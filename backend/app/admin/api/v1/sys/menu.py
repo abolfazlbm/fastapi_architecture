@@ -14,22 +14,22 @@ from backend.common.security.rbac import DependsRBAC
 router = APIRouter()
 
 
-@router.get('/sidebar', summary='获取用户菜单侧边栏', description='已适配 vben admin v5', dependencies=[DependsJwtAuth])
+@router.get('/sidebar', summary='get user menu sidebar', description='adapted vben admin v5', dependencies=[DependsJwtAuth])
 async def get_user_sidebar(request: Request) -> ResponseSchemaModel[list[dict[str, Any] | None]]:
     menu = await menu_service.get_sidebar(request=request)
     return response_base.success(data=menu)
 
 
-@router.get('/{pk}', summary='获取菜单详情', dependencies=[DependsJwtAuth])
-async def get_menu(pk: Annotated[int, Path(description='菜单 ID')]) -> ResponseSchemaModel[GetMenuDetail]:
+@router.get('/{pk}', summary='Get menu details', dependencies=[DependsJwtAuth])
+async def get_menu(pk: Annotated[int, Path(description='Menu ID')]) -> ResponseSchemaModel[GetMenuDetail]:
     data = await menu_service.get(pk=pk)
     return response_base.success(data=data)
 
 
-@router.get('', summary='获取菜单树', dependencies=[DependsJwtAuth])
+@router.get('', summary='get menu tree', dependencies=[DependsJwtAuth])
 async def get_menu_tree(
-    title: Annotated[str | None, Query(description='菜单标题')] = None,
-    status: Annotated[int | None, Query(description='状体')] = None,
+    title: Annotated[str | None, Query(description='menu title')] = None,
+    status: Annotated[int | None, Query(description='Status')] = None,
 ) -> ResponseSchemaModel[list[dict[str, Any]]]:
     menu = await menu_service.get_tree(title=title, status=status)
     return response_base.success(data=menu)
@@ -37,7 +37,7 @@ async def get_menu_tree(
 
 @router.post(
     '',
-    summary='创建菜单',
+    summary='Create menu',
     dependencies=[
         Depends(RequestPermission('sys:menu:add')),
         DependsRBAC,
@@ -50,13 +50,13 @@ async def create_menu(obj: CreateMenuParam) -> ResponseModel:
 
 @router.put(
     '/{pk}',
-    summary='更新菜单',
+    summary='Update menu',
     dependencies=[
         Depends(RequestPermission('sys:menu:edit')),
         DependsRBAC,
     ],
 )
-async def update_menu(pk: Annotated[int, Path(description='菜单 ID')], obj: UpdateMenuParam) -> ResponseModel:
+async def update_menu(pk: Annotated[int, Path(description='Menu ID')], obj: UpdateMenuParam) -> ResponseModel:
     count = await menu_service.update(pk=pk, obj=obj)
     if count > 0:
         return response_base.success()
@@ -65,13 +65,13 @@ async def update_menu(pk: Annotated[int, Path(description='菜单 ID')], obj: Up
 
 @router.delete(
     '/{pk}',
-    summary='删除菜单',
+    summary='Delete menu',
     dependencies=[
         Depends(RequestPermission('sys:menu:del')),
         DependsRBAC,
     ],
 )
-async def delete_menu(pk: Annotated[int, Path(description='菜单 ID')]) -> ResponseModel:
+async def delete_menu(pk: Annotated[int, Path(description='Menu ID')]) -> ResponseModel:
     count = await menu_service.delete(pk=pk)
     if count > 0:
         return response_base.success()

@@ -18,7 +18,7 @@ router = APIRouter()
 
 @router.get(
     '',
-    summary='分页获取操作日志',
+    summary='Paging to get operation log',
     dependencies=[
         DependsJwtAuth,
         DependsPagination,
@@ -26,9 +26,9 @@ router = APIRouter()
 )
 async def get_opera_logs_paged(
     db: CurrentSession,
-    username: Annotated[str | None, Query(description='用户名')] = None,
-    status: Annotated[int | None, Query(description='状态')] = None,
-    ip: Annotated[str | None, Query(description='IP 地址')] = None,
+    username: Annotated[str | None, Query(description='username')] = None,
+    status: Annotated[int | None, Query(description='status')] = None,
+    ip: Annotated[str | None, Query(description='IP address')] = None,
 ) -> ResponseSchemaModel[PageData[GetOperaLogDetail]]:
     log_select = await opera_log_service.get_select(username=username, status=status, ip=ip)
     page_data = await paging_data(db, log_select)
@@ -37,7 +37,7 @@ async def get_opera_logs_paged(
 
 @router.delete(
     '',
-    summary='批量删除操作日志',
+    summary='Batch delete operation log',
     dependencies=[
         Depends(RequestPermission('log:opera:del')),
         DependsRBAC,
@@ -52,7 +52,7 @@ async def delete_opera_logs(obj: DeleteOperaLogParam) -> ResponseModel:
 
 @router.delete(
     '/all',
-    summary='清空操作日志',
+    summary='Clear the operation log',
     dependencies=[
         Depends(RequestPermission('log:opera:clear')),
         DependsRBAC,
