@@ -15,7 +15,7 @@ router = APIRouter()
 
 @router.post(
     '/upload',
-    summary='文件上传',
+    summary='File upload',
     dependencies=[
         Depends(RequestPermission('sys:file:upload')),
         DependsRBAC,

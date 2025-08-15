@@ -18,7 +18,7 @@ router = APIRouter()
 
 @router.get(
     '',
-    summary='分页获取登录日志',
+    summary='Get login logs on page',
     dependencies=[
         DependsJwtAuth,
         DependsPagination,
@@ -26,9 +26,9 @@ router = APIRouter()
 )
 async def get_login_logs_paged(
     db: CurrentSession,
-    username: Annotated[str | None, Query(description='用户名')] = None,
-    status: Annotated[int | None, Query(description='状态')] = None,
-    ip: Annotated[str | None, Query(description='IP 地址')] = None,
+    username: Annotated[str | None, Query(description='username')] = None,
+    status: Annotated[int | None, Query(description='status')] = None,
+    ip: Annotated[str | None, Query(description='IP address')] = None,
 ) -> ResponseSchemaModel[PageData[GetLoginLogDetail]]:
     log_select = await login_log_service.get_select(username=username, status=status, ip=ip)
     page_data = await paging_data(db, log_select)
@@ -37,7 +37,7 @@ async def get_login_logs_paged(
 
 @router.delete(
     '',
-    summary='批量删除登录日志',
+    summary='Batch delete login',
     dependencies=[
         Depends(RequestPermission('log:login:del')),
         DependsRBAC,
@@ -52,7 +52,7 @@ async def delete_login_logs(obj: DeleteLoginLogParam) -> ResponseModel:
 
 @router.delete(
     '/all',
-    summary='清空登录日志',
+    summary='Clear the login log',
     dependencies=[
         Depends(RequestPermission('log:login:clear')),
         DependsRBAC,

@@ -14,19 +14,19 @@ from backend.common.security.rbac import DependsRBAC
 router = APIRouter()
 
 
-@router.get('/{pk}', summary='获取部门详情', dependencies=[DependsJwtAuth])
-async def get_dept(pk: Annotated[int, Path(description='部门 ID')]) -> ResponseSchemaModel[GetDeptDetail]:
+@router.get('/{pk}', summary='Get department details', dependencies=[DependsJwtAuth])
+async def get_dept(pk: Annotated[int, Path(description='Department ID')]) -> ResponseSchemaModel[GetDeptDetail]:
     data = await dept_service.get(pk=pk)
     return response_base.success(data=data)
 
 
-@router.get('', summary='获取部门树', dependencies=[DependsJwtAuth])
+@router.get('', summary='Obtain department tree', dependencies=[DependsJwtAuth])
 async def get_dept_tree(
     request: Request,
-    name: Annotated[str | None, Query(description='部门名称')] = None,
-    leader: Annotated[str | None, Query(description='部门负责人')] = None,
-    phone: Annotated[str | None, Query(description='联系电话')] = None,
-    status: Annotated[int | None, Query(description='状态')] = None,
+    name: Annotated[str | None, Query(description='department name')] = None,
+    leader: Annotated[str | None, Query(description='department head')] = None,
+    phone: Annotated[str | None, Query(description='Contact Number')] = None,
+    status: Annotated[int | None, Query(description='status')] = None,
 ) -> ResponseSchemaModel[list[dict[str, Any]]]:
     dept = await dept_service.get_tree(request=request, name=name, leader=leader, phone=phone, status=status)
     return response_base.success(data=dept)
@@ -34,7 +34,7 @@ async def get_dept_tree(
 
 @router.post(
     '',
-    summary='创建部门',
+    summary='Create a department',
     dependencies=[
         Depends(RequestPermission('sys:dept:add')),
         DependsRBAC,
@@ -47,13 +47,13 @@ async def create_dept(obj: CreateDeptParam) -> ResponseModel:
 
 @router.put(
     '/{pk}',
-    summary='更新部门',
+    summary='Update department',
     dependencies=[
         Depends(RequestPermission('sys:dept:edit')),
         DependsRBAC,
     ],
 )
-async def update_dept(pk: Annotated[int, Path(description='部门 ID')], obj: UpdateDeptParam) -> ResponseModel:
+async def update_dept(pk: Annotated[int, Path(description='Department ID')], obj: UpdateDeptParam) -> ResponseModel:
     count = await dept_service.update(pk=pk, obj=obj)
     if count > 0:
         return response_base.success()
@@ -62,13 +62,13 @@ async def update_dept(pk: Annotated[int, Path(description='部门 ID')], obj: Up
 
 @router.delete(
     '/{pk}',
-    summary='删除部门',
+    summary='Delete the department',
     dependencies=[
         Depends(RequestPermission('sys:dept:del')),
         DependsRBAC,
     ],
 )
-async def delete_dept(pk: Annotated[int, Path(description='部门 ID')]) -> ResponseModel:
+async def delete_dept(pk: Annotated[int, Path(description='Department ID')]) -> ResponseModel:
     count = await dept_service.delete(pk=pk)
     if count > 0:
         return response_base.success()
