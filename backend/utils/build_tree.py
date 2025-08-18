@@ -8,11 +8,11 @@ from backend.utils.serializers import RowData, select_list_serialize
 
 def get_tree_nodes(row: Sequence[RowData], is_sort: bool, sort_key: str) -> list[dict[str, Any]]:
     """
-    获取所有树形结构节点
+    Get all tree structure nodes
 
-    :param row: 原始数据行序列
-    :param is_sort: 是否启用结果排序
-    :param sort_key: 基于此键对结果进行进行排序
+    :param row: original data row sequence
+    :param is_sort: Whether to enable result sorting
+    :param sort_key: Sort the results based on this key
     :return:
     """
     tree_nodes = select_list_serialize(row)
@@ -23,9 +23,9 @@ def get_tree_nodes(row: Sequence[RowData], is_sort: bool, sort_key: str) -> list
 
 def traversal_to_tree(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """
-    通过遍历算法构造树形结构
+    Constructing a tree structure through a traversal algorithm
 
-    :param nodes: 树节点列表
+    :param nodes: tree node list
     :return:
     """
     tree: list[dict[str, Any]] = []
@@ -51,10 +51,10 @@ def traversal_to_tree(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 def recursive_to_tree(nodes: list[dict[str, Any]], *, parent_id: int | None = None) -> list[dict[str, Any]]:
     """
-    通过递归算法构造树形结构（性能影响较大）
+    Constructing a tree structure through recursive algorithm (performance impact is greater)
 
-    :param nodes: 树节点列表
-    :param parent_id: 父节点 ID，默认为 None 表示根节点
+    :param nodes: tree node list
+    :param parent_id: Parent node ID, default to None to represent the root node
     :return:
     """
     tree: list[dict[str, Any]] = []
@@ -76,13 +76,13 @@ def get_tree_data(
     sort_key: str = 'sort',
 ) -> list[dict[str, Any]]:
     """
-    获取树形结构数据
+    Getting tree structure data
 
-    :param row: 原始数据行序列
-    :param build_type: 构建树形结构的算法类型，默认为遍历算法
-    :param parent_id: 父节点 ID，仅在递归算法中使用
-    :param is_sort: 是否启用结果排序
-    :param sort_key: 基于此键对结果进行进行排序
+    :param row: original data row sequence
+    :param build_type: The algorithm type for building a tree structure, default to the traversal algorithm
+    :param parent_id: parent node ID, only used in recursive algorithms
+    :param is_sort: Whether to enable result sorting
+    :param sort_key: Sort the results based on this key
     :return:
     """
     nodes = get_tree_nodes(row, is_sort, sort_key)
@@ -92,17 +92,17 @@ def get_tree_data(
         case BuildTreeType.recursive:
             tree = recursive_to_tree(nodes, parent_id=parent_id)
         case _:
-            raise ValueError(f'无效的算法类型：{build_type}')
+            raise ValueError(f'Invalid algorithm type：{build_type}')
     return tree
 
 
 def get_vben5_tree_data(row: Sequence[RowData], is_sort: bool = True, sort_key: str = 'sort') -> list[dict[str, Any]]:
     """
-    获取 vben5 菜单树形结构数据
+    Get vben5 menu tree structure data
 
-    :param row: 原始数据行序列
-    :param is_sort: 是否启用结果排序
-    :param sort_key: 基于此键对结果进行进行排序
+    :param row: original data row sequence
+    :param is_sort: Whether to enable result sorting
+    :param sort_key: Sort the results based on this key
     :return:
     """
     meta_keys = {'title', 'icon', 'link', 'cache', 'display', 'status'}

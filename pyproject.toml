@@ -1,11 +1,11 @@
 [project]
-name = "fastapi_best_architecture"
+name = "fastapi_architecture"
 description = """
 A RBAC (Role-Based Access Control) permission control system built on FastAPI, featuring a unique pseudo-three-tier
 architecture design, with built-in basic implementation of fastapi admin as a template library, free and open-source.
 """
 authors = [
-    { name = "Wu Clan", email = "jianhengwu0407@gmail.com" },
+    { name = "Abolfazl", email = "a.babamohammadi@gmail.com" },
 ]
 readme = "README.md"
 license = { text = "MIT" }
@@ -39,6 +39,7 @@ dependencies = [
     "loguru>=0.7.3",
     "msgspec>=0.19.0",
     "path>=17.0.0",
+    "persiantools>=5.3.0",
     "psutil>=7.0.0",
     "psycopg>=3.2.9",
     "pwdlib>=0.2.1",

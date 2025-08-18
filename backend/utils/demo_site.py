@@ -8,9 +8,9 @@ from backend.core.conf import settings
 
 async def demo_site(request: Request) -> None:
     """
-    演示站点
+    Demo site
 
-    :param request: FastAPI 请求对象
+    :param request: FastAPI request object
     :return:
     """
     method = request.method
@@ -21,4 +21,4 @@ async def demo_site(request: Request) -> None:
         and method != 'OPTIONS'
         and (method, path) not in settings.DEMO_MODE_EXCLUDE
     ):
-        raise errors.ForbiddenError(msg='演示环境下禁止执行此操作')
+        raise errors.ForbiddenError(msg='This is prohibited in the demonstration environment')

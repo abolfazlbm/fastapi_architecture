@@ -16,9 +16,9 @@ R = TypeVar('R', bound=RowData)
 
 def select_columns_serialize(row: R) -> dict[str, Any]:
     """
-    序列化 SQLAlchemy 查询表的列，不包含关联列
+    Serializes the columns of the SQLAlchemy lookup table, not containing the associated columns
 
-    :param row: SQLAlchemy 查询结果行
+    :param row: SQLAlchemy query result row
     :return:
     """
     result = {}
@@ -32,9 +32,9 @@ def select_columns_serialize(row: R) -> dict[str, Any]:
 
 def select_list_serialize(row: Sequence[R]) -> list[dict[str, Any]]:
     """
-    序列化 SQLAlchemy 查询列表
+    Serialize SQLAlchemy query list
 
-    :param row: SQLAlchemy 查询结果列表
+    :param row: SQLAlchemy query result list
     :return:
     """
     return [select_columns_serialize(item) for item in row]
@@ -42,10 +42,10 @@ def select_list_serialize(row: Sequence[R]) -> list[dict[str, Any]]:
 
 def select_as_dict(row: R, use_alias: bool = False) -> dict[str, Any]:
     """
-    将 SQLAlchemy 查询结果转换为字典，可以包含关联数据
+    Convert SQLAlchemy query results to a dictionary that can contain associated data
 
-    :param row: SQLAlchemy 查询结果行
-    :param use_alias: 是否使用别名作为列名
+    :param row: SQLAlchemy query result row
+    :param use_alias: Whether to use an alias as a column name
     :return:
     """
     if not use_alias:
@@ -65,7 +65,7 @@ def select_as_dict(row: R, use_alias: bool = False) -> dict[str, Any]:
 
 class MsgSpecJSONResponse(JSONResponse):
     """
-    使用高性能的 msgspec 库将数据序列化为 JSON 的响应类
+    Serialize data into JSON's response class using the high-performance msgspec library
     """
 
     def render(self, content: Any) -> bytes:

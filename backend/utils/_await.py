@@ -10,7 +10,7 @@ T = TypeVar('T')
 
 
 class _TaskRunner:
-    """在后台线程上运行 asyncio 事件循环的任务运行器"""
+    """Task runner that runs asyncio event loop on background thread"""
 
     def __init__(self):
         self.__loop: asyncio.AbstractEventLoop | None = None
@@ -19,7 +19,7 @@ class _TaskRunner:
         atexit.register(self.close)
 
     def close(self):
-        """关闭事件循环并清理"""
+        """Close the event loop and clean up"""
         if self.__loop:
             self.__loop.stop()
             self.__loop = None
@@ -30,14 +30,14 @@ class _TaskRunner:
         _runner_map.pop(name, None)
 
     def _target(self):
-        """后台线程的目标函数"""
+        """Objective function of background thread"""
         try:
             self.__loop.run_forever()
         finally:
             self.__loop.close()
 
     def run(self, coro: Awaitable[T]) -> T:
-        """在后台事件循环上运行协程并返回其结果"""
+        """Run the coroutine on the background event loop and return its result"""
         with self.__lock:
             name = f'TaskRunner-{threading.get_ident()}'
             if self.__loop is None:
@@ -52,7 +52,7 @@ _runner_map = weakref.WeakValueDictionary()
 
 
 def run_await(coro: Callable[..., Awaitable[T]] | Callable[..., Coroutine[Any, Any, T]]) -> Callable[..., T]:
-    """将协程包装在函数中，该函数将在后台事件循环上运行，直到它执行完为止"""
+    """Wrap the coroutine in a function that will run on the background event loop until it is executed"""
 
     @wraps(coro)
     def wrapped(*args, **kwargs):
@@ -60,14 +60,14 @@ def run_await(coro: Callable[..., Awaitable[T]] | Callable[..., Coroutine[Any, A
         if not asyncio.iscoroutine(inner) and not asyncio.isfuture(inner):
             raise TypeError(f'Expected coroutine, got {type(inner)}')
         try:
-            # 如果事件循环正在运行，则使用任务调用
+           # If the event loop is running, use task calls
             asyncio.get_running_loop()
             name = f'TaskRunner-{threading.get_ident()}'
             if name not in _runner_map:
                 _runner_map[name] = _TaskRunner()
             return _runner_map[name].run(inner)
         except RuntimeError:
-            # 如果没有，则创建一个新的事件循环
+            # If not, create a new event loop
             loop = asyncio.get_event_loop()
             return loop.run_until_complete(inner)
 

@@ -16,17 +16,17 @@ from backend.utils.serializers import MsgSpecJSONResponse
 
 
 class _AuthenticationError(AuthenticationError):
-    """重写内部认证错误类"""
+    """Rewrite internal authentication error class"""
 
     def __init__(
         self, *, code: int | None = None, msg: str | None = None, headers: dict[str, Any] | None = None
     ) -> None:
         """
-        初始化认证错误
+        Initialization authentication error
 
-        :param code: 错误码
-        :param msg: 错误信息
-        :param headers: 响应头
+        :param code: Error code
+        :param msg: Error message
+        :param headers: response headers
         :return:
         """
         self.code = code
@@ -35,24 +35,24 @@ class _AuthenticationError(AuthenticationError):
 
 
 class JwtAuthMiddleware(AuthenticationBackend):
-    """JWT 认证中间件"""
+    """JWT certification middleware"""
 
     @staticmethod
     def auth_exception_handler(conn: HTTPConnection, exc: _AuthenticationError) -> Response:
         """
-        覆盖内部认证错误处理
+        Overwrite internal authentication error handling
 
-        :param conn: HTTP 连接对象
-        :param exc: 认证错误对象
+        :param conn: HTTP connection object
+        :param exc: Authentication error object
         :return:
         """
         return MsgSpecJSONResponse(content={'code': exc.code, 'msg': exc.msg, 'data': None}, status_code=exc.code)
 
     async def authenticate(self, request: Request) -> tuple[AuthCredentials, GetUserInfoWithRelationDetail] | None:
         """
-        认证请求
+        Authentication request
 
-        :param request: FastAPI 请求对象
+        :param request: FastAPI request object
         :return:
         """
         token = request.headers.get('Authorization')
@@ -75,9 +75,9 @@ class JwtAuthMiddleware(AuthenticationBackend):
         except TokenError as exc:
             raise _AuthenticationError(code=exc.code, msg=exc.detail, headers=exc.headers)
         except Exception as e:
-            log.exception(f'JWT 授权异常：{e}')
+            log.exception(f'JWT Authorization exception：{e}')
             raise _AuthenticationError(code=getattr(e, 'code', 500), msg=getattr(e, 'msg', 'Internal Server Error'))
 
-        # 请注意，此返回使用非标准模式，所以在认证通过时，将丢失某些标准特性
-        # 标准返回模式请查看：https://www.starlette.io/authentication/
+        # Please note that this return uses non-standard mode, so some standard features will be lost when the authentication is passed.
+        # For standard return mode, please check: https://www.starlette.io/authentication/
         return AuthCredentials(['authenticated']), user

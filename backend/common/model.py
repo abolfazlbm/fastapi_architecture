@@ -10,7 +10,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, MappedAsDataclass, declared_
 from backend.utils.snowflake import snowflake
 from backend.utils.timezone import timezone
 
-# 通用 Mapped 类型主键, 需手动添加，参考以下使用方式
+# General Mapped type primary key, need to be added manually, refer to the following usage method
 # MappedBase -> id: Mapped[id_key]
 # DataClassBase && Base -> id: Mapped[id_key] = mapped_column(init=False)
 id_key = Annotated[
@@ -22,13 +22,13 @@ id_key = Annotated[
         index=True,
         autoincrement=True,
         sort_order=-999,
-        comment='主键 ID',
+        comment='Primary key ID',
     ),
 ]
 
 
-# 雪花算法 Mapped 类型主键，使用方法与 id_key 相同
-# 详情：https://fastapi-practices.github.io/fastapi_best_architecture_docs/backend/reference/pk.html
+# Snowflake algorithm Mapped type primary key, the usage method is the same as id_key
+# Details: https://fastapi-practices.github.io/fastapi_best_architecture_docs/backend/reference/pk.html
 snowflake_id_key = Annotated[
     int,
     mapped_column(
@@ -38,33 +38,33 @@ snowflake_id_key = Annotated[
         index=True,
         default=snowflake.generate,
         sort_order=-999,
-        comment='雪花算法主键 ID',
+        comment='Snowflake algorithm primary key ID',
     ),
 ]
 
 
-# Mixin: 一种面向对象编程概念, 使结构变得更加清晰, `Wiki <https://en.wikipedia.org/wiki/Mixin/>`__
+# Mixin: An object-oriented programming concept that makes structure clearer, `Wiki <https://en.wikipedia.org/wiki/Mixin/>`__
 class UserMixin(MappedAsDataclass):
-    """用户 Mixin 数据类"""
+    """User Mixin Data Class"""
 
-    created_by: Mapped[int] = mapped_column(sort_order=998, comment='创建者')
-    updated_by: Mapped[int | None] = mapped_column(init=False, default=None, sort_order=998, comment='修改者')
+    created_by: Mapped[int] = mapped_column(sort_order=998, comment='creator')
+    updated_by: Mapped[int | None] = mapped_column(init=False, default=None, sort_order=998, comment='Modified')
 
 
 class DateTimeMixin(MappedAsDataclass):
-    """日期时间 Mixin 数据类"""
+    """Date and Time Mixin Data Class"""
 
     created_time: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), init=False, default_factory=timezone.now, sort_order=999, comment='创建时间'
+        DateTime(timezone=True), init=False, default_factory=timezone.now, sort_order=999, comment='Create time'
     )
     updated_time: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), init=False, onupdate=timezone.now, sort_order=999, comment='更新时间'
+        DateTime(timezone=True), init=False, onupdate=timezone.now, sort_order=999, comment='Update time'
     )
 
 
 class MappedBase(AsyncAttrs, DeclarativeBase):
     """
-    声明式基类, 作为所有基类或数据模型类的父类而存在
+    Declarative base class, exists as the parent class of all base classes or data model classes
 
     `AsyncAttrs <https://docs.sqlalchemy.org/en/20/orm/extensions/asyncio.html#sqlalchemy.ext.asyncio.AsyncAttrs>`__
 
@@ -75,18 +75,18 @@ class MappedBase(AsyncAttrs, DeclarativeBase):
 
     @declared_attr.directive
     def __tablename__(cls) -> str:
-        """生成表名"""
+        """Generate table name"""
         return cls.__name__.lower()
 
     @declared_attr.directive
     def __table_args__(cls) -> dict:
-        """表配置"""
+        """Table Configuration"""
         return {'comment': cls.__doc__ or ''}
 
 
 class DataClassBase(MappedAsDataclass, MappedBase):
     """
-    声明性数据类基类, 带有数据类集成, 允许使用更高级配置, 但你必须注意它的一些特性, 尤其是和 DeclarativeBase 一起使用时
+    Declarative Data Class Base Class with Data Class Integration allows for more advanced configurations, but you must pay attention to some of its features, especially when used with DeclarativeBase
 
     `MappedAsDataclass <https://docs.sqlalchemy.org/en/20/orm/dataclasses.html#orm-declarative-native-dataclasses>`__
     """
@@ -96,7 +96,7 @@ class DataClassBase(MappedAsDataclass, MappedBase):
 
 class Base(DataClassBase, DateTimeMixin):
     """
-    声明性数据类基类, 带有数据类集成, 并包含 MiXin 数据类基础表结构
+    Declarative data class base class, with data class integration, and includes the MiXin data class basic table structure
     """
 
     __abstract__ = True

@@ -14,14 +14,14 @@ from backend.core.path_conf import LOCALE_DIR
 
 
 class I18n:
-    """国际化管理器"""
+    """International Manager"""
 
     def __init__(self):
         self.locales: dict[str, dict[str, Any]] = {}
         self.current_language: str = settings.I18N_DEFAULT_LANGUAGE
 
     def load_locales(self):
-        """加载语言文本"""
+        """Loading language text"""
         patterns = [
             os.path.join(LOCALE_DIR, '*.json'),
             os.path.join(LOCALE_DIR, '*.yaml'),
@@ -45,11 +45,11 @@ class I18n:
 
     def t(self, key: str, default: Any | None = None, **kwargs) -> str:
         """
-        翻译函数
+        Translation functions
 
-        :param key: 目标文本键，支持点分隔，例如 'response.success'
-        :param default: 目标语言文本不存在时的默认文本
-        :param kwargs: 目标文本中的变量参数
+        :param key: Target text key, support dot separation, such as 'response.success'
+        :param default: The default text when the target language text does not exist
+        :param kwargs: variable parameters in target text
         :return:
         """
         keys = key.split('.')
@@ -64,7 +64,7 @@ class I18n:
             if isinstance(translation, dict) and k in list(translation.keys()):
                 translation = translation[k]
             else:
-                # Pydantic 兼容
+                # Pydantic Compatible
                 if keys[0] == 'pydantic':
                     translation = None
                 else:
@@ -76,8 +76,8 @@ class I18n:
         return translation or default
 
 
-# 创建 i18n 单例
+# Create i18n single case
 i18n = I18n()
 
-# 创建翻译函数实例
+# Create a translation function instance
 t = i18n.t

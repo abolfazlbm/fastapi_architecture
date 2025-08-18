@@ -16,9 +16,9 @@ from backend.database.db import CurrentSession
 router = APIRouter()
 
 
-@router.get('/{pk}', summary='获取任务结果详情', dependencies=[DependsJwtAuth])
+@router.get('/{pk}', summary='get task result details', dependencies=[DependsJwtAuth])
 async def get_task_result(
-    pk: Annotated[int, Path(description='任务结果 ID')],
+    pk: Annotated[int, Path(description='Task Result ID')],
 ) -> ResponseSchemaModel[GetTaskResultDetail]:
     result = await task_result_service.get(pk=pk)
     return response_base.success(data=result)
@@ -26,7 +26,7 @@ async def get_task_result(
 
 @router.get(
     '',
-    summary='分页获取所有任务结果',
+    summary='Pagination gets all task results',
     dependencies=[
         DependsJwtAuth,
         DependsPagination,
@@ -34,8 +34,8 @@ async def get_task_result(
 )
 async def get_task_results_paged(
     db: CurrentSession,
-    name: Annotated[str | None, Query(description='任务名称')] = None,
-    task_id: Annotated[str | None, Query(description='任务 ID')] = None,
+    name: Annotated[str | None, Query(description='Task Name')] = None,
+    task_id: Annotated[str | None, Query(description='Task ID')] = None,
 ) -> ResponseSchemaModel[PageData[GetTaskResultDetail]]:
     result_select = await task_result_service.get_select(name=name, task_id=task_id)
     page_data = await paging_data(db, result_select)
@@ -44,7 +44,7 @@ async def get_task_results_paged(
 
 @router.delete(
     '',
-    summary='批量删除任务结果',
+    summary='Batch delete task results',
     dependencies=[
         Depends(RequestPermission('sys:task:del')),
         DependsRBAC,

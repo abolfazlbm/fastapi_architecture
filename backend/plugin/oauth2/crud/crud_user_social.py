@@ -15,7 +15,7 @@ class CRUDUserSocial(CRUDPlus[UserSocial]):
         检查系统用户社交账号绑定
 
         :param db: 数据库会话
-        :param pk: 用户 ID
+        :param pk: User ID
         :param source: 社交账号类型
         :return:
         """

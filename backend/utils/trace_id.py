@@ -7,9 +7,9 @@ from backend.core.conf import settings
 
 def get_request_trace_id(request: Request) -> str:
     """
-    从请求头中获取追踪 ID
+    Get the trace ID from the request header
 
-    :param request: FastAPI 请求对象
+    :param request: FastAPI request object
     :return:
     """
     return request.headers.get(settings.TRACE_ID_REQUEST_HEADER_KEY) or settings.TRACE_ID_LOG_DEFAULT_VALUE

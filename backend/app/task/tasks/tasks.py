@@ -9,19 +9,19 @@ from backend.app.task.celery import celery_app
 
 @celery_app.task(name='task_demo')
 def task_demo() -> str:
-    """示例任务，模拟耗时操作"""
+    """Sample task, simulation time-consuming operation"""
     sleep(30)
     return 'test async'
 
 
 @celery_app.task(name='task_demo_async')
 async def task_demo_async() -> str:
-    """异步示例任务，模拟耗时操作"""
+    """Async sample task, simulate time-consuming operations"""
     await asleep(30)
     return 'test async'
 
 
 @celery_app.task(name='task_demo_params')
 async def task_demo_params(hello: str, world: str | None = None) -> str:
-    """参数示例任务，模拟传参操作"""
+    """Sample sample task, simulate parameter transfer operation"""
     return hello + world

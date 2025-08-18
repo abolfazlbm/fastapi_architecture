@@ -11,34 +11,34 @@ from backend.app.task.schema.scheduler import CreateTaskSchedulerParam, UpdateTa
 
 
 class CRUDTaskScheduler(CRUDPlus[TaskScheduler]):
-    """任务调度数据库操作类"""
+    """Task Scheduling Database Operation Class"""
 
     @staticmethod
     async def get(db: AsyncSession, pk: int) -> TaskScheduler | None:
         """
-        获取任务调度
+        Get task schedule
 
-        :param db: 数据库会话
-        :param pk: 任务调度 ID
+        :param db: database session
+        :param pk: Task Scheduling ID
         :return:
         """
         return await task_scheduler_dao.select_model(db, pk)
 
     async def get_all(self, db: AsyncSession) -> Sequence[TaskScheduler]:
         """
-        获取所有任务调度
+        Get all task schedules
 
-        :param db: 数据库会话
+        :param db: database session
         :return:
         """
         return await self.select_models(db)
 
     async def get_list(self, name: str | None, type: int | None) -> Select:
         """
-        获取任务调度列表
+        Get the task schedule list
 
-        :param name: 任务调度名称
-        :param type: 任务调度类型
+        :param name: task scheduling name
+        :param type: Task scheduling type
         :return:
         """
         filters = {}
@@ -52,20 +52,20 @@ class CRUDTaskScheduler(CRUDPlus[TaskScheduler]):
 
     async def get_by_name(self, db: AsyncSession, name: str) -> TaskScheduler | None:
         """
-        通过名称获取任务调度
+        Get task schedule by name
 
-        :param db: 数据库会话
-        :param name: 任务调度名称
+        :param db: database session
+        :param name: task scheduling name
         :return:
         """
         return await self.select_model_by_column(db, name=name)
 
     async def create(self, db: AsyncSession, obj: CreateTaskSchedulerParam) -> None:
         """
-        创建任务调度
+        Create a task schedule
 
-        :param db: 数据库会话
-        :param obj: 创建任务调度参数
+        :param db: database session
+        :param obj: Create task scheduling parameters
         :return:
         """
         await self.create_model(db, obj, flush=True)
@@ -73,11 +73,11 @@ class CRUDTaskScheduler(CRUDPlus[TaskScheduler]):
 
     async def update(self, db: AsyncSession, pk: int, obj: UpdateTaskSchedulerParam) -> int:
         """
-        更新任务调度
+        Update task schedule
 
-        :param db: 数据库会话
-        :param pk: 任务调度 ID
-        :param obj: 更新任务调度参数
+        :param db: database session
+        :param pk: Task Scheduling ID
+        :param obj: Update task scheduling parameters
         :return:
         """
         task_scheduler = await self.get(db, pk)
@@ -88,11 +88,11 @@ class CRUDTaskScheduler(CRUDPlus[TaskScheduler]):
 
     async def set_status(self, db: AsyncSession, pk: int, status: bool) -> int:
         """
-        设置任务调度状态
+        Set task scheduling status
 
-        :param db: 数据库会话
-        :param pk: 任务调度 ID
-        :param status: 状态
+        :param db: database session
+        :param pk: Task Scheduling ID
+        :param status: status
         :return:
         """
         task_scheduler = await self.get(db, pk)
@@ -102,10 +102,10 @@ class CRUDTaskScheduler(CRUDPlus[TaskScheduler]):
 
     async def delete(self, db: AsyncSession, pk: int) -> int:
         """
-        删除任务调度
+        Delete task schedule
 
-        :param db: 数据库会话
-        :param pk: 任务调度 ID
+        :param db: database session
+        :param pk: Task Scheduling ID
         :return:
         """
         task_scheduler = await self.get(db, pk)

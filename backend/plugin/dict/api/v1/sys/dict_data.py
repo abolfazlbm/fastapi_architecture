@@ -48,7 +48,7 @@ async def get_dict_datas_paged(
     type_code: Annotated[str | None, Query(description='字典类型编码')] = None,
     label: Annotated[str | None, Query(description='字典数据标签')] = None,
     value: Annotated[str | None, Query(description='字典数据键值')] = None,
-    status: Annotated[int | None, Query(description='状态')] = None,
+    status: Annotated[int | None, Query(description='Status')] = None,
     type_id: Annotated[int | None, Query(description='字典类型 ID')] = None,
 ) -> ResponseSchemaModel[PageData[GetDictDataDetail]]:
     dict_data_select = await dict_data_service.get_select(

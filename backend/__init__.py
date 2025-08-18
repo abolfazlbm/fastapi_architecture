@@ -10,5 +10,5 @@ def get_version() -> str | None:
     console.print(f'[cyan]{__version__}[/]')
 
 
-# 初始化 i18n
+# Initialize i18n
 i18n.load_locales()

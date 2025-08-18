@@ -7,11 +7,11 @@ from asyncio import Queue
 
 async def batch_dequeue(queue: Queue, max_items: int, timeout: float) -> list:
     """
-    从异步队列中获取多个项目
+    Get multiple items from an asynchronous queue
 
-    :param queue: 用于获取项目的 `asyncio.Queue` 队列
-    :param max_items: 从队列中获取的最大项目数量
-    :param timeout: 总的等待超时时间（秒）
+    :param queue: `asyncio.Queue` queue used to get the project
+    :param max_items: Maximum number of items obtained from the queue
+    :param timeout: Total waiting timeout (seconds)
     :return:
     """
     items = []

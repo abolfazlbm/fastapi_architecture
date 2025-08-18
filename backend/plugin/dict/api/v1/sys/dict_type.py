@@ -41,7 +41,7 @@ async def get_dict_types_paged(
     db: CurrentSession,
     name: Annotated[str | None, Query(description='字典类型名称')] = None,
     code: Annotated[str | None, Query(description='字典类型编码')] = None,
-    status: Annotated[int | None, Query(description='状态')] = None,
+    status: Annotated[int | None, Query(description='Status')] = None,
 ) -> ResponseSchemaModel[PageData[GetDictTypeDetail]]:
     dict_type_select = await dict_type_service.get_select(name=name, code=code, status=status)
     page_data = await paging_data(db, dict_type_select)

@@ -9,7 +9,7 @@ from backend.common.response.response_code import CustomErrorCode, StandardRespo
 
 
 class BaseExceptionMixin(Exception):
-    """基础异常混入类"""
+    """Basic exceptions mixed into the class"""
 
     code: int
 
@@ -21,14 +21,14 @@ class BaseExceptionMixin(Exception):
 
 
 class HTTPError(HTTPException):
-    """HTTP 异常"""
+    """HTTP exception"""
 
     def __init__(self, *, code: int, msg: Any = None, headers: dict[str, Any] | None = None):
         super().__init__(status_code=code, detail=msg, headers=headers)
 
 
 class CustomError(BaseExceptionMixin):
-    """自定义异常"""
+    """Custom exception"""
 
     def __init__(self, *, error: CustomErrorCode, data: Any = None, background: BackgroundTask | None = None):
         self.code = error.code
@@ -36,7 +36,7 @@ class CustomError(BaseExceptionMixin):
 
 
 class RequestError(BaseExceptionMixin):
-    """请求异常"""
+    """Request exception"""
 
     def __init__(
         self,
@@ -51,7 +51,7 @@ class RequestError(BaseExceptionMixin):
 
 
 class ForbiddenError(BaseExceptionMixin):
-    """禁止访问异常"""
+    """Access exception"""
 
     code = StandardResponseCode.HTTP_403
 
@@ -60,7 +60,7 @@ class ForbiddenError(BaseExceptionMixin):
 
 
 class NotFoundError(BaseExceptionMixin):
-    """资源不存在异常"""
+    """There is no exception to the resource"""
 
     code = StandardResponseCode.HTTP_404
 
@@ -69,7 +69,7 @@ class NotFoundError(BaseExceptionMixin):
 
 
 class ServerError(BaseExceptionMixin):
-    """服务器异常"""
+    """Server exception"""
 
     code = StandardResponseCode.HTTP_500
 
@@ -80,7 +80,7 @@ class ServerError(BaseExceptionMixin):
 
 
 class GatewayError(BaseExceptionMixin):
-    """网关异常"""
+    """Gateway exception"""
 
     code = StandardResponseCode.HTTP_502
 
@@ -89,7 +89,7 @@ class GatewayError(BaseExceptionMixin):
 
 
 class AuthorizationError(BaseExceptionMixin):
-    """授权异常"""
+    """Authorization exception"""
 
     code = StandardResponseCode.HTTP_403
 
@@ -98,7 +98,7 @@ class AuthorizationError(BaseExceptionMixin):
 
 
 class TokenError(HTTPError):
-    """Token 异常"""
+    """Token abnormal"""
 
     code = StandardResponseCode.HTTP_401
 
@@ -107,7 +107,7 @@ class TokenError(HTTPError):
 
 
 class ConflictError(BaseExceptionMixin):
-    """资源冲突异常"""
+    """Resource conflict exception"""
 
     code = StandardResponseCode.HTTP_409
 

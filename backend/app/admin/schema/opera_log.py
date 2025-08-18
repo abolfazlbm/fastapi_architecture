@@ -10,47 +10,47 @@ from backend.common.schema import SchemaBase
 
 
 class OperaLogSchemaBase(SchemaBase):
-    """操作日志基础模型"""
+    """Basic Model of Operation Log"""
 
-    trace_id: str = Field(description='追踪 ID')
-    username: str | None = Field(None, description='用户名')
-    method: str = Field(description='请求方法')
-    title: str = Field(description='操作标题')
-    path: str = Field(description='请求路径')
-    ip: str = Field(description='IP 地址')
-    country: str | None = Field(None, description='国家')
-    region: str | None = Field(None, description='地区')
-    city: str | None = Field(None, description='城市')
-    user_agent: str = Field(description='用户代理')
-    os: str | None = Field(None, description='操作系统')
-    browser: str | None = Field(None, description='浏览器')
-    device: str | None = Field(None, description='设备')
-    args: dict[str, Any] | None = Field(None, description='请求参数')
-    status: StatusType = Field(description='状态')
-    code: str = Field(description='状态码')
-    msg: str | None = Field(None, description='消息')
-    cost_time: float = Field(description='耗时')
-    opera_time: datetime = Field(description='操作时间')
+    trace_id: str = Field(description='tracking ID')
+    username: str | None = Field(None, description='Username')
+    method: str = Field(description='request method')
+    title: str = Field(description='Operation title')
+    path: str = Field(description='request path')
+    ip: str = Field(description='IP address')
+    country: str | None = Field(None, description='Country')
+    region: str | None = Field(None, description='region')
+    city: str | None = Field(None, description='City')
+    user_agent: str = Field(description='user agent')
+    os: str | None = Field(None, description='OS')
+    browser: str | None = Field(None, description='browser')
+    device: str | None = Field(None, description='device')
+    args: dict[str, Any] | None = Field(None, description='Request Parameter')
+    status: StatusType = Field(description='Status')
+    code: str = Field(description='status code')
+    msg: str | None = Field(None, description='Message')
+    cost_time: float = Field(description='time-consuming')
+    opera_time: datetime = Field(description='operation time')
 
 
 class CreateOperaLogParam(OperaLogSchemaBase):
-    """创建操作日志参数"""
+    """Create operation log parameters"""
 
 
 class UpdateOperaLogParam(OperaLogSchemaBase):
-    """更新操作日志参数"""
+    """Update operation log parameters"""
 
 
 class DeleteOperaLogParam(SchemaBase):
-    """删除操作日志参数"""
+    """Delete operation log parameters"""
 
-    pks: list[int] = Field(description='操作日志 ID 列表')
+    pks: list[int] = Field(description='Operation log ID list')
 
 
 class GetOperaLogDetail(OperaLogSchemaBase):
-    """操作日志详情"""
+    """Operation log details"""
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: int = Field(description='日志 ID')
-    created_time: datetime = Field(description='创建时间')
+    id: int = Field(description='log ID')
+    created_time: datetime = Field(description='create time')

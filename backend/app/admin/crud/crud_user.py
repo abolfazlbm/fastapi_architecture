@@ -26,7 +26,7 @@ class CRUDUser(CRUDPlus[User]):
         获取用户详情
 
         :param db: 数据库会话
-        :param user_id: 用户 ID
+        :param user_id: User ID
         :return:
         """
         return await self.select_model(db, user_id)
@@ -104,7 +104,7 @@ class CRUDUser(CRUDPlus[User]):
         更新用户信息
 
         :param db: 数据库会话
-        :param input_user: 用户 ID
+        :param input_user: User ID
         :param obj: 更新用户参数
         :return:
         """
@@ -122,7 +122,7 @@ class CRUDUser(CRUDPlus[User]):
         更新用户昵称
 
         :param db: 数据库会话
-        :param user_id: 用户 ID
+        :param user_id: User ID
         :param nickname: 用户昵称
         :return:
         """
@@ -133,7 +133,7 @@ class CRUDUser(CRUDPlus[User]):
         更新用户头像
 
         :param db: 数据库会话
-        :param user_id: 用户 ID
+        :param user_id: User ID
         :param avatar: 头像地址
         :return:
         """
@@ -144,7 +144,7 @@ class CRUDUser(CRUDPlus[User]):
         更新用户邮箱
 
         :param db: 数据库会话
-        :param user_id: 用户 ID
+        :param user_id: User ID
         :param email: 邮箱
         :return:
         """
@@ -155,7 +155,7 @@ class CRUDUser(CRUDPlus[User]):
         删除用户
 
         :param db: 数据库会话
-        :param user_id: 用户 ID
+        :param user_id: User ID
         :return:
         """
         return await self.delete_model(db, user_id)
@@ -175,7 +175,7 @@ class CRUDUser(CRUDPlus[User]):
         重置用户密码
 
         :param db: 数据库会话
-        :param pk: 用户 ID
+        :param pk: User ID
         :param password: 新密码
         :return:
         """
@@ -219,7 +219,7 @@ class CRUDUser(CRUDPlus[User]):
         设置用户超级管理员状态
 
         :param db: 数据库会话
-        :param user_id: 用户 ID
+        :param user_id: User ID
         :param is_super: 是否超级管理员
         :return:
         """
@@ -230,7 +230,7 @@ class CRUDUser(CRUDPlus[User]):
         设置用户后台登录状态
 
         :param db: 数据库会话
-        :param user_id: 用户 ID
+        :param user_id: User ID
         :param is_staff: 是否可登录后台
         :return:
         """
@@ -241,7 +241,7 @@ class CRUDUser(CRUDPlus[User]):
         设置用户状态
 
         :param db: 数据库会话
-        :param user_id: 用户 ID
+        :param user_id: User ID
         :param status: 状态
         :return:
         """
@@ -252,7 +252,7 @@ class CRUDUser(CRUDPlus[User]):
         设置用户多端登录状态
 
         :param db: 数据库会话
-        :param user_id: 用户 ID
+        :param user_id: User ID
         :param multi_login: 是否允许多端登录
         :return:
         """
@@ -265,7 +265,7 @@ class CRUDUser(CRUDPlus[User]):
         获取用户关联信息
 
         :param db: 数据库会话
-        :param user_id: 用户 ID
+        :param user_id: User ID
         :param username: 用户名
         :return:
         """
