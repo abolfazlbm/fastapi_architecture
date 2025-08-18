@@ -1,5 +1,5 @@
 version = 1
-revision = 1
+revision = 2
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version >= '3.13'",
@@ -632,7 +632,7 @@ standard-no-fastapi-cloud-cli = [
 ]
 
 [[package]]
-name = "fastapi-best-architecture"
+name = "fastapi-architecture"
 source = { editable = "." }
 dependencies = [
     { name = "aiofiles" },
@@ -660,6 +660,7 @@ dependencies = [
     { name = "loguru" },
     { name = "msgspec" },
     { name = "path" },
+    { name = "persiantools" },
     { name = "psutil" },
     { name = "psycopg" },
     { name = "pwdlib" },
@@ -716,6 +717,7 @@ requires-dist = [
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "msgspec", specifier = ">=0.19.0" },
     { name = "path", specifier = ">=17.0.0" },
+    { name = "persiantools", specifier = ">=5.3.0" },
     { name = "psutil", specifier = ">=7.0.0" },
     { name = "psycopg", specifier = ">=3.2.9" },
     { name = "pwdlib", specifier = ">=0.2.1" },
@@ -1510,6 +1512,18 @@ source = { registry = "https://mirrors.aliyun.com/pypi/simple" }
 sdist = { url = "https://mirrors.aliyun.com/pypi/packages/ed/51/127cd9fa2baae5715e24839d6fb73c6fa6eca7b84a52fc7ce8195d830802/path-17.1.0.tar.gz", hash = "sha256:d41e05ed4fa1d4f6d702df3c1e0a1a255d7b544287432456455dc7c51e5f98e9" }
 wheels = [
     { url = "https://mirrors.aliyun.com/pypi/packages/94/30/4b1094c93615ea388058452dee70e3bbc6dc88ececea73f9c4e4437accea/path-17.1.0-py3-none-any.whl", hash = "sha256:688e7ec254f07a1c25f5474662d4480c663a2c8c4eb15c0ba056d8ab81608d22" },
+]
+
+[[package]]
+name = "persiantools"
+version = "5.3.0"
+source = { registry = "https://mirrors.aliyun.com/pypi/simple" }
+dependencies = [
+    { name = "pytz" },
+]
+sdist = { url = "https://mirrors.aliyun.com/pypi/packages/be/96/327bb4c582faf9c74bc005f09ad744eb2af03dce8ba4b3f1d31ce4e140fe/persiantools-5.3.0.tar.gz", hash = "sha256:99a8fbd421ec6e403298567ba66e3ada4a05b0d23ab1e3b281f1ce46db2d528d" }
+wheels = [
+    { url = "https://mirrors.aliyun.com/pypi/packages/06/a6/bca01e7c603acd62cf09e6c1de2a58dd2fc21fc8703d0f529e603b7e490c/persiantools-5.3.0-py3-none-any.whl", hash = "sha256:9d682c2bd5c280e3933367b02965d37d39876faad42b6ada5ea2596197afd871" },
 ]
 
 [[package]]
