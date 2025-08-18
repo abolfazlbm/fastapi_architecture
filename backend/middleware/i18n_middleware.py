@@ -10,19 +10,19 @@ from backend.common.i18n import i18n
 
 
 class I18nMiddleware(BaseHTTPMiddleware):
-    """国际化中间件"""
+    """International middleware"""
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """
-        处理请求并设置国际化语言
+        Process requests and set up international languages
 
-        :param request: FastAPI 请求对象
-        :param call_next: 下一个中间件或路由处理函数
+        :param request: FastAPI request object
+        :param call_next: next middleware or routing processing function
         :return:
         """
         language = self.get_current_language(request)
 
-        # 设置国际化语言
+        # Set an international language
         if language and i18n.current_language != language:
             i18n.current_language = language
 
@@ -33,9 +33,9 @@ class I18nMiddleware(BaseHTTPMiddleware):
     @lru_cache(maxsize=128)
     def get_current_language(self, request: Request) -> str | None:
         """
-        获取当前请求的语言偏好
+        Get the language preferences for the current request
 
-        :param request: FastAPI 请求对象
+        :param request: FastAPI request object
         :return:
         """
         accept_language = request.headers.get('Accept-Language', '')
@@ -45,7 +45,7 @@ class I18nMiddleware(BaseHTTPMiddleware):
         languages = [lang.split(';')[0] for lang in accept_language.split(',')]
         lang = languages[0].lower().strip()
 
-        # 语言映射
+        # Language Mapping
         lang_mapping = {
             'zh': 'zh-CN',
             'zh-cn': 'zh-CN',

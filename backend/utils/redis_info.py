@@ -7,25 +7,25 @@ from backend.utils.server_info import server_info
 class RedisInfo:
     @staticmethod
     async def get_info() -> dict[str, str]:
-        """获取 Redis 服务器信息"""
+        """Get Redis server information"""
 
-        # 获取原始信息
+       # Get original information
         info = await redis_client.info()
 
-        # 格式化信息
+        # Format information
         fmt_info: dict[str, str] = {}
         for key, value in info.items():
             if isinstance(value, dict):
-                # 将字典格式化为字符串
+                # Format the dictionary into a string
                 fmt_info[key] = ','.join(f'{k}={v}' for k, v in value.items())
             else:
                 fmt_info[key] = str(value)
 
-        # 添加数据库大小信息
+        # Add database size information
         db_size = await redis_client.dbsize()
         fmt_info['keys_num'] = str(db_size)
 
-        # 格式化运行时间
+        # Format the run time
         uptime = int(fmt_info.get('uptime_in_seconds', '0'))
         fmt_info['uptime_in_seconds'] = server_info.fmt_seconds(uptime)
 
@@ -33,12 +33,12 @@ class RedisInfo:
 
     @staticmethod
     async def get_stats() -> list[dict[str, str]]:
-        """获取 Redis 命令统计信息"""
+        """Get Redis command statistics"""
 
-        # 获取命令统计信息
+        # Get command statistics
         command_stats = await redis_client.info('commandstats')
 
-        # 格式化统计信息
+        # Format statistics
         stats_list: list[dict[str, str]] = []
         for key, value in command_stats.items():
             if not isinstance(value, dict):

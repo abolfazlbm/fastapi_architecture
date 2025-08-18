@@ -13,16 +13,16 @@ from backend.database.db import async_db_session
 
 
 class LoginLogService:
-    """登录日志服务类"""
+    """Login log service class"""
 
     @staticmethod
     async def get_select(*, username: str | None, status: int | None, ip: str | None) -> Select:
         """
-        获取登录日志列表查询条件
+        Get the login log list query conditions
 
-        :param username: 用户名
-        :param status: 状态
-        :param ip: IP 地址
+        :param username: Username
+        :param status: status
+        :param ip: IP address
         :return:
         """
         return await login_log_dao.get_list(username=username, status=status, ip=ip)
@@ -39,15 +39,15 @@ class LoginLogService:
         msg: str,
     ) -> None:
         """
-        创建登录日志
+        Create a login log
 
-        :param db: 数据库会话
-        :param request: FastAPI 请求对象
-        :param user_uuid: 用户 UUID
-        :param username: 用户名
-        :param login_time: 登录时间
-        :param status: 状态
-        :param msg: 消息
+        :param db: database session
+        :param request: FastAPI request object
+        :param user_uuid: User UUID
+        :param username: Username
+        :param login_time: login time
+        :param status: status
+        :param msg: message
         :return:
         """
         try:
@@ -68,14 +68,14 @@ class LoginLogService:
             )
             await login_log_dao.create(db, obj)
         except Exception as e:
-            log.error(f'登录日志创建失败: {e}')
+            log.error(f'Login log creation failed: {e}')
 
     @staticmethod
     async def delete(*, obj: DeleteLoginLogParam) -> int:
         """
-        批量删除登录日志
+        Batch delete login
 
-        :param obj: 日志 ID 列表
+        :param obj: Log ID list
         :return:
         """
         async with async_db_session.begin() as db:
@@ -84,7 +84,7 @@ class LoginLogService:
 
     @staticmethod
     async def delete_all() -> None:
-        """清空所有登录日志"""
+        """Clear all login logs"""
         async with async_db_session.begin() as db:
             await login_log_dao.delete_all(db)
 

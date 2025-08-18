@@ -14,22 +14,22 @@ from backend.common.log import log
 
 
 class AESCipher:
-    """AES 加密器"""
+    """AES Encryptor"""
 
     def __init__(self, key: bytes | str) -> None:
         """
-        初始化 AES 加密器
+        Initialize the AES encryptor
 
-        :param key: 密钥，16/24/32 bytes 或 16 进制字符串
+        :param key: key, 16/24/32 bytes or hexadecimal string
         :return:
         """
         self.key = key if isinstance(key, bytes) else bytes.fromhex(key)
 
     def encrypt(self, plaintext: bytes | str) -> bytes:
         """
-        AES 加密
+        AES Encryption
 
-        :param plaintext: 加密前的明文
+        :param plaintext: plaintext before encryption
         :return:
         """
         if not isinstance(plaintext, bytes):
@@ -44,9 +44,9 @@ class AESCipher:
 
     def decrypt(self, ciphertext: bytes | str) -> str:
         """
-        AES 解密
+        AES Decryption
 
-        :param ciphertext: 解密前的密文，bytes 或 16 进制字符串
+        :param ciphertext: ciphertext before decryption, bytes or hexadecimal string
         :return:
         """
         ciphertext = ciphertext if isinstance(ciphertext, bytes) else bytes.fromhex(ciphertext)
@@ -61,14 +61,14 @@ class AESCipher:
 
 
 class Md5Cipher:
-    """MD5 加密器"""
+    """MD5 Encryptor"""
 
     @staticmethod
     def encrypt(plaintext: bytes | str) -> str:
         """
-        MD5 加密
+        MD5 Encryption
 
-        :param plaintext: 加密前的明文
+        :param plaintext: plaintext before encryption
         :return:
         """
         md5 = hashlib.md5()
@@ -79,22 +79,22 @@ class Md5Cipher:
 
 
 class ItsDCipher:
-    """ItsDangerous 加密器"""
+    """ItsDangerous Encryptor"""
 
     def __init__(self, key: bytes | str) -> None:
         """
-        初始化 ItsDangerous 加密器
+        Initialize the ItsDangerous Encryptor
 
-        :param key: 密钥，16/24/32 bytes 或 16 进制字符串
+        :param key: key, 16/24/32 bytes or hexadecimal string
         :return:
         """
         self.key = key if isinstance(key, bytes) else bytes.fromhex(key)
 
     def encrypt(self, plaintext: Any) -> str:
         """
-        ItsDangerous 加密
+        ItsDangerous Encryption
 
-        :param plaintext: 加密前的明文
+        :param plaintext: plaintext before encryption
         :return:
         """
         serializer = URLSafeSerializer(self.key)
@@ -107,9 +107,9 @@ class ItsDCipher:
 
     def decrypt(self, ciphertext: str) -> Any:
         """
-        ItsDangerous 解密
+        ItsDangerous Decryption
 
-        :param ciphertext: 解密前的密文
+        :param ciphertext: ciphertext before decryption
         :return:
         """
         serializer = URLSafeSerializer(self.key)

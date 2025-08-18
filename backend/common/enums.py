@@ -8,38 +8,38 @@ T = TypeVar('T', bound=Enum)
 
 
 class _EnumBase:
-    """枚举基类，提供通用方法"""
+    """Enumer base class, providing general method """
 
     @classmethod
     def get_member_keys(cls: Type[T]) -> list[str]:
-        """获取枚举成员名称列表"""
+        """Get enumerated member names list"""
         return [name for name in cls.__members__.keys()]
 
     @classmethod
     def get_member_values(cls: Type[T]) -> list:
-        """获取枚举成员值列表"""
+        """Get enumerated member value list"""
         return [item.value for item in cls.__members__.values()]
 
     @classmethod
     def get_member_dict(cls: Type[T]) -> dict[str, Any]:
-        """获取枚举成员字典"""
+        """Get enumerated member dictionary"""
         return {name: item.value for name, item in cls.__members__.items()}
 
 
 class IntEnum(_EnumBase, SourceIntEnum):
-    """整型枚举基类"""
+    """Integer Enumeration Base Class"""
 
     pass
 
 
 class StrEnum(_EnumBase, str, Enum):
-    """字符串枚举基类"""
+    """String Enumeration Base Class"""
 
     pass
 
 
 class MenuType(IntEnum):
-    """菜单类型"""
+    """Menu Type"""
 
     directory = 0
     menu = 1
@@ -49,14 +49,14 @@ class MenuType(IntEnum):
 
 
 class RoleDataRuleOperatorType(IntEnum):
-    """数据规则运算符"""
+    """Data rule operator"""
 
     AND = 0
     OR = 1
 
 
 class RoleDataRuleExpressionType(IntEnum):
-    """数据规则表达式"""
+    """Data rule expression"""
 
     eq = 0  # ==
     ne = 1  # !=
@@ -69,7 +69,7 @@ class RoleDataRuleExpressionType(IntEnum):
 
 
 class MethodType(StrEnum):
-    """HTTP 请求方法"""
+    """HTTP request method"""
 
     GET = 'GET'
     POST = 'POST'
@@ -80,21 +80,21 @@ class MethodType(StrEnum):
 
 
 class LoginLogStatusType(IntEnum):
-    """登录日志状态"""
+    """Login log status"""
 
     fail = 0
     success = 1
 
 
 class BuildTreeType(StrEnum):
-    """构建树形结构类型"""
+    """Construct tree structure type"""
 
     traversal = 'traversal'
     recursive = 'recursive'
 
 
 class OperaLogCipherType(IntEnum):
-    """操作日志加密类型"""
+    """Operation log encryption type"""
 
     aes = 0
     md5 = 1
@@ -103,35 +103,35 @@ class OperaLogCipherType(IntEnum):
 
 
 class StatusType(IntEnum):
-    """状态类型"""
+    """Status Type"""
 
     disable = 0
     enable = 1
 
 
 class UserSocialType(StrEnum):
-    """用户社交类型"""
+    """User social type"""
 
     github = 'GitHub'
     linux_do = 'LinuxDo'
 
 
 class FileType(StrEnum):
-    """文件类型"""
+    """File Type"""
 
     image = 'image'
     video = 'video'
 
 
 class PluginType(StrEnum):
-    """插件类型"""
+    """Plugin Type"""
 
     zip = 'zip'
     git = 'git'
 
 
 class UserPermissionType(StrEnum):
-    """用户权限类型"""
+    """User Permission Type"""
 
     superuser = 'superuser'
     staff = 'staff'
@@ -140,14 +140,14 @@ class UserPermissionType(StrEnum):
 
 
 class DataBaseType(StrEnum):
-    """数据库类型"""
+    """Database Type"""
 
     mysql = 'mysql'
     postgresql = 'postgresql'
 
 
 class PrimaryKeyType(StrEnum):
-    """主键类型"""
+    """Primary key type"""
 
     autoincrement = 'autoincrement'
     snowflake = 'snowflake'

@@ -10,33 +10,33 @@ from backend.common.schema import SchemaBase
 
 
 class TaskResultSchemaBase(SchemaBase):
-    """任务结果基础模型"""
+    """Task Outcome Foundation Model"""
 
-    task_id: str = Field(description='任务 ID')
-    status: str = Field(description='执行状态')
-    result: Any | None = Field(description='执行结果')
-    date_done: datetime | None = Field(description='结束时间')
-    traceback: str | None = Field(description='错误回溯')
-    name: str | None = Field(description='任务名称')
-    args: bytes | None = Field(description='任务位置参数')
-    kwargs: bytes | None = Field(description='任务关键字参数')
-    worker: str | None = Field(description='运行 Worker')
-    retries: int | None = Field(description='重试次数')
-    queue: str | None = Field(description='运行队列')
+    task_id: str = Field(description='Task ID')
+    status: str = Field(description='Execution status')
+    result: Any | None = Field(description='Execution results')
+    date_done: datetime | None = Field(description='End time')
+    traceback: str | None = Field(description='Error backlidding')
+    name: str | None = Field(description='Task name')
+    args: bytes | None = Field(description='Task position parameters')
+    kwargs: bytes | None = Field(description='Task keyword parameters')
+    worker: str | None = Field(description='Run the Worker')
+    retries: int | None = Field(description='Number of reattempts')
+    queue: str | None = Field(description='Run queues')
 
 
 class DeleteTaskResultParam(SchemaBase):
-    """删除任务结果参数"""
+    """Delete the task result parameter"""
 
-    pks: list[int] = Field(description='任务结果 ID 列表')
+    pks: list[int] = Field(description='List of task result IDs')
 
 
 class GetTaskResultDetail(TaskResultSchemaBase):
-    """任务结果详情"""
+    """Details of the task result"""
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: int = Field(description='任务结果 ID')
+    id: int = Field(description='Mission results ID')
 
     @field_serializer('args', 'kwargs', when_used='unless-none')
     def serialize_params(self, value: bytes | None, _info) -> Any:

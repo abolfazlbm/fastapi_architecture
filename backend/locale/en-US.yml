@@ -1,0 +1,113 @@
+error:
+  captcha:
+    error: Verification code error
+    expired: The verification code has expired, please re-get it
+  language_not_found: The current language package is not initialized or does not exist
+pydantic:
+  # Custom verification error information, refer to:
+  # https://github.com/pydantic/pydantic-core/blob/a5cb7382643415b716b1a7a5392914e50f726528/tests/test_errors.py#L266
+  # https://github.com/pydantic/pydantic/blob/caa78016433ec9b16a973f92f187a7b6bfde6cb5/docs/errors/errors.md?plain=1#L232
+  arguments_type: The argument must be a tuple, list, or dictionary
+  assertion_error: 'Assertion failed, {error}'
+  bool_parsing: The input should be a valid boolean value, and the input cannot be interpreted
+  bool_type: The input should be a valid boolean value
+  bytes_too_long: 'The data should have up to {max_length} bytes'
+  bytes_too_short: 'The data should have at least {min_length} bytes'
+  bytes_type: The input should be valid bytes
+  callable_type: The input should be a callable object
+  dataclass_exact_type: 'The input should be an instance where {class_name}'
+  dataclass_type: 'The input should be a dictionary or an instance of {class_name}'
+  date_from_datetime_inexact: The date time provided to a date should have zero time - for example an exact date
+  date_from_datetime_parsing: 'Enter should be valid date or datetime, {error}'
+  date_future: The date should be the future time
+  date_past: The date should be the past time
+  date_parsing: 'Enter should be valid date in YYYY-MM-DD format, {error}'
+  date_type: The input should be a valid date
+  datetime_future: The input should be the future time
+  datetime_object_invalid: 'Invalid datetime object, get {error}'
+  datetime_past: The input should be the past time
+  datetime_parsing: 'Enter should be valid datetime, {error}'
+  datetime_type: Enter the datetime that should be valid
+  decimal_max_digits: 'The decimal input should not exceed {max_digits} digits in total'
+  decimal_max_places: 'Decimal input should not exceed {decimal_places} decimal places'
+  decimal_parsing: The input should be a valid decimal number
+  decimal_type: The decimal input should be an integer, a floating point, a string, or a Decimal object
+  decimal_whole_digits: 'Decimal input should not exceed {whole_digits} digits before the decimal point'
+  dict_type: The input should be a valid dictionary
+  email_parsing: 'Enter should be a valid email address, {error}'
+  email_type: Enter the email address that should be valid
+  enum: 'The input should be {expected}'
+  extra_forbidden: No additional input allowed
+  finite_number: The input should be a finite number
+  float_parsing: The input should be a valid number and the string cannot be parsed into a number
+  float_type: The input should be a valid number
+  frozen_field: field has been frozen
+  frozen_instance: The instance has been frozen
+  frozen_set_type: The input should be a valid frozen collection
+  get_attribute_error: 'An error occurred while extracting attributes: {error}'
+  greater_than: 'Input should be greater than {gt}'
+  greater_than_equal: 'The input should be greater than or equal to {ge}'
+  int_from_float: Input should be a valid integer to get a number with a fractional part
+  int_parsing: The input should be a valid integer and cannot parse the string into an integer
+  int_parsing_size: Unable to parse input string into integer, exceeding maximum size
+  int_type: The input should be a valid integer
+  invalid_key: The key should be a string
+  is_instance_of: 'The input should be an instance where {class}'
+  is_subclass_of: 'The input should be a subclass of {class}'
+  iteration_error: 'An error occurred while iterating the object, error: {error}'
+  iterable_type: The input should be an iterable object
+  json_invalid: 'Invalid JSON: {error}'
+  json_type: JSON input should be a string, byte, or byte array
+  less_than: 'The input should be less than {lt}'
+  less_than_equal: 'The input should be less than or equal to {le}'
+  list_type: The input should be a valid list
+  literal_error: 'The input should be {expected}'
+  mapping_type: 'The input should be a valid mapping, error: {error}'
+  Missing: Field is required
+  Missing_argument: Required parameters are missing
+  Missing_keyword_only_argument: Missing required keyword-specific parameters
+  Missing_positional_only_argument: Missing required location-specific parameters
+  model_attributes_type: The input should be a valid dictionary or extractable field object
+  model_type: 'The input should be a valid dictionary or an instance of {class_name}'
+  multiple_argument_values: multiple values are provided for the parameter
+  multiple_of: 'The input should be a multiple of {multiple_of}'
+  no_such_attribute: 'The object has no attribute ''{attribute}'''
+  none_required: The input should be None
+  recursion_loop: recursion error - loop reference detected
+  set_type: The input should be a valid set
+  string_pattern_mismatch: 'String should match pattern ''{pattern}'''
+  string_sub_type: The input should be a string, not an instance of the str subclass
+  string_too_long: 'The string should have at most {max_length} characters'
+  string_too_short: 'The string should have at least {min_length} characters'
+  string_type: The input should be a valid string
+  string_unicode: The input should be a valid string and the original data cannot be parsed into a Unicode string
+  time_delta_parsing: 'The input should be a valid time difference, {error}'
+  time_delta_type: The input should be valid time difference
+  time_parsing: 'The input should be in a valid time format, {error}'
+  time_type: The input should be valid
+  timezone_aware: The input should contain time zone information
+  timezone_naive: The input should not contain time zone information
+  timezone_offset: 'The time zone offset is required to be {tz_expected}, and actually get {tz_actual}'
+  too_long: '{field_type} should have at most {max_length} items after verification, not {actual_length}'
+  too_short: '{field_type} should have at least {min_length} items after verification, not {actual_length}'
+  tuple_type: The input should be a valid tuple
+  union_tag_invalid: 'Input tags found using {discriminator} ''{tag}'' does not match any expected tags: {expected_tags}'
+  union_tag_not_found: 'Cannot extract tags using diffraction {discriminator}'
+  unexpected_keyword_argument: Unexpected keyword arguments
+  unexpected_positional_argument: Unexpected positional parameter
+  url_parsing: 'The input should be a valid URL, {error}'
+  url_scheme: 'URL scheme should be {expected_schemes}'
+  url_syntax_violation: 'Enter violates strict URL syntax rules, {error}'
+  url_too_long: 'The URL should have up to {max_length} characters'
+  url_type: URL input should be a string or URL
+  uuid_parsing: 'The input should be a valid UUID, {error}'
+  uuid_type: UUID input should be a string, byte, or UUID object
+  uuid_version: 'The expected UUID version is {expected_version}'
+  value_error: 'Value error, {error}'
+Response:
+  error: Request error
+  success: The request was successful
+success:
+  login:
+    oauth2_success: Login successfully (OAuth2)
+    success: Login successfully

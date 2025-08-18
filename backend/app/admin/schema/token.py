@@ -10,42 +10,42 @@ from backend.common.schema import SchemaBase
 
 
 class GetSwaggerToken(SchemaBase):
-    """Swagger 认证令牌"""
+    """Swagger authentication token"""
 
-    access_token: str = Field(description='访问令牌')
-    token_type: str = Field('Bearer', description='令牌类型')
-    user: GetUserInfoDetail = Field(description='用户信息')
+    access_token: str = Field(description='Access Token')
+    token_type: str = Field('Bearer', description='Token type')
+    user: GetUserInfoDetail = Field(description='User Information')
 
 
 class AccessTokenBase(SchemaBase):
-    """访问令牌基础模型"""
+    """Access token basic model"""
 
-    access_token: str = Field(description='访问令牌')
-    access_token_expire_time: datetime = Field(description='令牌过期时间')
-    session_uuid: str = Field(description='会话 UUID')
+    access_token: str = Field(description='Access Token')
+    access_token_expire_time: datetime = Field(description='token expiration time')
+    session_uuid: str = Field(description='session UUID')
 
 
 class GetNewToken(AccessTokenBase):
-    """获取新令牌"""
+    """Get new token"""
 
 
 class GetLoginToken(AccessTokenBase):
-    """获取登录令牌"""
+    """Get login token"""
 
-    user: GetUserInfoDetail = Field(description='用户信息')
+    user: GetUserInfoDetail = Field(description='User Information')
 
 
 class GetTokenDetail(SchemaBase):
-    """令牌详情"""
+    """Token details"""
 
-    id: int = Field(description='用户 ID')
-    session_uuid: str = Field(description='会话 UUID')
-    username: str = Field(description='用户名')
-    nickname: str = Field(description='昵称')
-    ip: str = Field(description='IP 地址')
-    os: str = Field(description='操作系统')
-    browser: str = Field(description='浏览器')
-    device: str = Field(description='设备')
-    status: StatusType = Field(description='状态')
-    last_login_time: str = Field(description='最后登录时间')
-    expire_time: datetime = Field(description='过期时间')
+    id: int = Field(description='User ID')
+    session_uuid: str = Field(description='session UUID')
+    username: str = Field(description='Username')
+    nickname: str = Field(description='nickname')
+    ip: str = Field(description='IP address')
+    os: str = Field(description='OS')
+    browser: str = Field(description='browser')
+    device: str = Field(description='device')
+    status: StatusType = Field(description='Status')
+    last_login_time: str = Field(description='Last login time')
+    expire_time: datetime = Field(description='Expiration time')

@@ -8,16 +8,16 @@ from backend.database.db import async_db_session
 
 
 class OperaLogService:
-    """操作日志服务类"""
+    """Operation log service class"""
 
     @staticmethod
     async def get_select(*, username: str | None, status: int | None, ip: str | None) -> Select:
         """
-        获取操作日志列表查询条件
+        Get the operation log list query conditions
 
-        :param username: 用户名
-        :param status: 状态
-        :param ip: IP 地址
+        :param username: Username
+        :param status: status
+        :param ip: IP address
         :return:
         """
         return await opera_log_dao.get_list(username=username, status=status, ip=ip)
@@ -25,9 +25,9 @@ class OperaLogService:
     @staticmethod
     async def create(*, obj: CreateOperaLogParam) -> None:
         """
-        创建操作日志
+        Create an operation log
 
-        :param obj: 操作日志创建参数
+        :param obj: operation log creation parameters
         :return:
         """
         async with async_db_session.begin() as db:
@@ -36,9 +36,9 @@ class OperaLogService:
     @staticmethod
     async def bulk_create(*, objs: list[CreateOperaLogParam]) -> None:
         """
-        批量创建操作日志
+        Bulk creation of operation logs
 
-        :param objs: 操作日志创建参数列表
+        :param objs: operation log creation parameter list
         :return:
         """
         async with async_db_session.begin() as db:
@@ -47,9 +47,9 @@ class OperaLogService:
     @staticmethod
     async def delete(*, obj: DeleteOperaLogParam) -> int:
         """
-        批量删除操作日志
+        Batch delete operation log
 
-        :param obj: 日志 ID 列表
+        :param obj: Log ID list
         :return:
         """
         async with async_db_session.begin() as db:
@@ -58,7 +58,7 @@ class OperaLogService:
 
     @staticmethod
     async def delete_all() -> None:
-        """清空所有操作日志"""
+        """Clear all operation logs"""
         async with async_db_session.begin() as db:
             await opera_log_dao.delete_all(db)
 

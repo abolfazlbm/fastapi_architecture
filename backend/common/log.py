@@ -16,19 +16,19 @@ from backend.utils.timezone import timezone
 
 class InterceptHandler(logging.Handler):
     """
-    日志拦截处理器，用于将标准库的日志重定向到 loguru
+    Log interceptor processor for redirecting the logs of the standard library to loguru
 
-    参考：https://loguru.readthedocs.io/en/stable/overview.html#entirely-compatible-with-standard-logging
+    Reference: https://loguru.readthedocs.io/en/stable/overview.html#entirely-compatible-with-standard-logging
     """
 
     def emit(self, record: logging.LogRecord):
-        # 获取对应的 Loguru 级别（如果存在）
+        # Get the corresponding Loguru level (if present)
         try:
             level = logger.level(record.levelname).name
         except ValueError:
             level = record.levelno
 
-        # 查找记录日志消息的调用者
+        # Find the caller who logs the log message
         frame, depth = inspect.currentframe(), 0
         while frame and (depth == 0 or frame.f_code.co_filename == logging.__file__):
             frame = frame.f_back
@@ -38,9 +38,9 @@ class InterceptHandler(logging.Handler):
 
 
 def default_formatter(record):
-    """默认日志格式化程序"""
+    """Default log formatter"""
 
-    # 重写 sqlalchemy echo 输出
+    # Rewrite sqlalchemy echo output
     # https://github.com/sqlalchemy/sqlalchemy/discussions/12791
     record_name = record['name'] or ''
     if record_name.startswith('sqlalchemy'):
@@ -51,21 +51,21 @@ def default_formatter(record):
 
 def setup_logging() -> None:
     """
-    设置日志处理器
+    Setting up the log processor
 
-    参考：
+    refer to:
     - https://github.com/benoitc/gunicorn/issues/1572#issuecomment-638391953
     - https://github.com/pawamoy/pawamoy.github.io/issues/17
     """
-    # 设置根日志处理器和级别
+    # Set root log processor and level
     logging.root.handlers = [InterceptHandler()]
     logging.root.setLevel(settings.LOG_STD_LEVEL)
 
     for name in logging.root.manager.loggerDict.keys():
-        # 清空所有默认日志处理器
+        # Clear all default log processors
         logging.getLogger(name).handlers = []
 
-        # 配置日志传播规则
+        # Configure log propagation rules
         if 'uvicorn.access' in name or 'watchfiles.main' in name:
             logging.getLogger(name).propagate = False
         else:
@@ -74,17 +74,17 @@ def setup_logging() -> None:
         # Debug log handlers
         # logging.debug(f'{logging.getLogger(name)}, {logging.getLogger(name).propagate}')
 
-    # 移除 loguru 默认处理器
+   # Remove the loguru default processor
     logger.remove()
 
-    # correlation_id 过滤器
+    # correlation_id filter
     # https://github.com/snok/asgi-correlation-id/issues/7
     def correlation_id_filter(record):
         cid = correlation_id.get(settings.TRACE_ID_LOG_DEFAULT_VALUE)
         record['correlation_id'] = cid[: settings.TRACE_ID_LOG_LENGTH]
         return record
 
-    # 配置 loguru 处理器
+    # Configure the loguru processor
     logger.configure(
         handlers=[
             {
@@ -98,15 +98,15 @@ def setup_logging() -> None:
 
 
 def set_custom_logfile() -> None:
-    """设置自定义日志文件"""
+    """Set custom log files"""
     if not os.path.exists(LOG_DIR):
         os.mkdir(LOG_DIR)
 
-    # 日志文件
+    # Log File
     log_access_file = os.path.join(LOG_DIR, settings.LOG_ACCESS_FILENAME)
     log_error_file = os.path.join(LOG_DIR, settings.LOG_ERROR_FILENAME)
 
-    # 日志压缩回调
+    # Log compression callback
     def compression(filepath):
         filename = filepath.split(os.sep)[-1]
         original_filename = filename.split('.')[0]
@@ -114,7 +114,7 @@ def set_custom_logfile() -> None:
             return os.path.join(LOG_DIR, f'{original_filename}.log')
         return os.path.join(LOG_DIR, f'{original_filename}_{timezone.now().strftime("%Y-%m-%d")}.log')
 
-    # 日志文件通用配置
+    # General configuration of log files
     # https://loguru.readthedocs.io/en/stable/api/logger.html#loguru._logger.Logger.add
     log_config = {
         'format': default_formatter,
@@ -124,7 +124,7 @@ def set_custom_logfile() -> None:
         'compression': lambda filepath: os.rename(filepath, compression(filepath)),
     }
 
-    # 标准输出文件
+    # Standard output file
     logger.add(
         str(log_access_file),
         level=settings.LOG_FILE_ACCESS_LEVEL,
@@ -134,7 +134,7 @@ def set_custom_logfile() -> None:
         **log_config,
     )
 
-    # 标准错误文件
+    # Standard Error File
     logger.add(
         str(log_error_file),
         level=settings.LOG_FILE_ERROR_LEVEL,
@@ -145,5 +145,5 @@ def set_custom_logfile() -> None:
     )
 
 
-# 创建 logger 实例
+# Create a logger instance
 log = logger

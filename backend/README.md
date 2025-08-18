@@ -1,4 +1,4 @@
-# FastAPI Best Architecture - Backend
+# FastAPI Architecture - Backend
 
 ## Docker
 

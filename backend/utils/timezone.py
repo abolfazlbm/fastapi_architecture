@@ -10,28 +10,28 @@ from backend.core.conf import settings
 
 class TimeZone:
     def __init__(self) -> None:
-        """初始化时区转换器"""
+        """Initialize time zone converter"""
         self.tz_info = zoneinfo.ZoneInfo(settings.DATETIME_TIMEZONE)
 
     def now(self) -> datetime:
-        """获取当前时区时间"""
+        """Get the current time zone time"""
         return datetime.now(self.tz_info)
 
     def from_datetime(self, t: datetime) -> datetime:
         """
-        将 datetime 对象转换为当前时区时间
+        Convert datetime object to current time zone time
 
-        :param t: 需要转换的 datetime 对象
+        :param t: datetime object that needs to be converted
         :return:
         """
         return t.astimezone(self.tz_info)
 
     def from_str(self, t_str: str, format_str: str = settings.DATETIME_FORMAT) -> datetime:
         """
-        将时间字符串转换为当前时区的 datetime 对象
+        Convert a time string to a datetime object of the current time zone
 
-        :param t_str: 时间字符串
-        :param format_str: 时间格式字符串，默认为 settings.DATETIME_FORMAT
+        :param t_str: Time string
+        :param format_str: Time format string, default to settings.DATETIME_FORMAT
         :return:
         """
         return datetime.strptime(t_str, format_str).replace(tzinfo=self.tz_info)
@@ -39,10 +39,10 @@ class TimeZone:
     @staticmethod
     def to_str(t: datetime, format_str: str = settings.DATETIME_FORMAT) -> str:
         """
-        将 datetime 对象转换为指定格式的时间字符串
+        Convert the datetime object to a time string of the specified format
 
-        :param t: datetime 对象
-        :param format_str: 时间格式字符串，默认为 settings.DATETIME_FORMAT
+        :param t: datetime object
+        :param format_str: Time format string, default to settings.DATETIME_FORMAT
         :return:
         """
         return t.strftime(format_str)
@@ -50,9 +50,9 @@ class TimeZone:
     @staticmethod
     def to_utc(t: datetime | int) -> datetime:
         """
-        将 datetime 对象或时间戳转换为 UTC 时区时间
+        Convert datetime object or timestamp to UTC time zone time
 
-        :param t: 需要转换的 datetime 对象或时间戳
+        :param t: datetime object or timestamp that needs to be converted
         :return:
         """
         if isinstance(t, datetime):

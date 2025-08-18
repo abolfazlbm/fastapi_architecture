@@ -17,25 +17,25 @@ if TYPE_CHECKING:
 
 
 class Role(Base):
-    """角色表"""
+    """Role table"""
 
     __tablename__ = 'sys_role'
 
     id: Mapped[id_key] = mapped_column(init=False)
-    name: Mapped[str] = mapped_column(String(20), unique=True, comment='角色名称')
-    status: Mapped[int] = mapped_column(default=1, comment='角色状态（0停用 1正常）')
+    name: Mapped[str] = mapped_column(String(20), unique=True, comment='role name')
+    status: Mapped[int] = mapped_column(default=1, comment='role status (0 is disabled 1 is normal)')
     is_filter_scopes: Mapped[bool] = mapped_column(
-        Boolean().with_variant(INTEGER, 'postgresql'), default=True, comment='过滤数据权限(0否 1是)'
+        Boolean().with_variant(INTEGER, 'postgresql'), default=True, comment='Filter data permission (0 No 1 Yes)'
     )
     remark: Mapped[str | None] = mapped_column(
-        LONGTEXT().with_variant(TEXT, 'postgresql'), default=None, comment='备注'
+        LONGTEXT().with_variant(TEXT, 'postgresql'), default=None, comment='Remarks'
     )
 
-    # 角色用户多对多
+    # Many-to-many role users
     users: Mapped[list[User]] = relationship(init=False, secondary=sys_user_role, back_populates='roles')
 
-    # 角色菜单多对多
+    # Character menu many to many
     menus: Mapped[list[Menu]] = relationship(init=False, secondary=sys_role_menu, back_populates='roles')
 
-    # 角色数据范围多对多
+    # Role data range many-to-many
     scopes: Mapped[list[DataScope]] = relationship(init=False, secondary=sys_role_data_scope, back_populates='roles')

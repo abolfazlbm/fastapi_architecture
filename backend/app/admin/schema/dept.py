@@ -9,31 +9,31 @@ from backend.common.schema import CustomEmailStr, CustomPhoneNumber, SchemaBase
 
 
 class DeptSchemaBase(SchemaBase):
-    """部门基础模型"""
+    """Departmental Basic Model"""
 
-    name: str = Field(description='部门名称')
-    parent_id: int | None = Field(None, description='部门父级 ID')
-    sort: int = Field(0, ge=0, description='排序')
-    leader: str | None = Field(None, description='负责人')
-    phone: CustomPhoneNumber | None = Field(None, description='联系电话')
-    email: CustomEmailStr | None = Field(None, description='邮箱')
-    status: StatusType = Field(description='状态')
+    name: str = Field(description='department name')
+    parent_id: int | None = Field(None, description='Department Parent ID')
+    sort: int = Field(0, ge=0, description='Sort')
+    leader: str | None = Field(None, description='Person in charge')
+    phone: CustomPhoneNumber | None = Field(None, description='Contact Number')
+    email: CustomEmailStr | None = Field(None, description='Email')
+    status: StatusType = Field(description='Status')
 
 
 class CreateDeptParam(DeptSchemaBase):
-    """创建部门参数"""
+    """Create department parameters"""
 
 
 class UpdateDeptParam(DeptSchemaBase):
-    """更新部门参数"""
+    """Update department parameters"""
 
 
 class GetDeptDetail(DeptSchemaBase):
-    """部门详情"""
+    """Department details"""
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: int = Field(description='部门 ID')
-    del_flag: bool = Field(description='是否删除')
-    created_time: datetime = Field(description='创建时间')
-    updated_time: datetime | None = Field(None, description='更新时间')
+    id: int = Field(description='Department ID')
+    del_flag: bool = Field(description='Whether to delete')
+    created_time: datetime = Field(description='create time')
+    updated_time: datetime | None = Field(None, description='Update time')

@@ -31,38 +31,38 @@ from backend.utils.timezone import timezone
 
 
 class AuthService:
-    """认证服务类"""
+    """Certification Service"""
 
     @staticmethod
     async def user_verify(db: AsyncSession, username: str, password: str) -> User:
         """
-        验证用户名和密码
+        Verify username and password
 
-        :param db: 数据库会话
-        :param username: 用户名
-        :param password: 密码
+        :param db: database session
+        :param username: Username
+        :param password: Password
         :return:
         """
         user = await user_dao.get_by_username(db, username)
         if not user:
-            raise errors.NotFoundError(msg='用户名或密码有误')
+            raise errors.NotFoundError(msg='Username or password is incorrect')
 
         if user.password is None:
-            raise errors.AuthorizationError(msg='用户名或密码有误')
+            raise errors.AuthorizationError(msg='Username or password is incorrect')
         else:
             if not password_verify(password, user.password):
-                raise errors.AuthorizationError(msg='用户名或密码有误')
+                raise errors.AuthorizationError(msg='Username or password is incorrect')
 
         if not user.status:
-            raise errors.AuthorizationError(msg='用户已被锁定, 请联系统管理员')
+            raise errors.AuthorizationError(msg='The user has been locked, please contact the system administrator')
 
         return user
 
     async def swagger_login(self, *, obj: HTTPBasicCredentials) -> tuple[str, User]:
         """
-        Swagger 文档登录
+        Swagger Document Login
 
-        :param obj: 登录凭证
+        :param obj: Login credentials
         :return:
         """
         async with async_db_session.begin() as db:
@@ -80,12 +80,12 @@ class AuthService:
         self, *, request: Request, response: Response, obj: AuthLoginParam, background_tasks: BackgroundTasks
     ) -> GetLoginToken:
         """
-        用户登录
+        User login
 
-        :param request: 请求对象
-        :param response: 响应对象
-        :param obj: 登录参数
-        :param background_tasks: 后台任务
+        :param request: request object
+        :param response: Response object
+        :param obj: login parameters
+        :param background_tasks: background tasks
         :return:
         """
         async with async_db_session.begin() as db:
@@ -121,11 +121,11 @@ class AuthService:
                     httponly=True,
                 )
             except errors.NotFoundError as e:
-                log.error('登陆错误: 用户名不存在')
+                log.error('Login error: username does not exist')
                 raise errors.NotFoundError(msg=e.msg)
             except (errors.RequestError, errors.CustomError) as e:
                 if not user:
-                    log.error('登陆错误: 用户密码有误')
+                    log.error('Login error: user password is incorrect')
                 task = BackgroundTask(
                     login_log_service.create,
                     **dict(
@@ -140,7 +140,7 @@ class AuthService:
                 )
                 raise errors.RequestError(code=e.code, msg=e.msg, background=task)
             except Exception as e:
-                log.error(f'登陆错误: {e}')
+                log.error(f'Login error: {e}')
                 raise e
             else:
                 background_tasks.add_task(
@@ -166,9 +166,9 @@ class AuthService:
     @staticmethod
     async def get_codes(*, request: Request) -> list[str]:
         """
-        获取用户权限码
+        Get user permission code
 
-        :param request: FastAPI 请求对象
+        :param request: FastAPI request object
         :return:
         """
         codes = set()
@@ -198,17 +198,17 @@ class AuthService:
         """
         refresh_token = request.cookies.get(settings.COOKIE_REFRESH_TOKEN_KEY)
         if not refresh_token:
-            raise errors.RequestError(msg='Refresh Token 已过期，请重新登录')
+            raise errors.RequestError(msg='Refresh Token has expired, please log in again')
         token_payload = jwt_decode(refresh_token)
         async with async_db_session() as db:
             user = await user_dao.get(db, token_payload.id)
             if not user:
-                raise errors.NotFoundError(msg='用户不存在')
+                raise errors.NotFoundError(msg='user does not exist')
             elif not user.status:
-                raise errors.AuthorizationError(msg='用户已被锁定, 请联系统管理员')
+                raise errors.AuthorizationError(msg='The user has been locked, please contact the system administrator')
             if not user.is_multi_login:
                 if await redis_client.keys(match=f'{settings.TOKEN_REDIS_PREFIX}:{user.id}:*'):
-                    raise errors.ForbiddenError(msg='此用户已在异地登录，请重新登录并及时修改密码')
+                    raise errors.ForbiddenError(msg='This user has logged in remote location, please log in again and change the password in time')
             new_token = await create_new_token(
                 refresh_token,
                 token_payload.session_uuid,
@@ -233,10 +233,10 @@ class AuthService:
     @staticmethod
     async def logout(*, request: Request, response: Response) -> None:
         """
-        用户登出
+        User logout
 
-        :param request: FastAPI 请求对象
-        :param response: FastAPI 响应对象
+        :param request: FastAPI request object
+        :param response: FastAPI response object
         :return:
         """
         try:

@@ -15,29 +15,29 @@ from backend.utils.build_tree import get_tree_data, get_vben5_tree_data
 
 
 class MenuService:
-    """菜单服务类"""
+    """Menu Service Class"""
 
     @staticmethod
     async def get(*, pk: int) -> Menu:
         """
-        获取菜单详情
+        Get menu details
 
-        :param pk: 菜单 ID
+        :param pk: Menu ID
         :return:
         """
         async with async_db_session() as db:
             menu = await menu_dao.get(db, menu_id=pk)
             if not menu:
-                raise errors.NotFoundError(msg='菜单不存在')
+                raise errors.NotFoundError(msg='menu does not exist')
             return menu
 
     @staticmethod
     async def get_tree(*, title: str | None, status: int | None) -> list[dict[str, Any]]:
         """
-        获取菜单树形结构
+        Get the menu tree structure
 
-        :param title: 菜单标题
-        :param status: 状态
+        :param title: menu title
+        :param status: status
         :return:
         """
         async with async_db_session() as db:
@@ -48,9 +48,9 @@ class MenuService:
     @staticmethod
     async def get_sidebar(*, request: Request) -> list[dict[str, Any] | None]:
         """
-        获取用户的菜单侧边栏
+        Get the user's menu sidebar
 
-        :param request: FastAPI 请求对象
+        :param request: FastAPI request object
         :return:
         """
         async with async_db_session() as db:
@@ -70,43 +70,43 @@ class MenuService:
     @staticmethod
     async def create(*, obj: CreateMenuParam) -> None:
         """
-        创建菜单
+        Create menu
 
-        :param obj: 菜单创建参数
+        :param obj: Menu creation parameters
         :return:
         """
         async with async_db_session.begin() as db:
             title = await menu_dao.get_by_title(db, obj.title)
             if title:
-                raise errors.ConflictError(msg='菜单标题已存在')
+                raise errors.ConflictError(msg='menu title already exists')
             if obj.parent_id:
                 parent_menu = await menu_dao.get(db, obj.parent_id)
                 if not parent_menu:
-                    raise errors.NotFoundError(msg='父级菜单不存在')
+                    raise errors.NotFoundError(msg='Parent menu does not exist')
             await menu_dao.create(db, obj)
 
     @staticmethod
     async def update(*, pk: int, obj: UpdateMenuParam) -> int:
         """
-        更新菜单
+        Update menu
 
-        :param pk: 菜单 ID
-        :param obj: 菜单更新参数
+        :param pk: Menu ID
+        :param obj: Menu update parameters
         :return:
         """
         async with async_db_session.begin() as db:
             menu = await menu_dao.get(db, pk)
             if not menu:
-                raise errors.NotFoundError(msg='菜单不存在')
+                raise errors.NotFoundError(msg='menu does not exist')
             if menu.title != obj.title:
                 if await menu_dao.get_by_title(db, obj.title):
-                    raise errors.ConflictError(msg='菜单标题已存在')
+                    raise errors.ConflictError(msg='menu title already exists')
             if obj.parent_id:
                 parent_menu = await menu_dao.get(db, obj.parent_id)
                 if not parent_menu:
-                    raise errors.NotFoundError(msg='父级菜单不存在')
+                    raise errors.NotFoundError(msg='Parent menu does not exist')
             if obj.parent_id == menu.id:
-                raise errors.ForbiddenError(msg='禁止关联自身为父级')
+                raise errors.ForbiddenError(msg='Prohibit association itself as parent')
             count = await menu_dao.update(db, pk, obj)
             for role in await menu.awaitable_attrs.roles:
                 for user in await role.awaitable_attrs.users:
@@ -116,15 +116,15 @@ class MenuService:
     @staticmethod
     async def delete(*, pk: int) -> int:
         """
-        删除菜单
+        Delete menu
 
-        :param pk: 菜单 ID
+        :param pk: Menu ID
         :return:
         """
         async with async_db_session.begin() as db:
             children = await menu_dao.get_children(db, pk)
             if children:
-                raise errors.ConflictError(msg='菜单下存在子菜单，无法删除')
+                raise errors.ConflictError(msg='There is a submenu under the menu, it cannot be deleted')
             menu = await menu_dao.get(db, pk)
             count = await menu_dao.delete(db, pk)
             if menu:

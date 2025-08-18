@@ -13,7 +13,7 @@ class DictTypeSchemaBase(SchemaBase):
 
     name: str = Field(description='字典名称')
     code: str = Field(description='字典编码')
-    status: StatusType = Field(description='状态')
+    status: StatusType = Field(description='Status')
     remark: str | None = Field(None, description='备注')
 
 

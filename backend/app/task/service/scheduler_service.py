@@ -18,25 +18,25 @@ from backend.database.db import async_db_session
 
 
 class TaskSchedulerService:
-    """任务调度服务类"""
+    """Task Scheduling Service Class"""
 
     @staticmethod
     async def get(*, pk) -> TaskScheduler | None:
         """
-        获取任务调度详情
+        Get task scheduling details
 
-        :param pk: 任务调度 ID
+        :param pk: Task Scheduling ID
         :return:
         """
         async with async_db_session() as db:
             task_scheduler = await task_scheduler_dao.get(db, pk)
             if not task_scheduler:
-                raise errors.NotFoundError(msg='任务调度不存在')
+                raise errors.NotFoundError(msg='Task Scheduling does not exist')
             return task_scheduler
 
     @staticmethod
     async def get_all() -> Sequence[TaskScheduler]:
-        """获取所有任务调度"""
+        """Get all task schedules"""
         async with async_db_session() as db:
             task_schedulers = await task_scheduler_dao.get_all(db)
             return task_schedulers
@@ -44,10 +44,10 @@ class TaskSchedulerService:
     @staticmethod
     async def get_select(*, name: str | None, type: int | None) -> Select:
         """
-        获取任务调度列表查询条件
+        Get the task schedule list query conditions
 
-        :param name: 任务调度名称
-        :param type: 任务调度类型
+        :param name: task scheduling name
+        :param type: Task scheduling type
         :return:
         """
         return await task_scheduler_dao.get_list(name=name, type=type)
@@ -55,15 +55,15 @@ class TaskSchedulerService:
     @staticmethod
     async def create(*, obj: CreateTaskSchedulerParam) -> None:
         """
-        创建任务调度
+        Create a task schedule
 
-        :param obj: 任务调度创建参数
+        :param obj: Task Scheduling Create Parameters
         :return:
         """
         async with async_db_session.begin() as db:
             task_scheduler = await task_scheduler_dao.get_by_name(db, obj.name)
             if task_scheduler:
-                raise errors.ConflictError(msg='任务调度已存在')
+                raise errors.ConflictError(msg='Task Scheduling Already Exist')
             if obj.type == TaskSchedulerType.CRONTAB:
                 crontab_verify(obj.crontab)
             await task_scheduler_dao.create(db, obj)
@@ -71,19 +71,19 @@ class TaskSchedulerService:
     @staticmethod
     async def update(*, pk: int, obj: UpdateTaskSchedulerParam) -> int:
         """
-        更新任务调度
+        Update task schedule
 
-        :param pk: 任务调度 ID
-        :param obj: 任务调度更新参数
+        :param pk: Task Scheduling ID
+        :param obj: Task Scheduling Update Parameters
         :return:
         """
         async with async_db_session.begin() as db:
             task_scheduler = await task_scheduler_dao.get(db, pk)
             if not task_scheduler:
-                raise errors.NotFoundError(msg='任务调度不存在')
+                raise errors.NotFoundError(msg='Task Scheduling does not exist')
             if task_scheduler.name != obj.name:
                 if await task_scheduler_dao.get_by_name(db, obj.name):
-                    raise errors.ConflictError(msg='任务调度已存在')
+                    raise errors.ConflictError(msg='Task Scheduling Already Exist')
             if task_scheduler.type == TaskSchedulerType.CRONTAB:
                 crontab_verify(obj.crontab)
             count = await task_scheduler_dao.update(db, pk, obj)
@@ -92,53 +92,53 @@ class TaskSchedulerService:
     @staticmethod
     async def update_status(*, pk: int) -> int:
         """
-        更新任务调度状态
+        Update task scheduling status
 
-        :param pk: 任务调度 ID
+        :param pk: Task Scheduling ID
         :return:
         """
         async with async_db_session.begin() as db:
             task_scheduler = await task_scheduler_dao.get(db, pk)
             if not task_scheduler:
-                raise errors.NotFoundError(msg='任务调度不存在')
+                raise errors.NotFoundError(msg='Task Scheduling does not exist')
             count = await task_scheduler_dao.set_status(db, pk, not task_scheduler.enabled)
             return count
 
     @staticmethod
     async def delete(*, pk) -> int:
         """
-        删除任务调度
+        Delete task schedule
 
-        :param pk: 用户 ID
+        :param pk: User ID
         :return:
         """
         async with async_db_session.begin() as db:
             task_scheduler = await task_scheduler_dao.get(db, pk)
             if not task_scheduler:
-                raise errors.NotFoundError(msg='任务调度不存在')
+                raise errors.NotFoundError(msg='Task Scheduling does not exist')
             count = await task_scheduler_dao.delete(db, pk)
             return count
 
     @staticmethod
     async def execute(*, pk: int) -> None:
         """
-        执行任务
+        Perform tasks
 
-        :param pk: 任务调度 ID
+        :param pk: Task Scheduling ID
         :return:
         """
         async with async_db_session() as db:
             workers = await run_in_threadpool(celery_app.control.ping, timeout=0.5)
             if not workers:
-                raise errors.ServerError(msg='Celery Worker 暂不可用，请稍后重试')
+                raise errors.ServerError(msg='Celery Worker is not available yet, please try again later')
             task_scheduler = await task_scheduler_dao.get(db, pk)
             if not task_scheduler:
-                raise errors.NotFoundError(msg='任务调度不存在')
+                raise errors.NotFoundError(msg='Task Scheduling does not exist')
             try:
                 args = json.loads(task_scheduler.args) if task_scheduler.args else None
                 kwargs = json.loads(task_scheduler.kwargs) if task_scheduler.kwargs else None
             except (TypeError, json.JSONDecodeError):
-                raise errors.RequestError(msg='执行失败，任务参数非法')
+                raise errors.RequestError(msg='Execution failed, task parameters are illegal')
             else:
                 celery_app.send_task(name=task_scheduler.task, args=args, kwargs=kwargs)
 

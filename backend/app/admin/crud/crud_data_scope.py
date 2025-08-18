@@ -11,53 +11,53 @@ from backend.app.admin.schema.data_scope import CreateDataScopeParam, UpdateData
 
 
 class CRUDDataScope(CRUDPlus[DataScope]):
-    """数据范围数据库操作类"""
+    """Data scope database operation class"""
 
     async def get(self, db: AsyncSession, pk: int) -> DataScope | None:
         """
-        获取数据范围详情
+        Get data range details
 
-        :param db: 数据库会话
-        :param pk: 范围 ID
+        :param db: database session
+        :param pk: Range ID
         :return:
         """
         return await self.select_model(db, pk)
 
     async def get_by_name(self, db: AsyncSession, name: str) -> DataScope | None:
         """
-        通过名称获取数据范围
+        Get data range by name
 
-        :param db: 数据库会话
-        :param name: 范围名称
+        :param db: database session
+        :param name: range name
         :return:
         """
         return await self.select_model_by_column(db, name=name)
 
     async def get_with_relation(self, db: AsyncSession, pk: int) -> DataScope:
         """
-        获取数据范围关联数据
+        Get data range associated data
 
-        :param db: 数据库会话
-        :param pk: 范围 ID
+        :param db: database session
+        :param pk: Range ID
         :return:
         """
         return await self.select_model(db, pk, load_strategies=['rules'])
 
     async def get_all(self, db: AsyncSession) -> Sequence[DataScope]:
         """
-        获取所有数据范围
+        Get all data ranges
 
-        :param db: 数据库会话
+        :param db: database session
         :return:
         """
         return await self.select_models(db)
 
     async def get_list(self, name: str | None, status: int | None) -> Select:
         """
-        获取数据范围列表
+        Get a list of data ranges
 
-        :param name: 范围名称
-        :param status: 范围状态
+        :param name: range name
+        :param status: range status
         :return:
         """
         filters = {}
@@ -71,32 +71,32 @@ class CRUDDataScope(CRUDPlus[DataScope]):
 
     async def create(self, db: AsyncSession, obj: CreateDataScopeParam) -> None:
         """
-        创建数据范围
+        Create data range
 
-        :param db: 数据库会话
-        :param obj: 创建数据范围参数
+        :param db: database session
+        :param obj: Create data range parameters
         :return:
         """
         await self.create_model(db, obj)
 
     async def update(self, db: AsyncSession, pk: int, obj: UpdateDataScopeParam) -> int:
         """
-        更新数据范围
+        Update data range
 
-        :param db: 数据库会话
-        :param pk: 范围 ID
-        :param obj: 更新数据范围参数
+        :param db: database session
+        :param pk: Range ID
+        :param obj: Update data range parameters
         :return:
         """
         return await self.update_model(db, pk, obj)
 
     async def update_rules(self, db: AsyncSession, pk: int, rule_ids: UpdateDataScopeRuleParam) -> int:
         """
-        更新数据范围规则
+        Update data scope rules
 
-        :param db: 数据库会话
-        :param pk: 范围 ID
-        :param rule_ids: 数据规则 ID 列表
+        :param db: database session
+        :param pk: Range ID
+        :param rule_ids: Data rule ID list
         :return:
         """
         current_data_scope = await self.get_with_relation(db, pk)
@@ -107,10 +107,10 @@ class CRUDDataScope(CRUDPlus[DataScope]):
 
     async def delete(self, db: AsyncSession, pks: list[int]) -> int:
         """
-        批量删除数据范围
+        Batch delete data range
 
-        :param db: 数据库会话
-        :param pks: 范围 ID 列表
+        :param db: database session
+        :param pks: Range ID List
         :return:
         """
         return await self.delete_model_by_column(db, allow_multiple=True, id__in=pks)

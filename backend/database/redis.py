@@ -10,10 +10,10 @@ from backend.core.conf import settings
 
 
 class RedisCli(Redis):
-    """Redis 客户端"""
+    """Redis Client"""
 
     def __init__(self) -> None:
-        """初始化 Redis 客户端"""
+        """Initialize Redis Client"""
         super(RedisCli, self).__init__(
             host=settings.REDIS_HOST,
             port=settings.REDIS_PORT,
@@ -21,31 +21,31 @@ class RedisCli(Redis):
             db=settings.REDIS_DATABASE,
             socket_timeout=settings.REDIS_TIMEOUT,
             socket_connect_timeout=settings.REDIS_TIMEOUT,
-            socket_keepalive=True,  # 保持连接
-            health_check_interval=30,  # 健康检查间隔
-            decode_responses=True,  # 转码 utf-8
+            socket_keepalive=True, # Stay connected
+            health_check_interval=30, # Health check interval
+            decode_responses=True, # Transcoding utf-8
         )
 
     async def open(self) -> None:
-        """触发初始化连接"""
+        """Trigger initialization connection"""
         try:
             await self.ping()
         except TimeoutError:
-            log.error('❌ 数据库 redis 连接超时')
+            log.error('❌ Database redis connection timed out')
             sys.exit()
         except AuthenticationError:
-            log.error('❌ 数据库 redis 连接认证失败')
+            log.error('❌ Database redis connection authentication failed')
             sys.exit()
         except Exception as e:
-            log.error('❌ 数据库 redis 连接异常 {}', e)
+            log.error('❌ Database redis connection exception {}', e)
             sys.exit()
 
     async def delete_prefix(self, prefix: str, exclude: str | list[str] | None = None) -> None:
         """
-        删除指定前缀的所有 key
+        Delete all keys of the specified prefix
 
-        :param prefix: 前缀
-        :param exclude: 排除的 key
+        :param prefix: prefix
+        :param exclude: Excluded key
         :return:
         """
         keys = []
@@ -62,5 +62,5 @@ class RedisCli(Redis):
             await self.delete(*keys)
 
 
-# 创建 redis 客户端单例
+# Create a redis client singleton
 redis_client: RedisCli = RedisCli()
