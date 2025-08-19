@@ -41,7 +41,7 @@ def run(host: str, port: int, reload: bool, workers: int | None) -> None:
     panel_content.append(f'📚 Redoc Documentation: {redoc_url}\n', style='yellow')
     panel_content.append(f'📡 OpenAPI JSON: {openapi_url}\n', style='green')
     panel_content.append(
-        '🌍 fba official document: ...',
+        '🌍 official document: ...',
         style='cyan',
     )
 
