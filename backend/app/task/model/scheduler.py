@@ -7,7 +7,6 @@ from datetime import datetime
 from sqlalchemy import (
     JSON,
     Boolean,
-    DateTime,
     String,
     event,
 )
@@ -16,7 +15,7 @@ from sqlalchemy.dialects.postgresql import INTEGER, TEXT
 from sqlalchemy.orm import Mapped, mapped_column
 
 from backend.common.exception import errors
-from backend.common.model import Base, id_key
+from backend.common.model import Base, TimeZone, id_key
 from backend.core.conf import settings
 from backend.database.redis import redis_client
 from backend.utils.timezone import timezone
@@ -35,8 +34,8 @@ class TaskScheduler(Base):
     queue: Mapped[str | None] = mapped_column(String(255), comment='CELERY_TASK_QUEUES queue defined in ')
     exchange: Mapped[str | None] = mapped_column(String(255), comment='Low level AMQP Switches for routing')
     routing_key: Mapped[str | None] = mapped_column(String(255), comment='The routing key for low-level AMQP routes')
-    start_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), comment='The time when the task starts to trigger')
-    expire_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), comment='The deadline at which the task is no longer triggered')
+    start_time: Mapped[datetime | None] = mapped_column(TimeZone, comment='The time when the task starts to trigger')
+    expire_time: Mapped[datetime | None] = mapped_column(TimeZone, comment='The deadline at which the task is no longer triggered')
     expire_seconds: Mapped[int | None] = mapped_column(comment='The time difference between the seconds when the task is no longer triggered')
     type: Mapped[int] = mapped_column(comment='Scheduling type (0 interval 1 timer)')
     interval_every: Mapped[int | None] = mapped_column(comment='The number of intervals before the task runs again')
@@ -49,9 +48,7 @@ class TaskScheduler(Base):
         Boolean().with_variant(INTEGER, 'postgresql'), default=True, comment='Whether the task is enabled'
     )
     total_run_count: Mapped[int] = mapped_column(default=0, comment='The total number of times the task was triggered')
-    last_run_time: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), default=None, comment='The time when the task was last triggered'
-    )
+    last_run_time: Mapped[datetime | None] = mapped_column(TimeZone, default=None, comment='The time when the task was last triggered')
     remark: Mapped[str | None] = mapped_column(
         LONGTEXT().with_variant(TEXT, 'postgresql'), default=None, comment='remark'
     )

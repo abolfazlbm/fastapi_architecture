@@ -35,5 +35,11 @@ class GetDeptDetail(DeptSchemaBase):
 
     id: int = Field(description='Department ID')
     del_flag: bool = Field(description='Whether to delete')
-    created_time: datetime = Field(description='create time')
+    created_time: datetime = Field(description='Creation time')
     updated_time: datetime | None = Field(None, description='Update time')
+
+
+class GetDeptTree(GetDeptDetail):
+    """Obtain department tree"""
+
+    children: list['GetDeptTree'] | None = Field(None, description='Submenu')

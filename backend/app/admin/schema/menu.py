@@ -43,3 +43,9 @@ class GetMenuDetail(MenuSchemaBase):
     id: int = Field(description='Menu ID')
     created_time: datetime = Field(description='Create time')
     updated_time: datetime | None = Field(None, description='Update time')
+
+
+class GetMenuTree(GetMenuDetail):
+    """Get menu tree"""
+
+    children: list['GetMenuTree'] | None = Field(None, description='Submenu')

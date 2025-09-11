@@ -2,12 +2,12 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime
 
-from sqlalchemy import DateTime, String
+from sqlalchemy import String
 from sqlalchemy.dialects.mysql import JSON, LONGTEXT
 from sqlalchemy.dialects.postgresql import TEXT
 from sqlalchemy.orm import Mapped, mapped_column
 
-from backend.common.model import DataClassBase, id_key
+from backend.common.model import DataClassBase, TimeZone, id_key
 from backend.utils.timezone import timezone
 
 
@@ -35,7 +35,7 @@ class OperaLog(DataClassBase):
     code: Mapped[str] = mapped_column(String(20), insert_default='200', comment='Operation status code')
     msg: Mapped[str | None] = mapped_column(LONGTEXT().with_variant(TEXT, 'postgresql'), comment='prompt message')
     cost_time: Mapped[float] = mapped_column(insert_default=0.0, comment='Request time taken (ms)')
-    opera_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), comment='operation time')
+    opera_time: Mapped[datetime] = mapped_column(TimeZone, comment='operation time')
     created_time: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), init=False, default_factory=timezone.now, comment='Create time'
+        TimeZone, init=False, default_factory=timezone.now, comment='Create time'
     )

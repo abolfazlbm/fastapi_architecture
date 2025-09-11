@@ -10,7 +10,7 @@ T = TypeVar('T')
 
 
 class _TaskRunner:
-    """Task runner that runs asyncio event loop on background thread"""
+    """Task runner running asyncio event loop on background thread"""
 
     def __init__(self):
         self.__loop: asyncio.AbstractEventLoop | None = None
@@ -19,15 +19,16 @@ class _TaskRunner:
         atexit.register(self.close)
 
     def close(self):
-        """Close the event loop and clean up"""
-        if self.__loop:
-            self.__loop.stop()
+        """Close the event loop and clean it"""
+        with self.__lock:
+            if self.__loop:
+                self.__loop.call_soon_threadsafe(self.__loop.stop)
+            if self.__thread and self.__thread.is_alive():
+                self.__thread.join()
             self.__loop = None
-        if self.__thread:
-            self.__thread.join()
             self.__thread = None
-        name = f'TaskRunner-{threading.get_ident()}'
-        _runner_map.pop(name, None)
+            name = f'TaskRunner-{threading.get_ident()}'
+            _runner_map.pop(name, None)
 
     def _target(self):
         """Objective function of background thread"""
@@ -52,15 +53,16 @@ _runner_map = weakref.WeakValueDictionary()
 
 
 def run_await(coro: Callable[..., Awaitable[T]] | Callable[..., Coroutine[Any, Any, T]]) -> Callable[..., T]:
-    """Wrap the coroutine in a function that will run on the background event loop until it is executed"""
+    """Wrap the coroutine in a function until it is executed"""
 
     @wraps(coro)
     def wrapped(*args, **kwargs):
         inner = coro(*args, **kwargs)
         if not asyncio.iscoroutine(inner) and not asyncio.isfuture(inner):
-            raise TypeError(f'Expected coroutine, got {type(inner)}')
+            raise TypeError(f'Expected coroutine or future, got {type(inner)}')
+
         try:
-           # If the event loop is running, use task calls
+            # If the event loop is running, use task call
             asyncio.get_running_loop()
             name = f'TaskRunner-{threading.get_ident()}'
             if name not in _runner_map:
@@ -68,7 +70,11 @@ def run_await(coro: Callable[..., Awaitable[T]] | Callable[..., Coroutine[Any, A
             return _runner_map[name].run(inner)
         except RuntimeError:
             # If not, create a new event loop
-            loop = asyncio.get_event_loop()
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
             return loop.run_until_complete(inner)
 
     wrapped.__doc__ = coro.__doc__

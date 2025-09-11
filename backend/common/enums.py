@@ -113,6 +113,7 @@ class UserSocialType(StrEnum):
     """User social type"""
 
     github = 'GitHub'
+    google = 'Google'
     linux_do = 'LinuxDo'
 
 

@@ -5,7 +5,6 @@ import os
 import celery
 import celery_aio_pool
 
-from backend.app.task.model.result import OVERWRITE_CELERY_RESULT_GROUP_TABLE_NAME, OVERWRITE_CELERY_RESULT_TABLE_NAME
 from backend.app.task.tasks.beat import LOCAL_BEAT_SCHEDULE
 from backend.core.conf import settings
 from backend.core.path_conf import BASE_PATH
@@ -30,20 +29,17 @@ def init_celery() -> celery.Celery:
     celery.app.trace.build_tracer = celery_aio_pool.build_async_tracer
     celery.app.trace.reset_worker_optimizations()
 
+    # https://docs.celeryq.dev/en/stable/userguide/configuration.html
     app = celery.Celery(
         'fba_celery',
-        broker=f'redis://:{settings.REDIS_PASSWORD}@{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.CELERY_BROKER_REDIS_DATABASE}'
+        broker_url=f'redis://:{settings.REDIS_PASSWORD}@{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.CELERY_BROKER_REDIS_DATABASE}'
         if settings.CELERY_BROKER == 'redis'
         else f'amqp://{settings.CELERY_RABBITMQ_USERNAME}:{settings.CELERY_RABBITMQ_PASSWORD}@{settings.CELERY_RABBITMQ_HOST}:{settings.CELERY_RABBITMQ_PORT}',
         broker_connection_retry_on_startup=True,
-        backend=f'db+{settings.DATABASE_TYPE}+{"pymysql" if settings.DATABASE_TYPE == "mysql" else "psycopg"}'
+        result_backend=f'db+{settings.DATABASE_TYPE}+{"pymysql" if settings.DATABASE_TYPE == "mysql" else "psycopg"}'
         f'://{settings.DATABASE_USER}:{settings.DATABASE_PASSWORD}@{settings.DATABASE_HOST}:{settings.DATABASE_PORT}/{settings.DATABASE_SCHEMA}',
-        database_engine_options={'echo': settings.DATABASE_ECHO},
-        database_table_names={
-            'task': OVERWRITE_CELERY_RESULT_TABLE_NAME,
-            'group': OVERWRITE_CELERY_RESULT_GROUP_TABLE_NAME,
-        },
         result_extended=True,
+        database_engine_options={'echo': settings.DATABASE_ECHO},
         # result_expires=0, # Clean up the task results, default to 4 a.m., 0 or None means no cleaning
         # beat_sync_every=1, # Save task status cycle, default 3 * 60 seconds
         beat_schedule=LOCAL_BEAT_SCHEDULE,
@@ -53,6 +49,10 @@ def init_celery() -> celery.Celery:
         enable_utc=False,
         timezone=settings.DATETIME_TIMEZONE,
     )
+
+    # 在 Celery Setting this parameter in is invalid
+    # 参数：https://github.com/celery/celery/issues/7270
+    app.loader.override_backends = {'db': 'backend.app.task.database:DatabaseBackend'}
 
     # Automatically discover tasks
     packages = find_task_packages()

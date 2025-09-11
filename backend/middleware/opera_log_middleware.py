@@ -16,6 +16,7 @@ from backend.app.admin.service.opera_log_service import opera_log_service
 from backend.common.enums import OperaLogCipherType, StatusType
 from backend.common.log import log
 from backend.common.queue import batch_dequeue
+from backend.common.response.response_code import StandardResponseCode
 from backend.core.conf import settings
 from backend.utils.encrypt import AESCipher, ItsDCipher, Md5Cipher
 from backend.utils.trace_id import get_request_trace_id
@@ -44,7 +45,6 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
             args = await self.get_request_args(request)
 
             # Execute a request
-            elapsed = 0.0
             code = 200
             msg = 'Success'
             status = StatusType.enable
@@ -57,8 +57,6 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
                     '__request_validation_exception__',
                     '__request_assertion_error__',
                     '__request_custom_exception__',
-                    '__request_all_unknown_exception__',
-                    '__request_cors_500_exception__',
                 ]:
                     exception = getattr(request.state, state, None)
                     if exception:
@@ -67,15 +65,16 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
                         log.error(f'Request exception: {msg}')
                         break
             except Exception as e:
-                log.error(f'Request exception: {str(e)}')
-                code = getattr(e, 'code', code)  # Compatible with SQLAlchemy exception usage
-                msg = getattr(e, 'msg', msg)
+                elapsed = (time.perf_counter() - request.state.perf_time) * 1000
+                code = getattr(e, 'code', StandardResponseCode.HTTP_500)  # Compatible with SQLAlchemy exception usage
+                msg = getattr(e, 'msg', str(e))  # It is not recommended to use the traceback module to obtain error information, as code information will be exposed.
                 status = StatusType.disable
                 error = e
+                log.error(f'Request exception: {str(e)}')
 
             # This information can only be obtained after request
             _route = request.scope.get('route')
-            summary = getattr(_route, 'summary', '')
+            summary = getattr(_route, 'summary') or ''
 
             try:
                 # This information comes from JWT certification middleware

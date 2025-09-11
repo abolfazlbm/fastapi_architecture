@@ -17,9 +17,6 @@ STATIC_DIR = BASE_PATH / 'static'
 # Upload file directory
 UPLOAD_DIR = STATIC_DIR / 'upload'
 
-# Offline IP database path
-IP2REGION_XDB = STATIC_DIR / 'ip2region.xdb'
-
 # Plugin Directory
 PLUGIN_DIR = BASE_PATH / 'plugin'
 

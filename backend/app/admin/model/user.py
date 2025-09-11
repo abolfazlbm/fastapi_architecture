@@ -5,12 +5,12 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import VARBINARY, Boolean, DateTime, ForeignKey, String
+from sqlalchemy import VARBINARY, Boolean, ForeignKey, String
 from sqlalchemy.dialects.postgresql import BYTEA, INTEGER
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.app.admin.model.m2m import sys_user_role
-from backend.common.model import Base, id_key
+from backend.common.model import Base, TimeZone, id_key
 from backend.database.db import uuid4_str
 from backend.utils.timezone import timezone
 
@@ -42,11 +42,9 @@ class User(Base):
     is_multi_login: Mapped[bool] = mapped_column(
         Boolean().with_variant(INTEGER, 'postgresql'), default=False, comment='Whether to log in repeatedly (0 No 1 Yes)'
     )
-    join_time: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), init=False, default_factory=timezone.now, comment='Register time'
-    )
+    join_time: Mapped[datetime] = mapped_column(TimeZone, init=False, default_factory=timezone.now, comment='Register time')
     last_login_time: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), init=False, onupdate=timezone.now, comment='Last login'
+        TimeZone, init=False, onupdate=timezone.now, comment='Last login'
     )
 
     # One-to-many department users
