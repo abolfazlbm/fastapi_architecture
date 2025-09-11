@@ -105,7 +105,7 @@ values
 insert into sys_data_scope (id, name, status, created_time, updated_time)
 values
 (2048601269806956544, 'Test Department Data Permission', 1, now(), null),
-(2048601269869871104, 'Test Department and Sub-departments Data Permission', 1, now(), null);
+(2048601269869871104, 'Test Dep and Sub-dep Data Permission', 1, now(), null);
 
 insert into sys_data_rule (id, name, model, "column", operator, expression, "value", created_time, updated_time)
 values
