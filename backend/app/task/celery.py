@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 import os
 
 import celery
@@ -10,10 +8,10 @@ from backend.core.conf import settings
 from backend.core.path_conf import BASE_PATH
 
 
-def find_task_packages():
+def find_task_packages() -> list[str]:
     packages = []
-    task_dir = os.path.join(BASE_PATH, 'app', 'task', 'tasks')
-    for root, dirs, files in os.walk(task_dir):
+    task_dir = BASE_PATH / 'app' / 'task' / 'tasks'
+    for root, _dirs, files in os.walk(task_dir):
         if 'tasks.py' in files:
             package = root.replace(str(BASE_PATH.parent) + os.path.sep, '').replace(os.path.sep, '.')
             packages.append(package)
@@ -29,15 +27,20 @@ def init_celery() -> celery.Celery:
     celery.app.trace.build_tracer = celery_aio_pool.build_async_tracer
     celery.app.trace.reset_worker_optimizations()
 
+    broker_url = f'amqp://{settings.CELERY_RABBITMQ_USERNAME}:{settings.CELERY_RABBITMQ_PASSWORD}@{settings.CELERY_RABBITMQ_HOST}:{settings.CELERY_RABBITMQ_PORT}/{settings.CELERY_RABBITMQ_VHOST}'
+    if settings.CELERY_BROKER == 'redis':
+        broker_url = f'redis://:{settings.REDIS_PASSWORD}@{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.CELERY_BROKER_REDIS_DATABASE}'
+
+    result_backend = f'db+postgresql+psycopg://{settings.DATABASE_USER}:{settings.DATABASE_PASSWORD}@{settings.DATABASE_HOST}:{settings.DATABASE_PORT}/{settings.DATABASE_SCHEMA}'
+    if settings.DATABASE_TYPE == 'mysql':
+        result_backend = result_backend.replace('postgresql+psycopg', 'mysql+pymysql')
+
     # https://docs.celeryq.dev/en/stable/userguide/configuration.html
     app = celery.Celery(
         'fba_celery',
-        broker_url=f'redis://:{settings.REDIS_PASSWORD}@{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.CELERY_BROKER_REDIS_DATABASE}'
-        if settings.CELERY_BROKER == 'redis'
-        else f'amqp://{settings.CELERY_RABBITMQ_USERNAME}:{settings.CELERY_RABBITMQ_PASSWORD}@{settings.CELERY_RABBITMQ_HOST}:{settings.CELERY_RABBITMQ_PORT}',
+        broker_url=broker_url,
         broker_connection_retry_on_startup=True,
-        result_backend=f'db+{settings.DATABASE_TYPE}+{"pymysql" if settings.DATABASE_TYPE == "mysql" else "psycopg"}'
-        f'://{settings.DATABASE_USER}:{settings.DATABASE_PASSWORD}@{settings.DATABASE_HOST}:{settings.DATABASE_PORT}/{settings.DATABASE_SCHEMA}',
+        result_backend=result_backend,
         result_extended=True,
         database_engine_options={'echo': settings.DATABASE_ECHO},
         # result_expires=0, # Clean up the task results, default to 4 a.m., 0 or None means no cleaning

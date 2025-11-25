@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 import json
 import os
 import subprocess
@@ -10,6 +8,7 @@ from functools import lru_cache
 from importlib.metadata import PackageNotFoundError, distribution
 from typing import Any
 
+import anyio
 import rtoml
 
 from fastapi import APIRouter, Depends, Request
@@ -23,7 +22,7 @@ from backend.core.conf import settings
 from backend.core.path_conf import PLUGIN_DIR
 from backend.database.redis import RedisCli, redis_client
 from backend.utils._await import run_await
-from backend.utils.import_parse import get_model_object, import_module_cached
+from backend.utils.import_parse import get_model_objects, import_module_cached
 
 
 class PluginConfigError(Exception):
@@ -45,10 +44,9 @@ def get_plugins() -> list[str]:
 
     #Travel the plugin directory
     for item in os.listdir(PLUGIN_DIR):
-        if not os.path.isdir(os.path.join(PLUGIN_DIR, item)) and item == '__pycache__':
+        item_path = PLUGIN_DIR / item
+        if not os.path.isdir(item_path) and item == '__pycache__':
             continue
-
-        item_path = os.path.join(PLUGIN_DIR, item)
 
         # Check whether it is a directory and contains the __init__.py file
         if os.path.isdir(item_path) and '__init__.py' in os.listdir(item_path):
@@ -63,9 +61,9 @@ def get_plugin_models() -> list[type]:
 
     for plugin in get_plugins():
         module_path = f'backend.plugin.{plugin}.model'
-        obj = get_model_object(module_path)
+        obj = get_model_objects(module_path)
         if obj:
-            objs.append(obj)
+            objs.extend(obj)
 
     return objs
 
@@ -80,19 +78,20 @@ async def get_plugin_sql(plugin: str, db_type: DataBaseType, pk_type: PrimaryKey
     :return:
     """
     if db_type == DataBaseType.mysql:
-        mysql_dir = os.path.join(PLUGIN_DIR, plugin, 'sql', 'mysql')
+        mysql_dir = PLUGIN_DIR / plugin / 'sql' / 'mysql'
         if pk_type == PrimaryKeyType.autoincrement:
-            sql_file = os.path.join(mysql_dir, 'init.sql')
+            sql_file = mysql_dir / 'init.sql'
         else:
-            sql_file = os.path.join(mysql_dir, 'init_snowflake.sql')
+            sql_file = mysql_dir / 'init_snowflake.sql'
     else:
-        postgresql_dir = os.path.join(PLUGIN_DIR, plugin, 'sql', 'postgresql')
+        postgresql_dir = PLUGIN_DIR / plugin / 'sql' / 'postgresql'
         if pk_type == PrimaryKeyType.autoincrement:
-            sql_file = os.path.join(postgresql_dir, 'init.sql')
+            sql_file = postgresql_dir / 'init.sql'
         else:
-            sql_file = os.path.join(postgresql_dir, 'init_snowflake.sql')
+            sql_file = postgresql_dir / 'init_snowflake.sql'
 
-    if not os.path.exists(sql_file):
+    path = anyio.Path(sql_file)
+    if not await path.exists():
         return None
 
     return sql_file
@@ -105,11 +104,11 @@ def load_plugin_config(plugin: str) -> dict[str, Any]:
     :param plugin: Plugin Name
     :return:
     """
-    toml_path = os.path.join(PLUGIN_DIR, plugin, 'plugin.toml')
+    toml_path = PLUGIN_DIR / plugin / 'plugin.toml'
     if not os.path.exists(toml_path):
         raise PluginInjectError(f'Plugin {plugin} is missing plugin.toml configuration file, please check if the plugin is legal')
 
-    with open(toml_path, 'r', encoding='utf-8') as f:
+    with open(toml_path, encoding='utf-8') as f:
         return rtoml.load(f)
 
 
@@ -126,7 +125,8 @@ def parse_plugin_config() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
 
     # Clean up unknown plug-in information
     run_await(current_redis_client.delete_prefix)(
-        settings.PLUGIN_REDIS_PREFIX, exclude=[f'{settings.PLUGIN_REDIS_PREFIX}:{key}' for key in plugins]
+        settings.PLUGIN_REDIS_PREFIX,
+        exclude=[f'{settings.PLUGIN_REDIS_PREFIX}:{key}' for key in plugins],
     )
 
     for plugin in plugins:
@@ -142,15 +142,8 @@ def parse_plugin_config() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
             raise PluginConfigError(f'Plugin {plugin} The configuration file is missing the required fields: {", ".join(missing_fields)}')
 
         if data.get('api'):
-            # TODO: Delete outdated include configuration
-            include = data.get('app', {}).get('include')
-            if include:
-                warnings.warn(
-                    f' plugin {plugin} configuration app.include will be deprecated in future versions. Please update the configuration as app.extend as soon as possible, details: https://fastapi-practices.github.io/fastapi_best_architecture_docs/plugin/dev.html#%E6%8F%92%E4%BB%B6%E9%85%8D%E7%BD%AE',
-                    FutureWarning,
-                )
-            if not include and not data.get('app', {}).get('extend'):
-                raise PluginConfigError(f'Extended Plugin {plugin} configuration file is missing app.extend configuration')
+            if not data.get('app', {}).get('extend'):
+                raise PluginConfigError(f'Extension-level plug-in {plugin} configuration file is missing app.extend configuration')
             extend_plugins.append(data)
         else:
             if not data.get('app', {}).get('router'):
@@ -167,7 +160,8 @@ def parse_plugin_config() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
 
         # Cache the latest plug-in information
         run_await(current_redis_client.set)(
-            f'{settings.PLUGIN_REDIS_PREFIX}:{plugin}', json.dumps(data, ensure_ascii=False)
+            f'{settings.PLUGIN_REDIS_PREFIX}:{plugin}',
+            json.dumps(data, ensure_ascii=False),
         )
 
     # Reset plugin change status
@@ -187,7 +181,7 @@ def inject_extend_router(plugin: dict[str, Any]) -> None:
     :return:
     """
     plugin_name: str = plugin['plugin']['name']
-    plugin_api_path = os.path.join(PLUGIN_DIR, plugin_name, 'api')
+    plugin_api_path = PLUGIN_DIR / plugin_name / 'api'
     if not os.path.exists(plugin_api_path):
         raise PluginConfigError(f'Plugin {plugin} Missing api directory, please check if the plugin file is complete')
 
@@ -196,12 +190,12 @@ def inject_extend_router(plugin: dict[str, Any]) -> None:
             if not (file.endswith('.py') and file != '__init__.py'):
                 continue
 
-            # 解析插件路由配置
+            # Parse plugin routing configuration
             file_config = plugin['api'][file[:-3]]
             prefix = file_config['prefix']
             tags = file_config['tags']
 
-            # 获取插件路由模块
+            # Get the plug-in routing module
             file_path = os.path.join(root, file)
             path_to_module_str = os.path.relpath(file_path, PLUGIN_DIR).replace(os.sep, '.')[:-3]
             module_path = f'backend.plugin.{path_to_module_str}'
@@ -218,15 +212,14 @@ def inject_extend_router(plugin: dict[str, Any]) -> None:
 
                 # Get target app route
                 relative_path = os.path.relpath(root, plugin_api_path)
-                # TODO: Delete outdated include configuration
-                app_name = plugin.get('app', {}).get('include') or plugin.get('app', {}).get('extend')
+                app_name = plugin.get('app', {}).get('extend')
                 target_module_path = f'backend.app.{app_name}.api.{relative_path.replace(os.sep, ".")}'
                 target_module = import_module_cached(target_module_path)
                 target_router = getattr(target_module, 'router', None)
 
                 if not target_router or not isinstance(target_router, APIRouter):
                     raise PluginInjectError(
-                        f'The extension plugin {plugin_name} module {module_path} does not have a valid router, please check if the plugin file is complete'
+                        f'The extension plugin {plugin_name} module {module_path} does not have a valid router, please check if the plugin file is complete',
                     )
 
                 # Inject plugin route into target route
@@ -237,7 +230,7 @@ def inject_extend_router(plugin: dict[str, Any]) -> None:
                     dependencies=[Depends(PluginStatusChecker(plugin_name))],
                 )
             except Exception as e:
-                raise PluginInjectError(f'Extension Plugin {plugin_name} Route Injection Failed: {str(e)}') from e
+                raise PluginInjectError(f'Extension Plugin {plugin_name} Route Injection Failed: {e!s}') from e
 
 
 def inject_app_router(plugin: dict[str, Any], target_router: APIRouter) -> None:
@@ -260,13 +253,13 @@ def inject_app_router(plugin: dict[str, Any], target_router: APIRouter) -> None:
             plugin_router = getattr(module, router, None)
             if not plugin_router or not isinstance(plugin_router, APIRouter):
                 raise PluginInjectError(
-                    f'There is no valid router in the application-level plugin {plugin_name} module {module_path}, please check if the plugin file is complete'
+                    f'There is no valid router in the application-level plugin {plugin_name} module {module_path}, please check if the plugin file is complete',
                 )
 
             # Inject plugin route into target route
             target_router.include_router(plugin_router, dependencies=[Depends(PluginStatusChecker(plugin_name))])
     except Exception as e:
-        raise PluginInjectError(f'Application-level plugin {plugin_name} Route injection failed: {str(e)}') from e
+        raise PluginInjectError(f'Application-level plugin {plugin_name} Route injection failed: {e!s}') from e
 
 
 def build_final_router() -> APIRouter:
@@ -285,7 +278,62 @@ def build_final_router() -> APIRouter:
     return main_router
 
 
-def install_requirements(plugin: str | None) -> None:
+def _ensure_pip_available() -> bool:
+    """Make sure pip is available in the virtual environment"""
+    try:
+        result = subprocess.run([sys.executable, '-m', 'pip', '--version'], capture_output=True, text=True)
+        if result.returncode == 0:
+            return True
+    except (subprocess.TimeoutExpired, subprocess.SubprocessError, FileNotFoundError):
+        pass
+
+    # Try using ensurepip
+    try:
+        subprocess.check_call(
+            [sys.executable, '-m', 'ensurepip', '--default-pip'],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        result = subprocess.run([sys.executable, '-m', 'pip', '--version'], capture_output=True, text=True)
+        if result.returncode == 0:
+            return True
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, subprocess.SubprocessError, FileNotFoundError):
+        pass
+
+    # Try downloading and installing
+    try:
+        import os
+        import tempfile
+
+        import httpx
+
+        try:
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+                with httpx.Client(timeout=3) as client:
+                    get_pip_url = 'https://bootstrap.pypa.io/get-pip.py'
+                    response = client.get(get_pip_url)
+                    response.raise_for_status()
+                    f.write(response.text)
+                    temp_file = f.name
+        except Exception:  # noqa: ignore
+            return False
+
+        try:
+            subprocess.check_call([sys.executable, temp_file], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            result = subprocess.run([sys.executable, '-m', 'pip', '--version'], capture_output=True, text=True)
+            return result.returncode == 0
+        finally:
+            try:
+                os.unlink(temp_file)
+            except OSError:
+                pass
+    except Exception:  # noqa: ignore
+        pass
+
+    return False
+
+
+def install_requirements(plugin: str | None) -> None:  # noqa: C901
     """
     Install plugin dependencies
 
@@ -295,10 +343,10 @@ def install_requirements(plugin: str | None) -> None:
     plugins = [plugin] if plugin else get_plugins()
 
     for plugin in plugins:
-        requirements_file = os.path.join(PLUGIN_DIR, plugin, 'requirements.txt')
+        requirements_file = PLUGIN_DIR / plugin / 'requirements.txt'
         missing_dependencies = False
         if os.path.exists(requirements_file):
-            with open(requirements_file, 'r', encoding='utf-8') as f:
+            with open(requirements_file, encoding='utf-8') as f:
                 for line in f:
                     line = line.strip()
                     if not line or line.startswith('#'):
@@ -307,7 +355,7 @@ def install_requirements(plugin: str | None) -> None:
                         req = Requirement(line)
                         dependency = req.name.lower()
                     except Exception as e:
-                        raise PluginInstallError(f'Plugin {plugin} Dependency {line} Format error: {str(e)}') from e
+                        raise PluginInstallError(f'Plugin {plugin} Dependency {line} Format error: {e!s}') from e
                     try:
                         distribution(dependency)
                     except PackageNotFoundError:
@@ -315,12 +363,30 @@ def install_requirements(plugin: str | None) -> None:
 
         if missing_dependencies:
             try:
-                ensurepip_install = [sys.executable, '-m', 'ensurepip', '--upgrade']
+                if not _ensure_pip_available():
+                    raise PluginInstallError(f'pip The installation failed and cannot continue to install the plugin {plugin} dependencies')
+
                 pip_install = [sys.executable, '-m', 'pip', 'install', '-r', requirements_file]
                 if settings.PLUGIN_PIP_CHINA:
                     pip_install.extend(['-i', settings.PLUGIN_PIP_INDEX_URL])
-                subprocess.check_call(ensurepip_install, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                subprocess.check_call(pip_install, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+                max_retries = settings.PLUGIN_PIP_MAX_RETRY
+                for attempt in range(max_retries):
+                    try:
+                        subprocess.check_call(
+                            pip_install,
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL,
+                        )
+                        break
+                    except subprocess.TimeoutExpired:
+                        if attempt == max_retries - 1:
+                            raise PluginInstallError(f'Plug-in {plugin} depends on installation timeout')
+                        continue
+                    except subprocess.CalledProcessError as e:
+                        if attempt == max_retries - 1:
+                            raise PluginInstallError(f'Plug-in {plugin} dependency installation failed: {e}') from e
+                        continue
             except subprocess.CalledProcessError as e:
                 raise PluginInstallError(f'Plugin {plugin} Dependency installation failed: {e}') from e
 
@@ -332,7 +398,7 @@ def uninstall_requirements(plugin: str) -> None:
     :param plugin: plugin name
     :return:
     """
-    requirements_file = os.path.join(PLUGIN_DIR, plugin, 'requirements.txt')
+    requirements_file = PLUGIN_DIR / plugin / 'requirements.txt'
     if os.path.exists(requirements_file):
         try:
             pip_uninstall = [sys.executable, '-m', 'pip', 'uninstall', '-r', requirements_file, '-y']

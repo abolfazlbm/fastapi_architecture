@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 from datetime import datetime
 
 from pydantic import ConfigDict, Field
@@ -35,7 +33,7 @@ class DeleteDataRuleParam(SchemaBase):
 class GetDataRuleDetail(DataRuleSchemaBase):
     """Data Rule Details"""
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, frozen=True)
 
     id: int = Field(description='Rule ID')
     created_time: datetime = Field(description='create time')

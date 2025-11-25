@@ -1,13 +1,10 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-from datetime import datetime, timezone
-
 import sqlalchemy as sa
 
 from celery import states
 from sqlalchemy.types import PickleType
 
-from backend.common.model import MappedBase
+from backend.common.model import MappedBase, TimeZone
+from backend.utils.timezone import timezone
 
 """
 Rewrite all models inside celery.backends.database.models, adapt to fba to create tables and alembic migrations
@@ -22,17 +19,20 @@ class Task(MappedBase):
 
     id = sa.Column(sa.Integer, sa.Sequence('task_id_sequence'), primary_key=True, autoincrement=True)
     task_id = sa.Column(sa.String(155), unique=True)
-    status = sa.Column(sa.String(50), default=states.PENDING)
+    status = sa.Column(sa.String(64), default=states.PENDING)
     result = sa.Column(PickleType, nullable=True)
     date_done = sa.Column(
-        sa.DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc), nullable=True
+        TimeZone,
+        default=timezone.now,
+        onupdate=timezone.now,
+        nullable=True,
     )
     traceback = sa.Column(sa.Text, nullable=True)
 
-    def __init__(self, task_id):
+    def __init__(self, task_id: str) -> None:
         self.task_id = task_id
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         return {
             'task_id': self.task_id,
             'status': self.status,
@@ -41,11 +41,11 @@ class Task(MappedBase):
             'date_done': self.date_done,
         }
 
-    def __repr__(self):
-        return '<Task {0.task_id} state: {0.status}>'.format(self)
+    def __repr__(self) -> str:
+        return f'<Task {self.task_id} state: {self.status}>'
 
     @classmethod
-    def configure(cls, schema=None, name=None):
+    def configure(cls, schema=None, name=None) -> None:  # noqa: ANN001
         cls.__table__.schema = schema
         cls.id.default.schema = schema
         cls.__table__.name = name or cls.__tablename__
@@ -64,7 +64,7 @@ class TaskExtended(Task):
     retries = sa.Column(sa.Integer, nullable=True)
     queue = sa.Column(sa.String(155), nullable=True)
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         task_dict = super().to_dict()
         task_dict.update({
             'name': self.name,
@@ -86,24 +86,24 @@ class TaskSet(MappedBase):
     id = sa.Column(sa.Integer, sa.Sequence('taskset_id_sequence'), autoincrement=True, primary_key=True)
     taskset_id = sa.Column(sa.String(155), unique=True)
     result = sa.Column(PickleType, nullable=True)
-    date_done = sa.Column(sa.DateTime, default=datetime.now(timezone.utc), nullable=True)
+    date_done = sa.Column(TimeZone, default=timezone.now, nullable=True)
 
-    def __init__(self, taskset_id, result):
+    def __init__(self, taskset_id, result) -> None:  # noqa: ANN001
         self.taskset_id = taskset_id
         self.result = result
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         return {
             'taskset_id': self.taskset_id,
             'result': self.result,
             'date_done': self.date_done,
         }
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'<TaskSet: {self.taskset_id}>'
 
     @classmethod
-    def configure(cls, schema=None, name=None):
+    def configure(cls, schema=None, name=None) -> None:  # noqa: ANN001
         cls.__table__.schema = schema
         cls.id.default.schema = schema
         cls.__table__.name = name or cls.__tablename__

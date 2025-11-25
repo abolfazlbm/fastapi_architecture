@@ -1,9 +1,1 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-from backend.common.i18n import i18n
-
-__version__ = '1.8.1'
-
-
-# Initialize i18n
-i18n.load_locales()
+__version__ = '1.11.0'

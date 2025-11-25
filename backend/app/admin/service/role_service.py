@@ -1,8 +1,7 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
-from sqlalchemy import Select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.admin.crud.crud_data_scope import data_scope_dao
 from backend.app.admin.crud.crud_menu import menu_dao
@@ -15,10 +14,9 @@ from backend.app.admin.schema.role import (
     UpdateRoleParam,
     UpdateRoleScopeParam,
 )
+from backend.app.admin.utils.cache import user_cache_manager
 from backend.common.exception import errors
-from backend.core.conf import settings
-from backend.database.db import async_db_session
-from backend.database.redis import redis_client
+from backend.common.pagination import paging_data
 from backend.utils.build_tree import get_tree_data
 
 
@@ -26,162 +24,170 @@ class RoleService:
     """Role Service Class"""
 
     @staticmethod
-    async def get(*, pk: int) -> Role:
+    async def get(*, db: AsyncSession, pk: int) -> Role:
         """
         Get character details
 
+        :param db: database session
         :param pk: role ID
         :return:
         """
-        async with async_db_session() as db:
-            role = await role_dao.get_with_relation(db, pk)
-            if not role:
-                raise errors.NotFoundError(msg='role does not exist')
-            return role
+
+        role = await role_dao.get_join(db, pk)
+        if not role:
+            raise errors.NotFoundError(msg='role does not exist')
+        return role
 
     @staticmethod
-    async def get_all() -> Sequence[Role]:
-        """Get all roles"""
-        async with async_db_session() as db:
-            roles = await role_dao.get_all(db)
-            return roles
-
-    @staticmethod
-    async def get_select(*, name: str | None, status: int | None) -> Select:
+    async def get_all(*, db: AsyncSession) -> Sequence[Role]:
         """
-        Get the character list query criteria
+        Get all roles
 
+        :param db: database session
+        :return:
+        """
+
+        roles = await role_dao.get_all(db)
+        return roles
+
+    @staticmethod
+    async def get_list(*, db: AsyncSession, name: str | None, status: int | None) -> dict[str, Any]:
+        """
+        Get role list
+
+        :param db: database session
         :param name: role name
         :param status: status
         :return:
         """
-        return await role_dao.get_list(name=name, status=status)
+        role_select = await role_dao.get_select(name=name, status=status)
+        return await paging_data(db, role_select)
 
     @staticmethod
-    async def get_menu_tree(*, pk: int) -> list[dict[str, Any] | None]:
+    async def get_menu_tree(*, db: AsyncSession, pk: int) -> list[dict[str, Any] | None]:
         """
         Get the menu tree structure of the character
 
+        :param db: database session
         :param pk: role ID
         :return:
         """
-        async with async_db_session() as db:
-            role = await role_dao.get_with_relation(db, pk)
-            if not role:
-                raise errors.NotFoundError(msg='role does not exist')
-            menu_tree = get_tree_data(role.menus) if role.menus else []
-            return menu_tree
+
+        role = await role_dao.get(db, pk)
+        if not role:
+            raise errors.NotFoundError(msg='role does not exist')
+        menus = await role_dao.get_menus(db, pk)
+        menu_tree = get_tree_data(menus) if menus else []
+        return menu_tree
 
     @staticmethod
-    async def get_scopes(*, pk: int) -> list[int]:
+    async def get_scopes(*, db: AsyncSession, pk: int) -> list[int]:
         """
         Get the list of role data ranges
 
+        :param db: database session
         :param pk:
         :return:
         """
-        async with async_db_session() as db:
-            role = await role_dao.get_with_relation(db, pk)
-            if not role:
-                raise errors.NotFoundError(msg='role does not exist')
-            scope_ids = [scope.id for scope in role.scopes]
-            return scope_ids
+
+        role = await role_dao.get_join(db, pk)
+        if not role:
+            raise errors.NotFoundError(msg='role does not exist')
+        scope_ids = [scope.id for scope in role.scopes]
+        return scope_ids
 
     @staticmethod
-    async def create(*, obj: CreateRoleParam) -> None:
+    async def create(*, db: AsyncSession, obj: CreateRoleParam) -> None:
         """
         Create a role
 
+        :param db: database session
         :param obj: role creation parameters
         :return:
         """
-        async with async_db_session.begin() as db:
-            role = await role_dao.get_by_name(db, obj.name)
-            if role:
-                raise errors.ConflictError(msg='role already exists')
-            await role_dao.create(db, obj)
+
+        role = await role_dao.get_by_name(db, obj.name)
+        if role:
+            raise errors.ConflictError(msg='role already exists')
+        await role_dao.create(db, obj)
 
     @staticmethod
-    async def update(*, pk: int, obj: UpdateRoleParam) -> int:
+    async def update(*, db: AsyncSession, pk: int, obj: UpdateRoleParam) -> int:
         """
         Update roles
 
+        :param db: database session
         :param pk: role ID
         :param obj: role update parameters
         :return:
         """
-        async with async_db_session.begin() as db:
-            role = await role_dao.get(db, pk)
-            if not role:
-                raise errors.NotFoundError(msg='role does not exist')
-            if role.name != obj.name:
-                if await role_dao.get_by_name(db, obj.name):
-                    raise errors.ConflictError(msg='role already exists')
-            count = await role_dao.update(db, pk, obj)
-            for user in await role.awaitable_attrs.users:
-                await redis_client.delete_prefix(f'{settings.JWT_USER_REDIS_PREFIX}:{user.id}')
-            return count
+
+        role = await role_dao.get(db, pk)
+        if not role:
+            raise errors.NotFoundError(msg='role does not exist')
+        if role.name != obj.name and await role_dao.get_by_name(db, obj.name):
+            raise errors.ConflictError(msg='role already exists')
+        count = await role_dao.update(db, pk, obj)
+        await user_cache_manager.clear_by_role_id(db, [pk])
+        return count
 
     @staticmethod
-    async def update_role_menu(*, pk: int, menu_ids: UpdateRoleMenuParam) -> int:
+    async def update_role_menu(*, db: AsyncSession, pk: int, menu_ids: UpdateRoleMenuParam) -> int:
         """
         Update the role menu
 
+        :param db: database session
         :param pk: role ID
         :param menu_ids: Menu ID List
         :return:
         """
-        async with async_db_session.begin() as db:
-            role = await role_dao.get(db, pk)
-            if not role:
-                raise errors.NotFoundError(msg='role does not exist')
-            for menu_id in menu_ids.menus:
-                menu = await menu_dao.get(db, menu_id)
-                if not menu:
-                    raise errors.NotFoundError(msg='menu does not exist')
-            count = await role_dao.update_menus(db, pk, menu_ids)
-            for user in await role.awaitable_attrs.users:
-                await redis_client.delete_prefix(f'{settings.JWT_USER_REDIS_PREFIX}:{user.id}')
-            return count
+
+        role = await role_dao.get(db, pk)
+        if not role:
+            raise errors.NotFoundError(msg='role does not exist')
+        for menu_id in menu_ids.menus:
+            menu = await menu_dao.get(db, menu_id)
+            if not menu:
+                raise errors.NotFoundError(msg='menu does not exist')
+        count = await role_dao.update_menus(db, pk, menu_ids)
+        await user_cache_manager.clear_by_role_id(db, [pk])
+        return count
 
     @staticmethod
-    async def update_role_scope(*, pk: int, scope_ids: UpdateRoleScopeParam) -> int:
+    async def update_role_scope(*, db: AsyncSession, pk: int, scope_ids: UpdateRoleScopeParam) -> int:
         """
         Update role data range
 
+        :param db: database session
         :param pk: role ID
         :param scope_ids: Permission Rule ID List
         :return:
         """
-        async with async_db_session.begin() as db:
-            role = await role_dao.get(db, pk)
-            if not role:
-                raise errors.NotFoundError(msg='role does not exist')
-            for scope_id in scope_ids.scopes:
-                scope = await data_scope_dao.get(db, scope_id)
-                if not scope:
-                    raise errors.NotFoundError(msg='Data range does not exist')
-            count = await role_dao.update_scopes(db, pk, scope_ids)
-            for user in await role.awaitable_attrs.users:
-                await redis_client.delete(f'{settings.JWT_USER_REDIS_PREFIX}:{user.id}')
-            return count
+
+        role = await role_dao.get(db, pk)
+        if not role:
+            raise errors.NotFoundError(msg='role does not exist')
+        for scope_id in scope_ids.scopes:
+            scope = await data_scope_dao.get(db, scope_id)
+            if not scope:
+                raise errors.NotFoundError(msg='Data range does not exist')
+        count = await role_dao.update_scopes(db, pk, scope_ids)
+        await user_cache_manager.clear_by_role_id(db, [pk])
+        return count
 
     @staticmethod
-    async def delete(*, obj: DeleteRoleParam) -> int:
+    async def delete(*, db: AsyncSession, obj: DeleteRoleParam) -> int:
         """
         Batch delete roles
 
+        :param db: database session
         :param obj: Role ID list
         :return:
         """
-        async with async_db_session.begin() as db:
-            count = await role_dao.delete(db, obj.pks)
-            for pk in obj.pks:
-                role = await role_dao.get(db, pk)
-                if role:
-                    for user in await role.awaitable_attrs.users:
-                        await redis_client.delete(f'{settings.JWT_USER_REDIS_PREFIX}:{user.id}')
-            return count
+
+        count = await role_dao.delete(db, obj.pks)
+        await user_cache_manager.clear_by_role_id(db, obj.pks)
+        return count
 
 
 role_service: RoleService = RoleService()

@@ -1,10 +1,8 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 from datetime import datetime
 
 from pydantic import ConfigDict, Field
 
-from backend.app.admin.schema.data_scope import GetDataScopeDetail
+from backend.app.admin.schema.data_scope import GetDataScopeWithRelationDetail
 from backend.app.admin.schema.menu import GetMenuDetail
 from backend.common.enums import StatusType
 from backend.common.schema import SchemaBase
@@ -33,10 +31,24 @@ class DeleteRoleParam(SchemaBase):
     pks: list[int] = Field(description='role ID list')
 
 
+class CreateRoleMenuParam(SchemaBase):
+    """Create character menu parameters"""
+
+    role_id: int = Field(description='role ID')
+    menu_id: int = Field(description='menu ID')
+
+
 class UpdateRoleMenuParam(SchemaBase):
     """Update role menu parameters"""
 
     menus: list[int] = Field(description='menu ID list')
+
+
+class CreateRoleScopeParam(SchemaBase):
+    """Create role data range parameters"""
+
+    role_id: int = Field(description='role ID')
+    data_scope_id: int = Field(description='Data range ID')
 
 
 class UpdateRoleScopeParam(SchemaBase):
@@ -59,4 +71,4 @@ class GetRoleWithRelationDetail(GetRoleDetail):
     """Role Relationship Details"""
 
     menus: list[GetMenuDetail | None] = Field([], description='Men Detail List')
-    scopes: list[GetDataScopeDetail | None] = Field([], description='Data range list')
+    scopes: list[GetDataScopeWithRelationDetail | None] = Field([], description='Data range list')

@@ -1,9 +1,10 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+from functools import lru_cache
+
 from backend.core.conf import settings
 from backend.plugin.code_generator.enums import GenMySQLColumnType, GenPostgreSQLColumnType
 
 
+@lru_cache(maxsize=128)
 def sql_type_to_sqlalchemy(typing: str) -> str:
     """
     将 SQL 类型转换为 SQLAlchemy 类型
@@ -20,6 +21,7 @@ def sql_type_to_sqlalchemy(typing: str) -> str:
     return 'String'
 
 
+@lru_cache(maxsize=128)
 def sql_type_to_pydantic(typing: str) -> str:
     """
     将 SQL 类型转换为 Pydantic 类型

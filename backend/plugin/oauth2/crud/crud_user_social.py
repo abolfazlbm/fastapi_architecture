@@ -1,5 +1,5 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+from collections.abc import Sequence
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus
 
@@ -8,49 +8,70 @@ from backend.plugin.oauth2.schema.user_social import CreateUserSocialParam
 
 
 class CRUDUserSocial(CRUDPlus[UserSocial]):
-    """用户社交账号数据库操作类"""
+    """User social account database operation class"""
 
-    async def check_binding(self, db: AsyncSession, pk: int, source: str) -> UserSocial | None:
+    async def check_binding(self, db: AsyncSession, user_id: int, source: str) -> UserSocial | None:
         """
-        检查系统用户社交账号绑定
+        Check system user social account binding
 
-        :param db: 数据库会话
-        :param pk: User ID
-        :param source: 社交账号类型
+        :param db: database session
+        :param user_id: User ID
+        :param source: social account type
         :return:
         """
-        return await self.select_model_by_column(db, user_id=pk, source=source)
+        return await self.select_model_by_column(db, user_id=user_id, source=source)
 
     async def get_by_sid(self, db: AsyncSession, sid: str, source: str) -> UserSocial | None:
         """
-        通过 UUID 获取社交用户
+        Get social user by sid
 
-        :param db: 数据库会话
-        :param sid: 第三方 UUID
-        :param source: 社交账号类型
+        :param db: database session
+        :param sid: unique code of social account
+        :param source: social account type
         :return:
         """
         return await self.select_model_by_column(db, sid=sid, source=source)
 
+    async def get_by_user_id(self, db: AsyncSession, user_id: int) -> Sequence[UserSocial]:
+        """
+        Get all social account bindings by user ID
+
+        :param db: database session
+        :param user_id: user ID
+        :return:
+        """
+        return await self.select_models(db, user_id=user_id)
+
     async def create(self, db: AsyncSession, obj: CreateUserSocialParam) -> None:
         """
-        创建用户社交账号绑定
+        Create user social account binding
 
-        :param db: 数据库会话
-        :param obj: 创建用户社交账号绑定参数
+        :param db: database session
+        :param obj: Create user social account binding parameters
         :return:
         """
         await self.create_model(db, obj)
 
-    async def delete(self, db: AsyncSession, social_id: int) -> int:
+    async def delete(self, db: AsyncSession, user_id: int, source: str) -> int:
         """
-        删除用户社交账号绑定
+        Delete user social account binding
 
-        :param db: 数据库会话
-        :param social_id: 社交账号绑定 ID
+        :param db: database session
+        :param user_id: user ID
+        :param source: social account type
         :return:
         """
-        return await self.delete_model(db, social_id)
+        return await self.delete_model_by_column(db, user_id=user_id, source=source)
+
+    async def delete_by_user_id(self, db: AsyncSession, user_id: int) -> int:
+        """
+        Delete user social by user ID
+
+        :param db: database session
+        :param user_id: user ID
+        :return:
+        """
+        return await self.delete_model_by_column(db, user_id=user_id)
 
 
 user_social_dao: CRUDUserSocial = CRUDUserSocial(UserSocial)

@@ -1,8 +1,5 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 import glob
 import json
-import os
 
 from pathlib import Path
 from typing import Any
@@ -16,25 +13,26 @@ from backend.core.path_conf import LOCALE_DIR
 class I18n:
     """International Manager"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.locales: dict[str, dict[str, Any]] = {}
         self.current_language: str = settings.I18N_DEFAULT_LANGUAGE
+        self.load_locales()
 
-    def load_locales(self):
+    def load_locales(self) -> None:
         """Loading language text"""
         patterns = [
-            os.path.join(LOCALE_DIR, '*.json'),
-            os.path.join(LOCALE_DIR, '*.yaml'),
-            os.path.join(LOCALE_DIR, '*.yml'),
+            LOCALE_DIR / '*.json',
+            LOCALE_DIR / '*.yaml',
+            LOCALE_DIR / '*.yml',
         ]
 
         lang_files = []
 
         for pattern in patterns:
-            lang_files.extend(glob.glob(pattern))
+            lang_files.extend(glob.glob(str(pattern)))
 
         for lang_file in lang_files:
-            with open(lang_file, 'r', encoding='utf-8') as f:
+            with open(lang_file, encoding='utf-8') as f:
                 lang = Path(lang_file).stem
                 file_type = Path(lang_file).suffix[1:]
                 match file_type:
@@ -65,10 +63,7 @@ class I18n:
                 translation = translation[k]
             else:
                 # Pydantic Compatible
-                if keys[0] == 'pydantic':
-                    translation = None
-                else:
-                    translation = key
+                translation = None if keys[0] == 'pydantic' else key
 
         if translation and kwargs:
             translation = translation.format(**kwargs)

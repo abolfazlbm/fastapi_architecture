@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 import time
 
 from asyncio import Queue
@@ -13,11 +11,13 @@ from starlette.requests import Request
 
 from backend.app.admin.schema.opera_log import CreateOperaLogParam
 from backend.app.admin.service.opera_log_service import opera_log_service
+from backend.common.context import ctx
 from backend.common.enums import OperaLogCipherType, StatusType
 from backend.common.log import log
 from backend.common.queue import batch_dequeue
 from backend.common.response.response_code import StandardResponseCode
 from backend.core.conf import settings
+from backend.database.db import async_db_session
 from backend.utils.encrypt import AESCipher, ItsDCipher, Md5Cipher
 from backend.utils.trace_id import get_request_trace_id
 
@@ -51,30 +51,30 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
             error = None
             try:
                 response = await call_next(request)
-                elapsed = (time.perf_counter() - request.state.perf_time) * 1000
-                for state in [
+                elapsed = round((time.perf_counter() - ctx.perf_time) * 1000, 3)
+                for e in [
                     '__request_http_exception__',
                     '__request_validation_exception__',
                     '__request_assertion_error__',
                     '__request_custom_exception__',
                 ]:
-                    exception = getattr(request.state, state, None)
+                    exception = ctx.get(e)
                     if exception:
                         code = exception.get('code')
                         msg = exception.get('msg')
                         log.error(f'Request exception: {msg}')
                         break
             except Exception as e:
-                elapsed = (time.perf_counter() - request.state.perf_time) * 1000
+                elapsed = round((time.perf_counter() - ctx.perf_time) * 1000, 3)
                 code = getattr(e, 'code', StandardResponseCode.HTTP_500)  # Compatible with SQLAlchemy exception usage
                 msg = getattr(e, 'msg', str(e))  # It is not recommended to use the traceback module to obtain error information, as code information will be exposed.
                 status = StatusType.disable
                 error = e
-                log.error(f'Request exception: {str(e)}')
+                log.error(f'Request exception: {e!s}')
 
             # This information can only be obtained after request
-            _route = request.scope.get('route')
-            summary = getattr(_route, 'summary') or ''
+            route = request.scope.get('route')
+            summary = route.summary or '' if route else ''
 
             try:
                 # This information comes from JWT certification middleware
@@ -84,30 +84,33 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
 
             # Logging
             log.debug(f'interface summary: [{summary}]')
-            log.debug(f'request address: [{request.state.ip}]')
+            log.debug(f'request address: [{ctx.ip}]')
             log.debug(f'request parameter: {args}')
+            log.info(f'{request.client.host: <15} | {request.method: <8} | {code!s: <6} | {path} | {elapsed:.3f}ms')
+            if request.method != 'OPTIONS':
+                log.debug('<-- Request ends')
 
             # Log creation
             opera_log_in = CreateOperaLogParam(
-                trace_id=get_request_trace_id(request),
+                trace_id=get_request_trace_id(),
                 username=username,
                 method=method,
                 title=summary,
                 path=path,
-                ip=request.state.ip,
-                country=request.state.country,
-                region=request.state.region,
-                city=request.state.city,
-                user_agent=request.state.user_agent,
-                os=request.state.os,
-                browser=request.state.browser,
-                device=request.state.device,
+                ip=ctx.ip,
+                country=ctx.country,
+                region=ctx.region,
+                city=ctx.city,
+                user_agent=ctx.user_agent,
+                os=ctx.os,
+                browser=ctx.browser,
+                device=ctx.device,
                 args=args,
                 status=status,
                 code=str(code),
                 msg=msg,
                 cost_time=elapsed,  # There may be a slight difference from the log (negligible)
-                opera_time=request.state.start_time,
+                opera_time=ctx.start_time,
             )
             await self.opera_log_queue.put(opera_log_in)
 
@@ -157,16 +160,13 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
         form_data = await request.form()
         if len(form_data) > 0:
             for k, v in form_data.items():
-                if isinstance(v, UploadFile):
-                    form_data = {k: v.filename}
-                else:
-                    form_data = {k: v}
+                form_data = {k: v.filename} if isinstance(v, UploadFile) else {k: v}
             if 'multipart/form-data' not in content_type:
                 args['x-www-form-urlencoded'] = await self.desensitization(form_data)
             else:
                 args['form-data'] = await self.desensitization(form_data)
 
-        return None if not args else args
+        return args or None
 
     @staticmethod
     @sync_to_async
@@ -206,7 +206,8 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
                 try:
                     if settings.DATABASE_ECHO:
                         log.info('Automatically execute [Operation log batch creation] task...')
-                    await opera_log_service.bulk_create(objs=logs)
+                    async with async_db_session.begin() as db:
+                        await opera_log_service.bulk_create(db=db, objs=logs)
                 finally:
                     if not cls.opera_log_queue.empty():
                         cls.opera_log_queue.task_done()

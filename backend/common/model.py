@@ -1,12 +1,12 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 from datetime import datetime
 from typing import Annotated
 
-from sqlalchemy import BigInteger, DateTime, TypeDecorator
+from sqlalchemy import BigInteger, DateTime, Text, TypeDecorator
+from sqlalchemy.dialects.mysql import LONGTEXT
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase, Mapped, MappedAsDataclass, declared_attr, mapped_column
 
+from backend.core.conf import settings
 from backend.utils.snowflake import snowflake
 from backend.utils.timezone import timezone
 
@@ -43,16 +43,21 @@ snowflake_id_key = Annotated[
 ]
 
 
-# Mixin: An object-oriented programming concept that makes structure clearer, `Wiki <https://en.wikipedia.org/wiki/Mixin/>`__
-class UserMixin(MappedAsDataclass):
-    """User Mixin Data Class"""
+class UniversalText(TypeDecorator[str]):
+    """PostgreSQL, MySQL Compatibility (Long) Text Type"""
 
-    created_by: Mapped[int] = mapped_column(sort_order=998, comment='creator')
-    updated_by: Mapped[int | None] = mapped_column(init=False, default=None, sort_order=998, comment='Modified')
+    impl = LONGTEXT if settings.DATABASE_TYPE == 'mysql' else Text
+    cache_ok = True
+
+    def process_bind_param(self, value: str | None, dialect) -> str | None:  # noqa: ANN001
+        return value
+
+    def process_result_value(self, value: str | None, dialect) -> str | None:  # noqa: ANN001
+        return value
 
 
 class TimeZone(TypeDecorator[datetime]):
-    """Time zone perception DateTime"""
+    """PostgreSQL、MySQL Compatibility Time Zone Awareness Type"""
 
     impl = DateTime(timezone=True)
     cache_ok = True
@@ -61,28 +66,42 @@ class TimeZone(TypeDecorator[datetime]):
     def python_type(self) -> type[datetime]:
         return datetime
 
-    def process_bind_param(self, value: datetime | None, dialect) -> datetime | None:
-        if value is not None:
+    def process_bind_param(self, value: datetime | None, dialect) -> datetime | None:  # noqa: ANN001
+        if value is not None and value.utcoffset() != timezone.now().utcoffset():
             # TODO Handle daylight saving time offsets
-            if value.utcoffset() != timezone.now().utcoffset():
-                value = timezone.from_datetime(value)
+            value = timezone.from_datetime(value)
         return value
 
-    def process_result_value(self, value: datetime | None, dialect) -> datetime | None:
-        if value is not None:
-            if value.tzinfo is None:
-                value = value.replace(tzinfo=timezone.tz_info)
+    def process_result_value(self, value: datetime | None, dialect) -> datetime | None:  # noqa: ANN001
+        if value is not None and value.tzinfo is None:
+            value = value.replace(tzinfo=timezone.tz_info)
         return value
+
+
+# Mixin: 一object-oriented programming concepts to make the structure clearer, `Wiki <https://en.wikipedia.org/wiki/Mixin/>`__
+class UserMixin(MappedAsDataclass):
+    """User Mixin data class"""
+
+    created_by: Mapped[int] = mapped_column(sort_order=998, comment='创建者')
+    updated_by: Mapped[int | None] = mapped_column(init=False, default=None, sort_order=998, comment='修改者')
 
 
 class DateTimeMixin(MappedAsDataclass):
     """Date and Time Mixin Data Class"""
 
     created_time: Mapped[datetime] = mapped_column(
-        TimeZone, init=False, default_factory=timezone.now, sort_order=999, comment='Create time'
+        TimeZone,
+        init=False,
+        default_factory=timezone.now,
+        sort_order=999,
+        comment='Create time',
     )
     updated_time: Mapped[datetime | None] = mapped_column(
-        TimeZone, init=False, onupdate=timezone.now, sort_order=999, comment='Update time'
+        TimeZone,
+        init=False,
+        onupdate=timezone.now,
+        sort_order=999,
+        comment='Update time',
     )
 
 
@@ -98,14 +117,14 @@ class MappedBase(AsyncAttrs, DeclarativeBase):
     """
 
     @declared_attr.directive
-    def __tablename__(cls) -> str:
+    def __tablename__(self) -> str:
         """Generate table name"""
-        return cls.__name__.lower()
+        return self.__name__.lower()
 
     @declared_attr.directive
-    def __table_args__(cls) -> dict:
+    def __table_args__(self) -> dict:
         """Table Configuration"""
-        return {'comment': cls.__doc__ or ''}
+        return {'comment': self.__doc__ or ''}
 
 
 class DataClassBase(MappedAsDataclass, MappedBase):

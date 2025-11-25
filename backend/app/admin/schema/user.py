@@ -1,15 +1,13 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 from datetime import datetime
-from typing import Any
+from typing import Annotated, Any
 
-from pydantic import ConfigDict, Field, HttpUrl, model_validator
+from pydantic import ConfigDict, Field, HttpUrl, PlainSerializer, model_validator
 from typing_extensions import Self
 
 from backend.app.admin.schema.dept import GetDeptDetail
 from backend.app.admin.schema.role import GetRoleWithRelationDetail
 from backend.common.enums import StatusType
-from backend.common.schema import CustomEmailStr, CustomPhoneNumber, SchemaBase
+from backend.common.schema import CustomEmailStr, CustomPhoneNumber, SchemaBase, ser_string
 
 
 class AuthSchemaBase(SchemaBase):
@@ -22,7 +20,8 @@ class AuthSchemaBase(SchemaBase):
 class AuthLoginParam(AuthSchemaBase):
     """User Login Parameters"""
 
-    captcha: str = Field(description='verification code')
+    uuid: str | None = Field(None, description='Verification code UUID')
+    captcha: str | None = Field(None, description='verification code')
 
 
 class AddUserParam(AuthSchemaBase):
@@ -34,13 +33,20 @@ class AddUserParam(AuthSchemaBase):
     dept_id: int = Field(description='Department ID')
     roles: list[int] = Field(description='Role ID List')
 
+class AddUserRoleParam(SchemaBase):
+    """Add user role"""
+
+    user_id: int = Field(description='User ID')
+    role_id: int = Field(description='Role ID')
+
+
 class AddOAuth2UserParam(AuthSchemaBase):
     """Add OAuth2 user parameters"""
 
     password: str | None = Field(None, description='password')
     nickname: str | None = Field(None, description='Nickname')
     email: CustomEmailStr | None = Field(None, description='Email')
-    avatar: HttpUrl | None = Field(None, description='Avatar address')
+    avatar: Annotated[HttpUrl, PlainSerializer(ser_string)] | None = Field(None, description='Avatar address')
 
 
 class ResetPasswordParam(SchemaBase):
@@ -57,7 +63,7 @@ class UserInfoSchemaBase(SchemaBase):
     dept_id: int | None = Field(None, description='Department ID')
     username: str = Field(description='Username')
     nickname: str = Field(description='nickname')
-    avatar: HttpUrl | None = Field(None, description='Avatar address')
+    avatar: Annotated[HttpUrl, PlainSerializer(ser_string)] | None = Field(None, description='Avatar address')
     email: CustomEmailStr | None = Field(None, description='Email')
     phone: CustomPhoneNumber | None = Field(None, description='Phone Number')
 

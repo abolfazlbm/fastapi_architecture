@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 import asyncio
 import subprocess
 
@@ -19,7 +17,7 @@ from watchfiles import PythonFilter
 
 from backend import __version__
 from backend.common.enums import DataBaseType, PrimaryKeyType
-from backend.common.exception.errors import BaseExceptionMixin
+from backend.common.exception.errors import BaseExceptionError
 from backend.core.conf import settings
 from backend.database.db import async_db_session
 from backend.plugin.code_generator.schema.code import ImportParam
@@ -36,24 +34,25 @@ output_help = '\nMore information, try "[cyan]--help[/]"'
 class CustomReloadFilter(PythonFilter):
     """Custom overload filter"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(extra_extensions=['.json', '.yaml', '.yml'])
 
 
-def run(host: str, port: int, reload: bool, workers: int) -> None:
+def run(host: str, port: int, reload: bool, workers: int) -> None:  # noqa: FBT001
     url = f'http://{host}:{port}'
     docs_url = url + settings.FASTAPI_DOCS_URL
     redoc_url = url + settings.FASTAPI_REDOC_URL
     openapi_url = url + (settings.FASTAPI_OPENAPI_URL or '')
 
     panel_content = Text()
-    panel_content.append(f'📝 Swagger Documentation: {docs_url}\n', style='blue')
-    panel_content.append(f'📚 Redoc Documentation: {redoc_url}\n', style='yellow')
-    panel_content.append(f'📡 OpenAPI JSON: {openapi_url}\n', style='green')
-    panel_content.append(
-        '🌍 official document: ...',
-        style='cyan',
-    )
+    panel_content.append(f'Current version: v{__version__}')
+    panel_content.append(f'\nService address: {url}')
+    panel_content.append('\nOfficial documentation: ')
+
+    if settings.ENVIRONMENT == 'dev':
+        panel_content.append(f'\n\n📖 Swagger Document: {docs_url}', style='yellow')
+        panel_content.append(f'\n📚 Redoc   Document: {redoc_url}', style='blue')
+        panel_content.append(f'\n📡 OpenAPI JSON: {openapi_url}', style='green')
 
     console.print(Panel(panel_content, title='fba service information', border_style='purple', padding=(1, 2)))
     granian.Granian(
@@ -96,7 +95,11 @@ def run_celery_flower(port: int, basic_auth: str) -> None:
 
 
 async def install_plugin(
-    path: str, repo_url: str, no_sql: bool, db_type: DataBaseType, pk_type: PrimaryKeyType
+    path: str,
+    repo_url: str,
+    no_sql: bool,  # noqa: FBT001
+    db_type: DataBaseType,
+    pk_type: PrimaryKeyType,
 ) -> None:
     if not path and not repo_url:
         raise cappa.Exit('path or repo_url must specify one of them', code=1)
@@ -120,7 +123,7 @@ async def install_plugin(
             await execute_sql_scripts(sql_file)
 
     except Exception as e:
-        raise cappa.Exit(e.msg if isinstance(e, BaseExceptionMixin) else str(e), code=1)
+        raise cappa.Exit(e.msg if isinstance(e, BaseExceptionError) else str(e), code=1)
 
 
 async def execute_sql_scripts(sql_scripts: str) -> None:
@@ -142,16 +145,13 @@ async def import_table(
 ) -> None:
     try:
         obj = ImportParam(app=app, table_schema=table_schema, table_name=table_name)
-        await gen_service.import_business_and_model(obj=obj)
+        async with async_db_session.begin() as db:
+            await gen_service.import_business_and_model(db=db, obj=obj)
     except Exception as e:
-        raise cappa.Exit(e.msg if isinstance(e, BaseExceptionMixin) else str(e), code=1)
+        raise cappa.Exit(e.msg if isinstance(e, BaseExceptionError) else str(e), code=1)
 
 
-def generate(gen: bool) -> None:
-    if not gen:
-        console.print(output_help)
-        return
-
+def generate() -> None:
     try:
         ids = []
         results = run_await(gen_business_service.get_all)()
@@ -179,7 +179,7 @@ def generate(gen: bool) -> None:
 
         gen_path = run_await(gen_service.generate)(pk=business)
     except Exception as e:
-        raise cappa.Exit(e.msg if isinstance(e, BaseExceptionMixin) else str(e), code=1)
+        raise cappa.Exit(e.msg if isinstance(e, BaseExceptionError) else str(e), code=1)
 
     console.print(Text('\nThe code has been generated', style='bold green'))
     console.print(Text('\nPlease check for details：'), Text(gen_path, style='bold magenta'))
@@ -209,7 +209,7 @@ class Run:
         cappa.Arg(default=1, help='Using multiple worker processes, you must use `--no-reload` Use simultaneously'),
     ]
 
-    def __call__(self):
+    def __call__(self) -> None:
         run(host=self.host, port=self.port, reload=self.no_reload, workers=self.workers)
 
 
@@ -221,7 +221,7 @@ class Worker:
         cappa.Arg(short='-l', default='info', help='Log output level'),
     ]
 
-    def __call__(self):
+    def __call__(self) -> None:
         run_celery_worker(log_level=self.log_level)
 
 
@@ -233,7 +233,7 @@ class Beat:
         cappa.Arg(short='-l', default='info', help='Log output level'),
     ]
 
-    def __call__(self):
+    def __call__(self) -> None:
         run_celery_beat(log_level=self.log_level)
 
 
@@ -249,7 +249,7 @@ class Flower:
         cappa.Arg(default='admin:123456', help='Username and password for page login'),
     ]
 
-    def __call__(self):
+    def __call__(self) -> None:
         run_celery_flower(port=self.port, basic_auth=self.basic_auth)
 
 
@@ -283,7 +283,7 @@ class Add:
         cappa.Arg(default='autoincrement', help='Execute plugin SQL script database primary key type'),
     ]
 
-    async def __call__(self):
+    async def __call__(self) -> None:
         await install_plugin(self.path, self.repo_url, self.no_sql, self.db_type, self.pk_type)
 
 
@@ -303,21 +303,17 @@ class Import:
         cappa.Arg(short='tn', help='Database table name'),
     ]
 
-    async def __call__(self):
+    async def __call__(self) -> None:
         await import_table(self.app, self.table_schema, self.table_name)
 
 
 @cappa.command(name='codegen', help='Code generation (experience the complete functions, please deploy the fba vben front-end project yourself)', default_long=True)
 @dataclass
 class CodeGenerate:
-    gen: Annotated[
-        bool,
-        cappa.Arg(default=False, show_default=False, help='Execute code generation'),
-    ]
     subcmd: cappa.Subcommands[Import | None] = None
 
-    def __call__(self):
-        generate(self.gen)
+    def __call__(self) -> None:
+        generate()
 
 
 @cappa.command(help='一An efficient fba command line interface', default_long=True)
@@ -329,7 +325,7 @@ class FbaCli:
     ]
     subcmd: cappa.Subcommands[Run | Celery | Add | CodeGenerate | None] = None
 
-    async def __call__(self):
+    async def __call__(self) -> None:
         if self.sql:
             await execute_sql_scripts(self.sql)
 

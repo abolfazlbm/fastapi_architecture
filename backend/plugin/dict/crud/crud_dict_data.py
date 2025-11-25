@@ -1,8 +1,6 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-from typing import Sequence
+from collections.abc import Sequence
 
-from sqlalchemy import Select
+from sqlalchemy import Select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus
 
@@ -21,7 +19,22 @@ class CRUDDictData(CRUDPlus[DictData]):
         :param pk: 字典数据 ID
         :return:
         """
-        return await self.select_model(db, pk, load_strategies={'type': 'noload'})
+        return await self.select_model(db, pk)
+
+    async def get_by_type_code(self, db: AsyncSession, type_code: str) -> Sequence[DictData]:
+        """
+        通过字典类型编码获取字典数据
+
+        :param db: 数据库会话
+        :param type_code: 字典类型编码
+        :return:
+        """
+        return await self.select_models_order(
+            db,
+            sort_columns='sort',
+            sort_orders='desc',
+            type_code=type_code,
+        )
 
     async def get_all(self, db: AsyncSession) -> Sequence[DictData]:
         """
@@ -30,13 +43,18 @@ class CRUDDictData(CRUDPlus[DictData]):
         :param db: 数据库会话
         :return:
         """
-        return await self.select_models(db, load_strategies={'type': 'noload'})
+        return await self.select_models(db)
 
-    async def get_list(
-        self, type_code: str | None, label: str | None, value: str | None, status: int | None, type_id: int | None
+    async def get_select(
+        self,
+        type_code: str | None,
+        label: str | None,
+        value: str | None,
+        status: int | None,
+        type_id: int | None,
     ) -> Select:
         """
-        获取字典数据列表
+        获取字典数据列表查询表达式
 
         :param type_code: 字典类型编码
         :param label: 字典数据标签
@@ -58,17 +76,18 @@ class CRUDDictData(CRUDPlus[DictData]):
         if type_id is not None:
             filters['type_id'] = type_id
 
-        return await self.select_order('id', 'desc', load_strategies={'type': 'noload'}, **filters)
+        return await self.select_order('id', 'desc', **filters)
 
-    async def get_by_label(self, db: AsyncSession, label: str) -> DictData | None:
+    async def get_by_label_and_type_code(self, db: AsyncSession, label: str, type_code: str) -> DictData | None:
         """
         通过标签获取字典数据
 
         :param db: 数据库会话
         :param label: 字典标签
+        :param type_code: 字典类型编码
         :return:
         """
-        return await self.select_model_by_column(db, label=label)
+        return await self.select_model_by_column(db, and_(self.model.label == label, self.model.type_code == type_code))
 
     async def create(self, db: AsyncSession, obj: CreateDictDataParam, type_code: str) -> None:
         """
@@ -108,15 +127,15 @@ class CRUDDictData(CRUDPlus[DictData]):
         """
         return await self.delete_model_by_column(db, allow_multiple=True, id__in=pks)
 
-    async def get_with_relation(self, db: AsyncSession, pk: int) -> DictData | None:
+    async def delete_by_type_id(self, db: AsyncSession, type_ids: list[int]) -> int:
         """
-        获取字典数据及关联数据
+        通过类型 ID 删除字典数据
 
         :param db: 数据库会话
-        :param pk: 字典数据 ID
+        :param type_ids: 字典类型 ID 列表
         :return:
         """
-        return await self.select_model(db, pk, load_strategies=['type'])
+        return await self.delete_model_by_column(db, allow_multiple=True, type_id__in=type_ids)
 
 
 dict_data_dao: CRUDDictData = CRUDDictData(DictData)

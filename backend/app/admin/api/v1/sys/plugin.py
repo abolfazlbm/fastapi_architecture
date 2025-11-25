@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, File, Path, UploadFile
@@ -46,8 +44,9 @@ async def install_plugin(
     plugin_name = await plugin_service.install(type=type, file=file, repo_url=repo_url)
     return response_base.success(
         res=CustomResponse(
-            code=200, msg=f'Plugin {plugin_name} is installed successfully. Please follow the plugin instructions (README.md) to configure and restart the service'
-        )
+            code=200,
+            msg=f'Plugin {plugin_name} is installed successfully. Please follow the plugin instructions (README.md) to configure and restart the service',
+        ),
     )
 
 
@@ -63,7 +62,7 @@ async def install_plugin(
 async def uninstall_plugin(plugin: Annotated[str, Path(description='Plugin Name')]) -> ResponseModel:
     await plugin_service.uninstall(plugin=plugin)
     return response_base.success(
-        res=CustomResponse(code=200, msg=f'Plugin {plugin} Uninstalled successfully, please remove the relevant configuration and restart the service according to the plug-in instructions (README.md)')
+        res=CustomResponse(code=200, msg=f'Plugin {plugin} Uninstalled successfully, please remove the relevant configuration and restart the service according to the plug-in instructions (README.md)'),
     )
 
 

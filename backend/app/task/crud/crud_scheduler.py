@@ -1,6 +1,4 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-from typing import Sequence
+from collections.abc import Sequence
 
 from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -33,9 +31,9 @@ class CRUDTaskScheduler(CRUDPlus[TaskScheduler]):
         """
         return await self.select_models(db)
 
-    async def get_list(self, name: str | None, type: int | None) -> Select:
+    async def get_select(self, name: str | None, type: int | None) -> Select:
         """
-        Get the task schedule list
+        Get task scheduling list query expression
 
         :param name: task scheduling name
         :param type: Task scheduling type
@@ -86,7 +84,7 @@ class CRUDTaskScheduler(CRUDPlus[TaskScheduler]):
         TaskScheduler.no_changes = False
         return 1
 
-    async def set_status(self, db: AsyncSession, pk: int, status: bool) -> int:
+    async def set_status(self, db: AsyncSession, pk: int, *, status: bool) -> int:
         """
         Set task scheduling status
 
@@ -96,7 +94,7 @@ class CRUDTaskScheduler(CRUDPlus[TaskScheduler]):
         :return:
         """
         task_scheduler = await self.get(db, pk)
-        setattr(task_scheduler, 'enabled', status)
+        task_scheduler.enabled = status
         TaskScheduler.no_changes = False
         return 1
 

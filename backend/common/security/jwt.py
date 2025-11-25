@@ -1,18 +1,14 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 import json
+import uuid
 
 from datetime import timedelta
 from typing import Any
-from uuid import uuid4
 
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPBearer
 from fastapi.security.http import HTTPAuthorizationCredentials
 from fastapi.security.utils import get_authorization_scheme_param
 from jose import ExpiredSignatureError, JWTError, jwt
-from pwdlib import PasswordHash
-from pwdlib.hashers.bcrypt import BcryptHasher
 from pydantic_core import from_json
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,7 +20,6 @@ from backend.common.exception.errors import TokenError
 from backend.core.conf import settings
 from backend.database.db import async_db_session
 from backend.database.redis import redis_client
-from backend.utils.serializers import select_as_dict
 from backend.utils.timezone import timezone
 
 
@@ -40,36 +35,12 @@ class CustomHTTPBearer(HTTPBearer):
             return await super().__call__(request)
         except HTTPException as e:
             if e.status_code == 403:
-                raise TokenError()
-            raise e
+                raise TokenError
+            raise
 
 
 # JWT authorizes dependency injection
 DependsJwtAuth = Depends(CustomHTTPBearer())
-
-password_hash = PasswordHash((BcryptHasher(),))
-
-
-def get_hash_password(password: str, salt: bytes | None) -> str:
-    """
-    Encrypt passwords using hashing algorithm
-
-    :param password: Password
-    :param salt: salt value
-    :return:
-    """
-    return password_hash.hash(password, salt=salt)
-
-
-def password_verify(plain_password: str, hashed_password: str) -> bool:
-    """
-    Password verification
-
-    :param plain_password: Password to be verified
-    :param hashed_password: hashed password
-    :return:
-    """
-    return password_hash.verify(plain_password, hashed_password)
 
 
 def jwt_encode(payload: dict[str, Any]) -> str:
@@ -106,11 +77,13 @@ def jwt_decode(token: str) -> TokenPayload:
     except (JWTError, Exception):
         raise errors.TokenError(msg='Token is invalid')
     return TokenPayload(
-        id=int(user_id), session_uuid=session_uuid, expire_time=timezone.from_datetime(timezone.to_utc(expire))
+        id=int(user_id),
+        session_uuid=session_uuid,
+        expire_time=timezone.from_datetime(timezone.to_utc(expire)),
     )
 
 
-async def create_access_token(user_id: int, multi_login: bool, **kwargs) -> AccessToken:
+async def create_access_token(user_id: int, *, multi_login: bool, **kwargs) -> AccessToken:
     """
     Generate encrypted tokens
 
@@ -120,7 +93,7 @@ async def create_access_token(user_id: int, multi_login: bool, **kwargs) -> Acce
     :return:
     """
     expire = timezone.now() + timedelta(seconds=settings.TOKEN_EXPIRE_SECONDS)
-    session_uuid = str(uuid4())
+    session_uuid = str(uuid.uuid4())
     access_token = jwt_encode({
         'session_uuid': session_uuid,
         'exp': timezone.to_utc(expire).timestamp(),
@@ -147,7 +120,7 @@ async def create_access_token(user_id: int, multi_login: bool, **kwargs) -> Acce
     return AccessToken(access_token=access_token, access_token_expire_time=expire, session_uuid=session_uuid)
 
 
-async def create_refresh_token(session_uuid: str, user_id: int, multi_login: bool) -> RefreshToken:
+async def create_refresh_token(session_uuid: str, user_id: int, *, multi_login: bool) -> RefreshToken:
     """
     Generate encrypted refresh tokens, only for creating new tokens
 
@@ -175,7 +148,12 @@ async def create_refresh_token(session_uuid: str, user_id: int, multi_login: boo
 
 
 async def create_new_token(
-    refresh_token: str, session_uuid: str, user_id: int, multi_login: bool, **kwargs
+    refresh_token: str,
+    session_uuid: str,
+    user_id: int,
+    *,
+    multi_login: bool,
+    **kwargs,
 ) -> NewToken:
     """
     Generate a new token
@@ -194,8 +172,8 @@ async def create_new_token(
     await redis_client.delete(f'{settings.TOKEN_REFRESH_REDIS_PREFIX}:{user_id}:{session_uuid}')
     await redis_client.delete(f'{settings.TOKEN_REDIS_PREFIX}:{user_id}:{session_uuid}')
 
-    new_access_token = await create_access_token(user_id, multi_login, **kwargs)
-    new_refresh_token = await create_refresh_token(new_access_token.session_uuid, user_id, multi_login)
+    new_access_token = await create_access_token(user_id, multi_login=multi_login, **kwargs)
+    new_refresh_token = await create_refresh_token(new_access_token.session_uuid, user_id, multi_login=multi_login)
     return NewToken(
         new_access_token=new_access_token.access_token,
         new_access_token_expire_time=new_access_token.access_token_expire_time,
@@ -241,7 +219,7 @@ async def get_current_user(db: AsyncSession, pk: int) -> User:
     """
     from backend.app.admin.crud.crud_user import user_dao
 
-    user = await user_dao.get_with_relation(db, user_id=pk)
+    user = await user_dao.get_join(db, user_id=pk)
     if not user:
         raise errors.TokenError(msg='Token invalid')
     if not user.status:
@@ -258,16 +236,17 @@ async def get_current_user(db: AsyncSession, pk: int) -> User:
     return user
 
 
-def superuser_verify(request: Request) -> bool:
+def superuser_verify(request: Request, _token: str = DependsJwtAuth) -> bool:
     """
-    Verify current user permissions
+    Verify the current user's super administrator rights
 
     :param request: FastAPI request object
+    :param _token: JWT token
     :return:
     """
     superuser = request.user.is_superuser
     if not superuser or not request.user.is_staff:
-        raise errors.AuthorizationError()
+        raise errors.AuthorizationError
     return superuser
 
 
@@ -291,7 +270,7 @@ async def jwt_authentication(token: str) -> GetUserInfoWithRelationDetail:
     if not cache_user:
         async with async_db_session() as db:
             current_user = await get_current_user(db, user_id)
-            user = GetUserInfoWithRelationDetail(**select_as_dict(current_user))
+            user = GetUserInfoWithRelationDetail.model_validate(current_user)
             await redis_client.setex(
                 f'{settings.JWT_USER_REDIS_PREFIX}:{user_id}',
                 settings.TOKEN_EXPIRE_SECONDS,
@@ -302,3 +281,7 @@ async def jwt_authentication(token: str) -> GetUserInfoWithRelationDetail:
         # https://docs.pydantic.dev/latest/concepts/json/#partial-json-parsing
         user = GetUserInfoWithRelationDetail.model_validate(from_json(cache_user, allow_partial=True))
     return user
+
+
+# Super administrator authentication dependency injection
+DependsSuperUser = Depends(superuser_verify)

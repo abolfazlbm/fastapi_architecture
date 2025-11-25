@@ -1,17 +1,15 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 import inspect
 import logging
 import os
 import re
 import sys
 
-from asgi_correlation_id import correlation_id
 from loguru import logger
 
 from backend.core.conf import settings
 from backend.core.path_conf import LOG_DIR
 from backend.utils.timezone import timezone
+from backend.utils.trace_id import get_request_trace_id
 
 
 class InterceptHandler(logging.Handler):
@@ -21,7 +19,7 @@ class InterceptHandler(logging.Handler):
     Reference: https://loguru.readthedocs.io/en/stable/overview.html#entirely-compatible-with-standard-logging
     """
 
-    def emit(self, record: logging.LogRecord):
+    def emit(self, record: logging.LogRecord) -> None:
         # Get the corresponding Loguru level (if present)
         try:
             level = logger.level(record.levelname).name
@@ -37,7 +35,7 @@ class InterceptHandler(logging.Handler):
         logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
 
 
-def default_formatter(record):
+def default_formatter(record: logging.LogRecord) -> str:
     """Default log formatter"""
 
     # Rewrite sqlalchemy echo output
@@ -77,11 +75,10 @@ def setup_logging() -> None:
    # Remove the loguru default processor
     logger.remove()
 
-    # correlation_id filter
-    # https://github.com/snok/asgi-correlation-id/issues/7
-    def correlation_id_filter(record):
-        cid = correlation_id.get(settings.TRACE_ID_LOG_DEFAULT_VALUE)
-        record['correlation_id'] = cid[: settings.TRACE_ID_LOG_LENGTH]
+    # request_id filter
+    def request_id_filter(record: logging.LogRecord) -> logging.LogRecord:
+        rid = get_request_trace_id()
+        record['request_id'] = rid[: settings.TRACE_ID_LOG_LENGTH]
         return record
 
     # Configure the loguru processor
@@ -91,9 +88,9 @@ def setup_logging() -> None:
                 'sink': sys.stdout,
                 'level': settings.LOG_STD_LEVEL,
                 'format': default_formatter,
-                'filter': lambda record: correlation_id_filter(record),
-            }
-        ]
+                'filter': lambda record: request_id_filter(record),
+            },
+        ],
     )
 
 
@@ -103,16 +100,16 @@ def set_custom_logfile() -> None:
         os.mkdir(LOG_DIR)
 
     # Log File
-    log_access_file = os.path.join(LOG_DIR, settings.LOG_ACCESS_FILENAME)
-    log_error_file = os.path.join(LOG_DIR, settings.LOG_ERROR_FILENAME)
+    log_access_file = LOG_DIR / settings.LOG_ACCESS_FILENAME
+    log_error_file = LOG_DIR / settings.LOG_ERROR_FILENAME
 
     # Log compression callback
-    def compression(filepath):
+    def compression(filepath: str) -> str:
         filename = filepath.split(os.sep)[-1]
         original_filename = filename.split('.')[0]
         if '-' in original_filename:
-            return os.path.join(LOG_DIR, f'{original_filename}.log')
-        return os.path.join(LOG_DIR, f'{original_filename}_{timezone.now().strftime("%Y-%m-%d")}.log')
+            return LOG_DIR / f'{original_filename}.log'
+        return LOG_DIR / f'{original_filename}_{timezone.now().strftime("%Y-%m-%d")}.log'
 
     # General configuration of log files
     # https://loguru.readthedocs.io/en/stable/api/logger.html#loguru._logger.Logger.add

@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from rich.text import Text
 
@@ -15,14 +13,17 @@ _plugins = get_plugins()
 
 with Progress(
     SpinnerColumn(finished_text=f'[bold green]{_log_prefix} plugin ready[/]'),
+    TextColumn('{task.description}'),
     TextColumn('{task.completed}/{task.total}', style='bold green'),
     TimeElapsedColumn(),
     console=console,
 ) as progress:
     task = progress.add_task('Installation plugin dependencies...', total=len(_plugins))
     for plugin in _plugins:
+        progress.update(task, description=f'[bold magenta]Install plugin {plugin} depend...[/]')
         install_requirements(plugin)
         progress.advance(task)
+    progress.update(task, description='[bold green]-[/]')
 
 console.print(Text(f'{_log_prefix} starts the service...', style='bold magenta'))
 

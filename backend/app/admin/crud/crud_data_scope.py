@@ -1,13 +1,18 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-from typing import Sequence
+from collections.abc import Sequence
+from typing import Any
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select, delete, insert
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy_crud_plus import CRUDPlus
+from sqlalchemy_crud_plus import CRUDPlus, JoinConfig
 
-from backend.app.admin.model import DataRule, DataScope
-from backend.app.admin.schema.data_scope import CreateDataScopeParam, UpdateDataScopeParam, UpdateDataScopeRuleParam
+from backend.app.admin.model import DataRule, DataScope, data_scope_rule
+from backend.app.admin.schema.data_scope import (
+    CreateDataScopeParam,
+    CreateDataScopeRuleParam,
+    UpdateDataScopeParam,
+    UpdateDataScopeRuleParam,
+)
+from backend.utils.serializers import select_join_serialize
 
 
 class CRUDDataScope(CRUDPlus[DataScope]):
@@ -33,7 +38,7 @@ class CRUDDataScope(CRUDPlus[DataScope]):
         """
         return await self.select_model_by_column(db, name=name)
 
-    async def get_with_relation(self, db: AsyncSession, pk: int) -> DataScope:
+    async def get_join(self, db: AsyncSession, pk: int) -> Any:
         """
         Get data range associated data
 
@@ -41,7 +46,16 @@ class CRUDDataScope(CRUDPlus[DataScope]):
         :param pk: Range ID
         :return:
         """
-        return await self.select_model(db, pk, load_strategies=['rules'])
+        result = await self.select_models(
+            db,
+            id=pk,
+            join_conditions=[
+                JoinConfig(model=data_scope_rule, join_on=data_scope_rule.c.data_scope_id == self.model.id),
+                JoinConfig(model=DataRule, join_on=DataRule.id == data_scope_rule.c.data_rule_id, fill_result=True),
+            ],
+        )
+
+        return select_join_serialize(result, relationships=['DataScope-m2m-DataRule:rules'])
 
     async def get_all(self, db: AsyncSession) -> Sequence[DataScope]:
         """
@@ -52,9 +66,9 @@ class CRUDDataScope(CRUDPlus[DataScope]):
         """
         return await self.select_models(db)
 
-    async def get_list(self, name: str | None, status: int | None) -> Select:
+    async def get_select(self, name: str | None, status: int | None) -> Select:
         """
-        Get a list of data ranges
+        Get data range list query expression
 
         :param name: range name
         :param status: range status
@@ -67,7 +81,7 @@ class CRUDDataScope(CRUDPlus[DataScope]):
         if status is not None:
             filters['status'] = status
 
-        return await self.select_order('id', load_strategies={'rules': 'noload', 'roles': 'noload'}, **filters)
+        return await self.select_order('id', **filters)
 
     async def create(self, db: AsyncSession, obj: CreateDataScopeParam) -> None:
         """
@@ -90,7 +104,8 @@ class CRUDDataScope(CRUDPlus[DataScope]):
         """
         return await self.update_model(db, pk, obj)
 
-    async def update_rules(self, db: AsyncSession, pk: int, rule_ids: UpdateDataScopeRuleParam) -> int:
+    @staticmethod
+    async def update_rules(db: AsyncSession, pk: int, rule_ids: UpdateDataScopeRuleParam) -> int:
         """
         Update data scope rules
 
@@ -99,11 +114,16 @@ class CRUDDataScope(CRUDPlus[DataScope]):
         :param rule_ids: Data rule ID list
         :return:
         """
-        current_data_scope = await self.get_with_relation(db, pk)
-        stmt = select(DataRule).where(DataRule.id.in_(rule_ids.rules))
-        rules = await db.execute(stmt)
-        current_data_scope.rules = rules.scalars().all()
-        return len(current_data_scope.rules)
+        data_scope_rule_stmt = delete(data_scope_rule).where(data_scope_rule.c.data_scope_id == pk)
+        await db.execute(data_scope_rule_stmt)
+
+        data_scope_rule_data = [
+            CreateDataScopeRuleParam(data_scope_id=pk, data_rule_id=rule_id).model_dump() for rule_id in rule_ids.rules
+        ]
+        data_scope_rule_stmt = insert(data_scope_rule)
+        await db.execute(data_scope_rule_stmt, data_scope_rule_data)
+
+        return len(rule_ids.rules)
 
     async def delete(self, db: AsyncSession, pks: list[int]) -> int:
         """

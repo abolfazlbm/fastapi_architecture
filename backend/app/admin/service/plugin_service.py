@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 import io
 import json
 import os
@@ -7,6 +5,8 @@ import shutil
 import zipfile
 
 from typing import Any
+
+import anyio
 
 from fastapi import UploadFile
 
@@ -26,14 +26,10 @@ class PluginService:
     @staticmethod
     async def get_all() -> list[dict[str, Any]]:
         """Get all plugins"""
-        keys = []
-        result = []
 
-        async for key in redis_client.scan_iter(f'{settings.PLUGIN_REDIS_PREFIX}:*'):
-            keys.append(key)
+        keys = [key async for key in redis_client.scan_iter(f'{settings.PLUGIN_REDIS_PREFIX}:*')]
 
-        for info in await redis_client.mget(*keys):
-            result.append(json.loads(info))
+        result = [json.loads(info) for info in await redis_client.mget(*keys)]
 
         return result
 
@@ -52,6 +48,8 @@ class PluginService:
         :param repo_url: git repository address
         :return:
         """
+        if settings.ENVIRONMENT != 'dev':
+            raise errors.RequestError(msg='Installing plug-ins in non-development environments is prohibited')
         if type == PluginType.zip:
             if not file:
                 raise errors.RequestError(msg='ZIP compressed package cannot be empty')
@@ -61,24 +59,26 @@ class PluginService:
         return await install_git_plugin(repo_url)
 
     @staticmethod
-    async def uninstall(*, plugin: str):
+    async def uninstall(*, plugin: str) -> None:
         """
         Uninstall plug-in
 
         :param plugin: plugin name
         :return:
         """
-        plugin_dir = os.path.join(PLUGIN_DIR, plugin)
-        if not os.path.exists(plugin_dir):
+        if settings.ENVIRONMENT != 'dev':
+            raise errors.RequestError(msg='Disable uninstalling plug-ins in non-development environments')
+        plugin_dir = anyio.Path(PLUGIN_DIR / plugin)
+        if not await plugin_dir.exists():
             raise errors.NotFoundError(msg='plugin does not exist')
         await uninstall_requirements_async(plugin)
-        bacup_dir = os.path.join(PLUGIN_DIR, f'{plugin}.{timezone.now().strftime("%Y%m%d%H%M%S")}.backup')
+        bacup_dir = PLUGIN_DIR / f'{plugin}.{timezone.now().strftime("%Y%m%d%H%M%S")}.backup'
         shutil.move(plugin_dir, bacup_dir)
         await redis_client.delete(f'{settings.PLUGIN_REDIS_PREFIX}:{plugin}')
         await redis_client.set(f'{settings.PLUGIN_REDIS_PREFIX}:changed', 'ture')
 
     @staticmethod
-    async def update_status(*, plugin: str):
+    async def update_status(*, plugin: str) -> None:
         """
         Update plugin status
 
@@ -107,8 +107,8 @@ class PluginService:
         :param plugin: plugin name
         :return:
         """
-        plugin_dir = os.path.join(PLUGIN_DIR, plugin)
-        if not os.path.exists(plugin_dir):
+        plugin_dir = anyio.Path(PLUGIN_DIR / plugin)
+        if not await plugin_dir.exists():
             raise errors.NotFoundError(msg='plugin does not exist')
 
         bio = io.BytesIO()
@@ -117,7 +117,7 @@ class PluginService:
                 dirs[:] = [d for d in dirs if d != '__pycache__']
                 for file in files:
                     file_path = os.path.join(root, file)
-                    arcname = os.path.relpath(file_path, start=plugin_dir)
+                    arcname = os.path.relpath(file_path, start=plugin_dir)  # noqa: ASYNC240
                     zf.write(file_path, os.path.join(plugin, arcname))
 
         bio.seek(0)

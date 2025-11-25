@@ -1,14 +1,16 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+import uuid
+
 from fast_captcha import img_captcha
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends
 from fastapi_limiter.depends import RateLimiter
 from starlette.concurrency import run_in_threadpool
 
 from backend.app.admin.schema.captcha import GetCaptchaDetail
 from backend.common.response.response_schema import ResponseSchemaModel, response_base
 from backend.core.conf import settings
+from backend.database.db import CurrentSession
 from backend.database.redis import redis_client
+from backend.utils.dynamic_config import load_login_config
 
 router = APIRouter()
 
@@ -18,18 +20,19 @@ router = APIRouter()
     summary='Get the login verification code',
     dependencies=[Depends(RateLimiter(times=5, seconds=10))],
 )
-async def get_captcha(request: Request) -> ResponseSchemaModel[GetCaptchaDetail]:
-    """
-    This interface may have performance losses. Although it is an asynchronous interface,
-    verification code generation is an IO-intensive task. Use thread pools to minimize performance losses.
-    """
-    img_type: str = 'base64'
-    img, code = await run_in_threadpool(img_captcha, img_byte=img_type)
-    ip = request.state.ip
+async def get_captcha(db: CurrentSession) -> ResponseSchemaModel[GetCaptchaDetail]:
+    await load_login_config(db)
+    img, code = await run_in_threadpool(img_captcha, img_byte='base64')
+    captcha_uuid = str(uuid.uuid4())
     await redis_client.set(
-        f'{settings.CAPTCHA_LOGIN_REDIS_PREFIX}:{ip}',
+        f'{settings.LOGIN_CAPTCHA_REDIS_PREFIX}:{captcha_uuid}',
         code,
-        ex=settings.CAPTCHA_LOGIN_EXPIRE_SECONDS,
+        ex=settings.LOGIN_CAPTCHA_EXPIRE_SECONDS,
     )
-    data = GetCaptchaDetail(image_type=img_type, image=img)
+    data = GetCaptchaDetail(
+        is_enabled=settings.LOGIN_CAPTCHA_ENABLED,
+        expire_seconds=settings.LOGIN_CAPTCHA_EXPIRE_SECONDS,
+        uuid=captcha_uuid,
+        image=img,
+    )
     return response_base.success(data=data)

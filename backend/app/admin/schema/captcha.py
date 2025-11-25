@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 from pydantic import Field
 
 from backend.common.schema import SchemaBase
@@ -8,5 +6,7 @@ from backend.common.schema import SchemaBase
 class GetCaptchaDetail(SchemaBase):
     """Verification code details"""
 
-    image_type: str = Field(description='image type')
-    image: str = Field(description='image content')
+    is_enabled: bool = Field(description='Whether to enable')
+    expire_seconds: int = Field(description='Expiration seconds')
+    uuid: str = Field(description='Image unique identifier')
+    image: str = Field(description='Image content')

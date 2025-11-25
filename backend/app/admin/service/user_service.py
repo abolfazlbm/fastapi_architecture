@@ -1,11 +1,10 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 import random
 
-from typing import Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from fastapi import Request
-from sqlalchemy import Select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.admin.crud.crud_dept import dept_dao
 from backend.app.admin.crud.crud_role import role_dao
@@ -16,307 +15,311 @@ from backend.app.admin.schema.user import (
     ResetPasswordParam,
     UpdateUserParam,
 )
+from backend.app.admin.schema.user_password_history import CreateUserPasswordHistoryParam
+from backend.app.admin.service.user_password_history_service import password_security_service
+from backend.app.admin.utils.password_security import password_verify, validate_new_password
+from backend.common.context import ctx
 from backend.common.enums import UserPermissionType
 from backend.common.exception import errors
+from backend.common.pagination import paging_data
 from backend.common.response.response_code import CustomErrorCode
-from backend.common.security.jwt import get_token, jwt_decode, password_verify, superuser_verify
+from backend.common.security.jwt import get_token, jwt_decode
 from backend.core.conf import settings
-from backend.database.db import async_db_session
 from backend.database.redis import redis_client
+from backend.utils.serializers import select_join_serialize
 
 
 class UserService:
     """User Service Class"""
 
     @staticmethod
-    async def get_userinfo(*, pk: int | None = None, username: str | None = None) -> User:
+    async def get_userinfo(*, db: AsyncSession, pk: int | None = None, username: str | None = None) -> User:
         """
         Get user information
 
+        :param db: 数据库会话
         :param pk: User ID
         :param username: Username
         :return:
         """
-        async with async_db_session() as db:
-            user = await user_dao.get_with_relation(db, user_id=pk, username=username)
-            if not user:
-                raise errors.NotFoundError(msg='user does not exist')
-            return user
+        user = await user_dao.get_join(db, user_id=pk, username=username)
+        if not user:
+            raise errors.NotFoundError(msg='user does not exist')
+        return user
 
     @staticmethod
-    async def get_roles(*, pk: int) -> Sequence[Role]:
+    async def get_roles(*, db: AsyncSession, pk: int) -> Sequence[Role]:
         """
         Get all roles of users
 
+        :param db: 数据库会话
         :param pk: User ID
         :return:
         """
-        async with async_db_session() as db:
-            user = await user_dao.get_with_relation(db, user_id=pk)
-            if not user:
-                raise errors.NotFoundError(msg='user does not exist')
-            return user.roles
+        user = await user_dao.get_join(db, user_id=pk)
+        if not user:
+            raise errors.NotFoundError(msg='user does not exist')
+        return user.roles
 
     @staticmethod
-    async def get_select(*, dept: int, username: str, phone: str, status: int) -> Select:
+    async def get_list(*, db: AsyncSession, dept: int, username: str, phone: str, status: int) -> dict[str, Any]:
         """
-        Get user list query conditions
+        Get user list
 
+        :param db: 数据库会话
         :param dept: Department ID
         :param username: Username
         :param phone: mobile phone number
         :param status: status
         :return:
         """
-        return await user_dao.get_list(dept=dept, username=username, phone=phone, status=status)
+        user_select = await user_dao.get_select(dept=dept, username=username, phone=phone, status=status)
+        data = await paging_data(db, user_select)
+        if data['items']:
+            serialized_items = select_join_serialize(data['items'], relationships=['User-m2o-Dept', 'User-m2m-Role'])
+            # 确保返回的是列表，即使只有一个元素
+            data['items'] = [serialized_items] if not isinstance(serialized_items, list) else serialized_items
+        return data
 
     @staticmethod
-    async def create(*, request: Request, obj: AddUserParam) -> None:
+    async def create(*, db: AsyncSession, obj: AddUserParam) -> None:
         """
         Create a user
 
-        :param request: FastAPI request object
-        :param obj: User adds parameters
+        :param db: database session
+        :param obj: User added parameters
         :return:
         """
-        async with async_db_session.begin() as db:
-            superuser_verify(request)
-            if await user_dao.get_by_username(db, obj.username):
-                raise errors.ConflictError(msg='Username registered')
-            obj.nickname = obj.nickname if obj.nickname else f'#{random.randrange(88888, 99999)}'
-            if not obj.password:
-                raise errors.RequestError(msg='Password is not allowed to be empty')
-            if not await dept_dao.get(db, obj.dept_id):
-                raise errors.NotFoundError(msg='Does not exist')
-            for role_id in obj.roles:
-                if not await role_dao.get(db, role_id):
-                    raise errors.NotFoundError(msg='role does not exist')
-            await user_dao.add(db, obj)
+        if await user_dao.get_by_username(db, obj.username):
+            raise errors.ConflictError(msg='Username registered')
+        obj.nickname = obj.nickname or f'#{random.randrange(88888, 99999)}'
+        if not obj.password:
+            raise errors.RequestError(msg='Password is not allowed to be empty')
+        if not await dept_dao.get(db, obj.dept_id):
+            raise errors.NotFoundError(msg='Does not exist')
+        for role_id in obj.roles:
+            if not await role_dao.get(db, role_id):
+                raise errors.NotFoundError(msg='role does not exist')
+        await user_dao.add(db, obj)
 
     @staticmethod
-    async def update(*, request: Request, pk: int, obj: UpdateUserParam) -> int:
+    async def update(*, db: AsyncSession, pk: int, obj: UpdateUserParam) -> int:
         """
-        更新用户信息
+        Update user information
 
-        :param request: FastAPI 请求对象
+        :param db: database session
         :param pk: User ID
-        :param obj: 用户更新参数
+        :param obj: User update parameters
         :return:
         """
-        async with async_db_session.begin() as db:
-            superuser_verify(request)
-            user = await user_dao.get_with_relation(db, user_id=pk)
-            if not user:
-                raise errors.NotFoundError(msg='用户不存在')
-            if obj.username != user.username:
-                if await user_dao.get_by_username(db, obj.username):
-                    raise errors.ConflictError(msg='用户名已注册')
-            for role_id in obj.roles:
-                if not await role_dao.get(db, role_id):
-                    raise errors.NotFoundError(msg='角色不存在')
-            count = await user_dao.update(db, user, obj)
-            await redis_client.delete(f'{settings.JWT_USER_REDIS_PREFIX}:{user.id}')
-            return count
+        user = await user_dao.get_join(db, user_id=pk)
+        if not user:
+            raise errors.NotFoundError(msg='The user does not exist')
+        if obj.username != user.username and await user_dao.get_by_username(db, obj.username):
+            raise errors.ConflictError(msg='Username has been registered')
+        if obj.dept_id and obj.dept_id != user.dept_id and not await dept_dao.get(db, dept_id=obj.dept_id):
+            raise errors.NotFoundError(msg='Department does not exist')
+        for role_id in obj.roles:
+            if not await role_dao.get(db, role_id):
+                raise errors.NotFoundError(msg='The character does not exist')
+        count = await user_dao.update(db, user.id, obj)
+        await redis_client.delete(f'{settings.JWT_USER_REDIS_PREFIX}:{user.id}')
+        return count
 
     @staticmethod
-    async def update_permission(*, request: Request, pk: int, type: UserPermissionType) -> int:
+    async def update_permission(*, db: AsyncSession, request: Request, pk: int, type: UserPermissionType) -> int:  # noqa: C901
         """
         Update user permissions
 
+        :param db: database session
         :param request: FastAPI request object
         :param pk: User ID
         :param type: permission type
         :return:
         """
-        async with async_db_session.begin() as db:
-            superuser_verify(request)
-            match type:
-                case UserPermissionType.superuser:
-                    user = await user_dao.get(db, pk)
-                    if not user:
-                        raise errors.NotFoundError(msg='user does not exist')
-                    if pk == request.user.id:
-                        raise errors.ForbiddenError(msg='Change changes to its own permissions')
-                    count = await user_dao.set_super(db, pk, not user.status)
-                case UserPermissionType.staff:
-                    user = await user_dao.get(db, pk)
-                    if not user:
-                        raise errors.NotFoundError(msg='user does not exist')
-                    if pk == request.user.id:
-                        raise errors.ForbiddenError(msg='Change changes to its own permissions')
-                    count = await user_dao.set_staff(db, pk, not user.is_staff)
-                case UserPermissionType.status:
-                    user = await user_dao.get(db, pk)
-                    if not user:
-                        raise errors.NotFoundError(msg='user does not exist')
-                    if pk == request.user.id:
-                        raise errors.ForbiddenError(msg='Change changes to its own permissions')
-                    count = await user_dao.set_status(db, pk, 0 if user.status == 1 else 1)
-                case UserPermissionType.multi_login:
-                    user = await user_dao.get(db, pk)
-                    if not user:
-                        raise errors.NotFoundError(msg='user does not exist')
-                    multi_login = user.is_multi_login if pk != user.id else request.user.is_multi_login
-                    new_multi_login = not multi_login
-                    count = await user_dao.set_multi_login(db, pk, new_multi_login)
-                    token = get_token(request)
-                    token_payload = jwt_decode(token)
-                    if pk == user.id:
-                        # When the system administrator modifys itself, other tokens except the current token are invalid
-                        if not new_multi_login:
-                            key_prefix = f'{settings.TOKEN_REDIS_PREFIX}:{user.id}'
-                            await redis_client.delete_prefix(
-                                key_prefix, exclude=f'{key_prefix}:{token_payload.session_uuid}'
-                            )
-                    else:
-                        # When the system administrator modifies others, all other tokens are invalid
-                        if not new_multi_login:
-                            key_prefix = f'{settings.TOKEN_REDIS_PREFIX}:{user.id}'
-                            await redis_client.delete_prefix(key_prefix)
-                case _:
-                    raise errors.RequestError(msg='Permission type does not exist')
+        match type:
+            case UserPermissionType.superuser:
+                user = await user_dao.get(db, pk)
+                if not user:
+                    raise errors.NotFoundError(msg='user does not exist')
+                if pk == request.user.id:
+                    raise errors.ForbiddenError(msg='Change changes to its own permissions')
+                count = await user_dao.set_super(db, pk, is_super=not user.status)
+            case UserPermissionType.staff:
+                user = await user_dao.get(db, pk)
+                if not user:
+                    raise errors.NotFoundError(msg='user does not exist')
+                if pk == request.user.id:
+                    raise errors.ForbiddenError(msg='Change changes to its own permissions')
+                count = await user_dao.set_staff(db, pk, is_staff=not user.is_staff)
+            case UserPermissionType.status:
+                user = await user_dao.get(db, pk)
+                if not user:
+                    raise errors.NotFoundError(msg='user does not exist')
+                if pk == request.user.id:
+                    raise errors.ForbiddenError(msg='Change changes to its own permissions')
+                count = await user_dao.set_status(db, pk, 0 if user.status == 1 else 1)
+            case UserPermissionType.multi_login:
+                user = await user_dao.get(db, pk)
+                if not user:
+                    raise errors.NotFoundError(msg='user does not exist')
+                multi_login = user.is_multi_login if pk != user.id else request.user.is_multi_login
+                new_multi_login = not multi_login
+                count = await user_dao.set_multi_login(db, pk, multi_login=new_multi_login)
+                token = get_token(request)
+                token_payload = jwt_decode(token)
+                if pk == user.id:
+                    # When the system administrator modifys itself, other tokens except the current token are invalid
+                    if not new_multi_login:
+                        key_prefix = f'{settings.TOKEN_REDIS_PREFIX}:{user.id}'
+                        await redis_client.delete_prefix(
+                            key_prefix,
+                            exclude=f'{key_prefix}:{token_payload.session_uuid}',
+                        )
+                else:
+                    # When the system administrator modifies others, all other tokens are invalid
+                    if not new_multi_login:
+                        key_prefix = f'{settings.TOKEN_REDIS_PREFIX}:{user.id}'
+                        await redis_client.delete_prefix(key_prefix)
+            case _:
+                raise errors.RequestError(msg='Permission type does not exist')
 
         await redis_client.delete(f'{settings.JWT_USER_REDIS_PREFIX}:{user.id}')
         return count
 
     @staticmethod
-    async def reset_password(*, request: Request, pk: int, password: str) -> int:
+    async def reset_password(*, db: AsyncSession, pk: int, password: str) -> int:
         """
         Reset user password
 
-        :param request: FastAPI request object
+        :param db: database session
         :param pk: User ID
-        :param password: new password
+        :param password: New Password
         :return:
         """
-        async with async_db_session.begin() as db:
-            superuser_verify(request)
-            user = await user_dao.get(db, pk)
-            if not user:
-                raise errors.NotFoundError(msg='user does not exist')
-            count = await user_dao.reset_password(db, user.id, password)
-            key_prefix = [
-                f'{settings.TOKEN_REDIS_PREFIX}:{user.id}',
-                f'{settings.TOKEN_REFRESH_REDIS_PREFIX}:{user.id}',
-                f'{settings.JWT_USER_REDIS_PREFIX}:{user.id}',
-            ]
-            for prefix in key_prefix:
-                await redis_client.delete(prefix)
-            return count
+        user = await user_dao.get(db, pk)
+        if not user:
+            raise errors.NotFoundError(msg='user does not exist')
+
+        await validate_new_password(db, user.id, password)
+        count = await user_dao.reset_password(db, user.id, password)
+
+        history_obj = CreateUserPasswordHistoryParam(user_id=user.id, password=user.password)
+        await password_security_service.save_password_history(db, history_obj)
+        await user_dao.update_password_changed_time(db, user.id)
+
+        key_prefix = [
+            f'{settings.TOKEN_REDIS_PREFIX}:{user.id}',
+            f'{settings.TOKEN_REFRESH_REDIS_PREFIX}:{user.id}',
+            f'{settings.JWT_USER_REDIS_PREFIX}:{user.id}',
+        ]
+        for prefix in key_prefix:
+            await redis_client.delete(prefix)
+        return count
 
     @staticmethod
-    async def update_nickname(*, request: Request, nickname: str) -> int:
+    async def update_nickname(*, db: AsyncSession, user_id: int, nickname: str) -> int:
         """
         Update the current user nickname
 
-        :param request: FastAPI request object
+        :param db: database session
+        :param user_id: user ID
         :param nickname: user nickname
         :return:
         """
-        async with async_db_session.begin() as db:
-            token = get_token(request)
-            token_payload = jwt_decode(token)
-            user = await user_dao.get(db, token_payload.id)
-            if not user:
-                raise errors.NotFoundError(msg='user does not exist')
-            count = await user_dao.update_nickname(db, token_payload.id, nickname)
-            await redis_client.delete(f'{settings.JWT_USER_REDIS_PREFIX}:{user.id}')
-            return count
+        count = await user_dao.update_nickname(db, user_id, nickname)
+        await redis_client.delete(f'{settings.JWT_USER_REDIS_PREFIX}:{user_id}')
+        return count
 
     @staticmethod
-    async def update_avatar(*, request: Request, avatar: str) -> int:
+    async def update_avatar(*, db: AsyncSession, user_id: int, avatar: str) -> int:
         """
         Update the current user avatar
 
-        :param request: FastAPI request object
+        :param db: database session
+        :param user_id: user ID
         :param avatar: avatar address
         :return:
         """
-        async with async_db_session.begin() as db:
-            token = get_token(request)
-            token_payload = jwt_decode(token)
-            user = await user_dao.get(db, token_payload.id)
-            if not user:
-                raise errors.NotFoundError(msg='user does not exist')
-            count = await user_dao.update_avatar(db, token_payload.id, avatar)
-            await redis_client.delete(f'{settings.JWT_USER_REDIS_PREFIX}:{user.id}')
-            return count
+        count = await user_dao.update_avatar(db, user_id, avatar)
+        await redis_client.delete(f'{settings.JWT_USER_REDIS_PREFIX}:{user_id}')
+        return count
 
     @staticmethod
-    async def update_email(*, request: Request, captcha: str, email: str) -> int:
+    async def update_email(*, db: AsyncSession, user_id: int, captcha: str, email: str) -> int:
         """
         Update the current user's email address
 
-        :param request: FastAPI request object
+        :param db: database session
+        :param user_id: user ID
         :param captcha: Email verification code
-        :param email: Email
+        :param email: email
         :return:
         """
-        async with async_db_session.begin() as db:
-            token = get_token(request)
-            token_payload = jwt_decode(token)
-            user = await user_dao.get(db, token_payload.id)
-            if not user:
-                raise errors.NotFoundError(msg='user does not exist')
-            captcha_code = await redis_client.get(f'{settings.EMAIL_CAPTCHA_REDIS_PREFIX}:{request.state.ip}')
-            if not captcha_code:
-                raise errors.RequestError(msg='Verification code has expired, please re-get it')
-            if captcha != captcha_code:
-                raise errors.CustomError(error=CustomErrorCode.CAPTCHA_ERROR)
-            await redis_client.delete(f'{settings.EMAIL_CAPTCHA_REDIS_PREFIX}:{request.state.ip}')
-            count = await user_dao.update_email(db, token_payload.id, email)
-            await redis_client.delete(f'{settings.JWT_USER_REDIS_PREFIX}:{user.id}')
-            return count
+        captcha_code = await redis_client.get(f'{settings.EMAIL_CAPTCHA_REDIS_PREFIX}:{ctx.ip}')
+        if not captcha_code:
+            raise errors.RequestError(msg='The verification code has expired, please obtain it again')
+        if captcha != captcha_code:
+            raise errors.CustomError(error=CustomErrorCode.CAPTCHA_ERROR)
+        await redis_client.delete(f'{settings.EMAIL_CAPTCHA_REDIS_PREFIX}:{ctx.ip}')
+        count = await user_dao.update_email(db, user_id, email)
+        await redis_client.delete(f'{settings.JWT_USER_REDIS_PREFIX}:{user_id}')
+        return count
 
     @staticmethod
-    async def update_password(*, request: Request, obj: ResetPasswordParam) -> int:
+    async def update_password(*, db: AsyncSession, user_id: int, obj: ResetPasswordParam) -> int:
         """
         Update the current user password
 
-        :param request: FastAPI request object
+        :param db: database session
+        :param user_id: user ID
         :param obj: Password reset parameters
         :return:
         """
-        async with async_db_session.begin() as db:
-            token = get_token(request)
-            token_payload = jwt_decode(token)
-            user = await user_dao.get(db, token_payload.id)
-            if not user:
-                raise errors.NotFoundError(msg='user does not exist')
-            if not password_verify(obj.old_password, user.password):
-                raise errors.RequestError(msg='original password error')
-            if obj.new_password != obj.confirm_password:
-                raise errors.RequestError(msg='Password input is inconsistent')
-            count = await user_dao.reset_password(db, user.id, obj.new_password)
-            key_prefix = [
-                f'{settings.TOKEN_REDIS_PREFIX}:{user.id}',
-                f'{settings.TOKEN_REFRESH_REDIS_PREFIX}:{user.id}',
-                f'{settings.JWT_USER_REDIS_PREFIX}:{user.id}',
-            ]
-            for prefix in key_prefix:
-                await redis_client.delete_prefix(prefix)
-            return count
+        user = await user_dao.get(db, user_id)
+
+        if user.password and not password_verify(obj.old_password, user.password):
+            raise errors.RequestError(msg='The original password is wrong')
+
+        if obj.new_password != obj.confirm_password:
+            raise errors.RequestError(msg='The two password inputs are inconsistent')
+
+        await validate_new_password(db, user_id, obj.new_password)
+        count = await user_dao.reset_password(db, user_id, obj.new_password)
+
+        history_obj = CreateUserPasswordHistoryParam(user_id=user.id, password=user.password)
+        await password_security_service.save_password_history(db, history_obj)
+        await user_dao.update_password_changed_time(db, user.id)
+
+        key_prefix = [
+            f'{settings.TOKEN_REDIS_PREFIX}:{user_id}',
+            f'{settings.TOKEN_REFRESH_REDIS_PREFIX}:{user_id}',
+            f'{settings.JWT_USER_REDIS_PREFIX}:{user_id}',
+        ]
+        for prefix in key_prefix:
+            await redis_client.delete_prefix(prefix)
+        return count
 
     @staticmethod
-    async def delete(*, pk: int) -> int:
+    async def delete(*, db: AsyncSession, pk: int) -> int:
         """
         Delete users
 
+        :param db: database session
         :param pk: User ID
         :return:
         """
-        async with async_db_session.begin() as db:
-            user = await user_dao.get(db, pk)
-            if not user:
-                raise errors.NotFoundError(msg='user does not exist')
-            count = await user_dao.delete(db, user.id)
-            key_prefix = [
-                f'{settings.TOKEN_REDIS_PREFIX}:{user.id}',
-                f'{settings.TOKEN_REFRESH_REDIS_PREFIX}:{user.id}',
-            ]
-            for key in key_prefix:
-                await redis_client.delete_prefix(key)
-            return count
+        user = await user_dao.get(db, pk)
+        if not user:
+            raise errors.NotFoundError(msg='user does not exist')
+        count = await user_dao.delete(db, user.id)
+        key_prefix = [
+            f'{settings.TOKEN_REDIS_PREFIX}:{user.id}',
+            f'{settings.TOKEN_REFRESH_REDIS_PREFIX}:{user.id}',
+        ]
+        for key in key_prefix:
+            await redis_client.delete_prefix(key)
+        return count
 
 
 user_service: UserService = UserService()

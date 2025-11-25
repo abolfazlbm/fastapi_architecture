@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 from datetime import datetime
 
 from pydantic import ConfigDict, Field
@@ -22,6 +20,13 @@ class CreateDataScopeParam(DataScopeBase):
 
 class UpdateDataScopeParam(DataScopeBase):
     """Update data range parameters"""
+
+
+class CreateDataScopeRuleParam(SchemaBase):
+    """Create data range rule parameters"""
+
+    data_scope_id: int = Field(description='Data Range ID')
+    data_rule_id: int = Field(description='Data Rules ID')
 
 
 class UpdateDataScopeRuleParam(SchemaBase):
@@ -49,4 +54,4 @@ class GetDataScopeDetail(DataScopeBase):
 class GetDataScopeWithRelationDetail(GetDataScopeDetail):
     """Data range association details"""
 
-    rules: list[GetDataRuleDetail] = Field([], description='Data Rule List')
+    rules: list[GetDataRuleDetail | None] = Field([], description='Data Rule List')

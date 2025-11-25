@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 import socketio
 
 from backend.common.log import log
@@ -10,7 +8,7 @@ from backend.database.redis import redis_client
 # Create a Socket.IO server instance
 sio = socketio.AsyncServer(
     client_manager=socketio.AsyncRedisManager(
-        f'redis://:{settings.REDIS_PASSWORD}@{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DATABASE}'
+        f'redis://:{settings.REDIS_PASSWORD}@{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DATABASE}',
     ),
     async_mode='asgi',
     cors_allowed_origins=settings.CORS_ALLOWED_ORIGINS,
@@ -20,7 +18,7 @@ sio = socketio.AsyncServer(
 
 
 @sio.event
-async def connect(sid, environ, auth):
+async def connect(sid, environ, auth) -> bool:
     """Socket connection event"""
     if not auth:
         log.error('WebSocket connection failed: no authorization')
@@ -40,7 +38,7 @@ async def connect(sid, environ, auth):
     try:
         await jwt_authentication(token)
     except Exception as e:
-        log.info(f'WebSocket connection failed: {str(e)}')
+        log.info(f'WebSocket connection failed: {e!s}')
         return False
 
     await redis_client.sadd(settings.TOKEN_ONLINE_REDIS_PREFIX, session_uuid)

@@ -1,17 +1,8 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-from __future__ import annotations
+import sqlalchemy as sa
 
-from typing import TYPE_CHECKING
+from sqlalchemy.orm import Mapped, mapped_column
 
-from sqlalchemy import String
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-
-from backend.app.admin.model.m2m import sys_data_scope_rule, sys_role_data_scope
 from backend.common.model import Base, id_key
-
-if TYPE_CHECKING:
-    from backend.app.admin.model import DataRule, Role
 
 
 class DataScope(Base):
@@ -20,11 +11,5 @@ class DataScope(Base):
     __tablename__ = 'sys_data_scope'
 
     id: Mapped[id_key] = mapped_column(init=False)
-    name: Mapped[str] = mapped_column(String(50), unique=True, comment='name')
+    name: Mapped[str] = mapped_column(sa.String(64), unique=True, comment='name')
     status: Mapped[int] = mapped_column(default=1, comment='Status (0 is disabled 1 is normal)')
-
-    # Data range rules many to many
-    rules: Mapped[list[DataRule]] = relationship(init=False, secondary=sys_data_scope_rule, back_populates='scopes')
-
-    # Role data range many-to-many
-    roles: Mapped[list[Role]] = relationship(init=False, secondary=sys_role_data_scope, back_populates='scopes')

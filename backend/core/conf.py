@@ -1,7 +1,6 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 from functools import lru_cache
-from typing import Any, Literal, Pattern
+from re import Pattern
+from typing import Any, Literal
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -53,6 +52,15 @@ class Settings(BaseSettings):
     # Redis
     REDIS_TIMEOUT: int = 5
 
+    # .env Snowflake
+    SNOWFLAKE_DATACENTER_ID: int | None = None
+    SNOWFLAKE_WORKER_ID: int | None = None
+
+    # Snowflake
+    SNOWFLAKE_REDIS_PREFIX: str = 'fba:snowflake'
+    SNOWFLAKE_HEARTBEAT_INTERVAL_SECONDS: int = 30
+    SNOWFLAKE_NODE_TTL_SECONDS: int = 60
+
     # .env Token
     TOKEN_SECRET_KEY: str  # Key secrets.token_urlsafe(32)
 
@@ -71,6 +79,23 @@ class Settings(BaseSettings):
         rf'^{FASTAPI_API_V1_PATH}/monitors/(redis|server)$',
     ]
 
+    # 用户安全
+    USER_LOCK_REDIS_PREFIX: str = 'fba:user:lock'
+    USER_LOCK_THRESHOLD: int = 5  # 用户密码错误锁定阈值，0 表示禁用锁定
+    USER_LOCK_SECONDS: int = 60 * 5  # 5 分钟
+    USER_PASSWORD_EXPIRY_DAYS: int = 365  # 用户密码有效期，0 表示永不过期
+    USER_PASSWORD_REMINDER_DAYS: int = 7  # 用户密码到期提醒，0 表示不提醒
+    USER_PASSWORD_HISTORY_CHECK_COUNT: int = 3
+    USER_PASSWORD_MIN_LENGTH: int = 6
+    USER_PASSWORD_MAX_LENGTH: int = 32
+    USER_PASSWORD_REQUIRE_SPECIAL_CHAR: bool = False
+
+    # 登录
+    LOGIN_CAPTCHA_ENABLED: bool = True
+    LOGIN_CAPTCHA_REDIS_PREFIX: str = 'fba:login:captcha'
+    LOGIN_CAPTCHA_EXPIRE_SECONDS: int = 60 * 5  # 5 分钟
+    LOGIN_FAILURE_PREFIX: str = 'fba:login:failure'
+
     # JWT
     JWT_USER_REDIS_PREFIX: str = 'fba:user'
 
@@ -85,13 +110,9 @@ class Settings(BaseSettings):
     COOKIE_REFRESH_TOKEN_KEY: str = 'fba_refresh_token'
     COOKIE_REFRESH_TOKEN_EXPIRE_SECONDS: int = 60 * 60 * 24 * 7  # 7 day
 
-    # Verification code
-    CAPTCHA_LOGIN_REDIS_PREFIX: str = 'fba:login:captcha'
-    CAPTCHA_LOGIN_EXPIRE_SECONDS: int = 60 * 5  # 3 Minute
-
     # Data permissions
     DATA_PERMISSION_MODELS: dict[str, str] = {  # SQLA model that allows data filtering, which must be defined as a module string
-        'department': 'backend.app.admin.model.Dept',
+        'Dept': 'backend.app.admin.model.Dept',
     }
     DATA_PERMISSION_COLUMN_EXCLUDE: list[str] = [  # Exclude SQL model columns that allow data filtering
         'id',
@@ -136,6 +157,7 @@ class Settings(BaseSettings):
         ('POST', f'{FASTAPI_API_V1_PATH}/auth/login'),
         ('POST', f'{FASTAPI_API_V1_PATH}/auth/logout'),
         ('GET', f'{FASTAPI_API_V1_PATH}/auth/captcha'),
+        ('POST', f'{FASTAPI_API_V1_PATH}/auth/refresh'),
     }
 
     # IP Positioning Configuration
@@ -150,7 +172,7 @@ class Settings(BaseSettings):
 
     # log
     LOG_FORMAT: str = (
-        '<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</> | <lvl>{level: <8}</> | <cyan>{correlation_id}</> | <lvl>{message}</>'
+        '<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</> | <lvl>{level: <8}</> | <cyan>{request_id}</> | <lvl>{message}</>'
     )
 
     # Log (Console)
@@ -173,6 +195,7 @@ class Settings(BaseSettings):
         '/openapi',
         f'{FASTAPI_API_V1_PATH}/auth/login/swagger',
         f'{FASTAPI_API_V1_PATH}/oauth2/github/callback',
+        f'{FASTAPI_API_V1_PATH}/oauth2/google/callback',
         f'{FASTAPI_API_V1_PATH}/oauth2/linux-do/callback',
     ]
     OPERA_LOG_ENCRYPT_TYPE: int = 1  # 0: AES (performance loss); 1: md5; 2: ItsDangerous; 3: Not encrypted, others: Replace with *******
@@ -188,6 +211,7 @@ class Settings(BaseSettings):
     # Plugin deploy
     PLUGIN_PIP_CHINA: bool = True
     PLUGIN_PIP_INDEX_URL: str = 'https://mirrors.aliyun.com/pypi/simple/'
+    PLUGIN_PIP_MAX_RETRY: int = 3
     PLUGIN_REDIS_PREFIX: str = 'fba:plugin'
 
     # I18n deploy
@@ -208,6 +232,7 @@ class Settings(BaseSettings):
 
     # Basic configuration
     CELERY_BROKER: Literal['rabbitmq', 'redis'] = 'redis'
+    CELERY_RABBITMQ_VHOST: str = ''
     CELERY_REDIS_PREFIX: str = 'fba:celery'
     CELERY_TASK_MAX_RETRIES: int = 5
 
@@ -228,7 +253,13 @@ class Settings(BaseSettings):
     OAUTH2_LINUX_DO_CLIENT_SECRET: str
 
     # Basic configuration
-    OAUTH2_FRONTEND_REDIRECT_URI: str = 'http://localhost:5173/oauth2/callback'
+    OAUTH2_STATE_REDIS_PREFIX: str = 'fba:oauth2:state'
+    OAUTH2_STATE_EXPIRE_SECONDS: int = 60 * 3  # 3 minute
+    OAUTH2_GITHUB_REDIRECT_URI: str = 'http://127.0.0.1:8000/api/v1/oauth2/github/callback'
+    OAUTH2_GOOGLE_REDIRECT_URI: str = 'http://127.0.0.1:8000/api/v1/oauth2/google/callback'
+    OAUTH2_LINUX_DO_REDIRECT_URI: str = 'http://127.0.0.1:8000/api/v1/oauth2/linux-do/callback'
+    OAUTH2_FRONTEND_LOGIN_REDIRECT_URI: str = 'http://localhost:5173/oauth2/callback'
+    OAUTH2_FRONTEND_BINDING_REDIRECT_URI: str = 'http://localhost:5173/profile'
 
     ##################################################
     # [ Plugin ] email
@@ -242,7 +273,7 @@ class Settings(BaseSettings):
     EMAIL_PORT: int = 465
     EMAIL_SSL: bool = True
     EMAIL_CAPTCHA_REDIS_PREFIX: str = 'fba:email:captcha'
-    EMAIL_CAPTCHA_EXPIRE_SECONDS: int = 60 * 3  # 3 Minute
+    EMAIL_CAPTCHA_EXPIRE_SECONDS: int = 60 * 3  # 3 minute
 
     @model_validator(mode='before')
     @classmethod

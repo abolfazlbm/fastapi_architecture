@@ -1,7 +1,6 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 from fastapi import Depends, Request
 
+from backend.common.context import ctx
 from backend.common.enums import MethodType, StatusType
 from backend.common.exception import errors
 from backend.common.log import log
@@ -10,7 +9,7 @@ from backend.core.conf import settings
 from backend.utils.import_parse import import_module_cached
 
 
-async def rbac_verify(request: Request, _token: str = DependsJwtAuth) -> None:
+async def rbac_verify(request: Request, _token: str = DependsJwtAuth) -> None:  # noqa: C901
     """
     RBAC permission verification (the order of authentication is very important, please modify it with caution)
 
@@ -46,13 +45,12 @@ async def rbac_verify(request: Request, _token: str = DependsJwtAuth) -> None:
 
     # Detect background management operation permissions
     method = request.method
-    if method != MethodType.GET or method != MethodType.OPTIONS:
-        if not request.user.is_staff:
-            raise errors.AuthorizationError(msg='The user has been banned from background management operations, please contact the system administrator')
+    if (method != MethodType.GET or method != MethodType.OPTIONS) and not request.user.is_staff:
+        raise errors.AuthorizationError(msg='The user has been banned from background management operations, please contact the system administrator')
 
     # RBAC Authentication
     if settings.RBAC_ROLE_MENU_MODE:
-        path_auth_perm = getattr(request.state, 'permission', None)
+        path_auth_perm = ctx.permission
 
         # No menu operation permissions identification is not verified
         if not path_auth_perm:
@@ -78,7 +76,7 @@ async def rbac_verify(request: Request, _token: str = DependsJwtAuth) -> None:
     else:
         try:
             casbin_rbac = import_module_cached('backend.plugin.casbin_rbac.rbac')
-            casbin_verify = getattr(casbin_rbac, 'casbin_verify')
+            casbin_verify = casbin_rbac.casbin_verify
         except (ImportError, AttributeError) as e:
             log.error(f' is performing RBAC permission verification through casbin, but this plugin does not exist: {e}')
             raise errors.ServerError(msg='Permission verification failed, please contact the system administrator')

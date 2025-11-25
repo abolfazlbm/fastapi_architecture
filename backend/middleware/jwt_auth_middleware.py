@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 from typing import Any
 
 from fastapi import Request, Response
@@ -19,7 +17,11 @@ class _AuthenticationError(AuthenticationError):
     """Rewrite internal authentication error class"""
 
     def __init__(
-        self, *, code: int | None = None, msg: str | None = None, headers: dict[str, Any] | None = None
+        self,
+        *,
+        code: int | None = None,
+        msg: str | None = None,
+        headers: dict[str, Any] | None = None,
     ) -> None:
         """
         Initialization authentication error

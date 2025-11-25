@@ -1,6 +1,4 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-from typing import Sequence
+from collections.abc import Sequence
 
 from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -42,9 +40,9 @@ class CRUDGenBusiness(CRUDPlus[GenBusiness]):
         """
         return await self.select_models(db)
 
-    async def get_list(self, table_name: str | None) -> Select:
+    async def get_select(self, table_name: str | None) -> Select:
         """
-        获取所有代码生成业务
+        获取所有代码生成业务查询表达式
 
         :param table_name: 业务表名
         :return:
@@ -54,7 +52,7 @@ class CRUDGenBusiness(CRUDPlus[GenBusiness]):
         if table_name is not None:
             filters['table_name__like'] = f'%{table_name}%'
 
-        return await self.select_order('id', 'desc', load_strategies={'gen_column': 'noload'}, **filters)
+        return await self.select_order('id', 'desc', **filters)
 
     async def create(self, db: AsyncSession, obj: CreateGenBusinessParam) -> None:
         """

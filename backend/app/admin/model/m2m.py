@@ -1,55 +1,39 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-from sqlalchemy import BigInteger, Column, ForeignKey, Table
+import sqlalchemy as sa
 
 from backend.common.model import MappedBase
 
-sys_user_role = Table(
+# User role table
+user_role = sa.Table(
     'sys_user_role',
     MappedBase.metadata,
-    Column('id', BigInteger, primary_key=True, unique=True, index=True, autoincrement=True, comment='Primary key ID'),
-    Column('user_id', BigInteger, ForeignKey('sys_user.id', ondelete='CASCADE'), primary_key=True, comment='User ID'),
-    Column('role_id', BigInteger, ForeignKey('sys_role.id', ondelete='CASCADE'), primary_key=True, comment='Role ID'),
+    sa.Column('id', sa.BigInteger, primary_key=True, unique=True, index=True, autoincrement=True, comment='Primary key ID'),
+    sa.Column('user_id', sa.BigInteger, primary_key=True, comment='User ID'),
+    sa.Column('role_id', sa.BigInteger, primary_key=True, comment='Role ID'),
 )
 
-sys_role_menu = Table(
+# Character menu table
+role_menu = sa.Table(
     'sys_role_menu',
     MappedBase.metadata,
-    Column('id', BigInteger, primary_key=True, unique=True, index=True, autoincrement=True, comment='Primary key ID'),
-    Column('role_id', BigInteger, ForeignKey('sys_role.id', ondelete='CASCADE'), primary_key=True, comment='Role ID'),
-    Column('menu_id', BigInteger, ForeignKey('sys_menu.id', ondelete='CASCADE'), primary_key=True, comment='Menu ID'),
+    sa.Column('id', sa.BigInteger, primary_key=True, unique=True, index=True, autoincrement=True, comment='Primary key ID'),
+    sa.Column('role_id', sa.BigInteger, primary_key=True, comment='Role ID'),
+    sa.Column('menu_id', sa.BigInteger, primary_key=True, comment='Menu ID'),
 )
 
-sys_role_data_scope = Table(
+# Role data range table
+role_data_scope = sa.Table(
     'sys_role_data_scope',
     MappedBase.metadata,
-    Column('id', BigInteger, primary_key=True, unique=True, index=True, autoincrement=True, comment='Primary key ID'),
-    Column('role_id', BigInteger, ForeignKey('sys_role.id', ondelete='CASCADE'), primary_key=True, comment='Role ID'),
-    Column(
-        'data_scope_id',
-        BigInteger,
-        ForeignKey('sys_data_scope.id', ondelete='CASCADE'),
-        primary_key=True,
-        comment='Data scope ID',
-    ),
+    sa.Column('id', sa.BigInteger, primary_key=True, unique=True, index=True, autoincrement=True, comment='Primary key ID'),
+    sa.Column('role_id', sa.BigInteger, primary_key=True, comment='Role ID'),
+    sa.Column('data_scope_id', sa.BigInteger, primary_key=True, comment='Data scope ID'),
 )
 
-sys_data_scope_rule = Table(
+# Data range rule table
+data_scope_rule = sa.Table(
     'sys_data_scope_rule',
     MappedBase.metadata,
-    Column('id', BigInteger, primary_key=True, unique=True, index=True, autoincrement=True, comment='Primary key ID'),
-    Column(
-        'data_scope_id',
-        BigInteger,
-        ForeignKey('sys_data_scope.id', ondelete='CASCADE'),
-        primary_key=True,
-        comment='Data scope ID',
-    ),
-    Column(
-        'data_rule_id',
-        BigInteger,
-        ForeignKey('sys_data_rule.id', ondelete='CASCADE'),
-        primary_key=True,
-        comment='Data Rules ID',
-    ),
+    sa.Column('id', sa.BigInteger, primary_key=True, unique=True, index=True, autoincrement=True, comment='Primary key ID'),
+    sa.Column('data_scope_id', sa.BigInteger, primary_key=True, comment='Data scope ID'),
+    sa.Column('data_rule_id', sa.BigInteger, primary_key=True, comment='Data Rules ID'),
 )

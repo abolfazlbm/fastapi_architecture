@@ -1,11 +1,8 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 from fastapi import Request
 from sqlalchemy import ColumnElement, and_, or_
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.app.admin.crud.crud_data_scope import data_scope_dao
+from backend.app.admin.schema.user import GetUserInfoWithRelationDetail
+from backend.common.context import ctx
 from backend.common.enums import RoleDataRuleExpressionType, RoleDataRuleOperatorType
 from backend.common.exception import errors
 from backend.core.conf import settings
@@ -41,57 +38,46 @@ class RequestPermission:
             if not isinstance(self.value, str):
                 raise errors.ServerError
             # Attach permissions to identify the request status
-            request.state.permission = self.value
+            ctx.permission = self.value
 
 
-async def filter_data_permission(db: AsyncSession, request: Request) -> ColumnElement[bool]:
+def filter_data_permission(request_user: GetUserInfoWithRelationDetail) -> ColumnElement[bool]:  # noqa: C901
     """
     Filter data permissions to control the user's visible data range
 
     Use scenarios:
         - Control what data users can see
 
-    :param db: database session
-    :param request: FastAPI request object
+    :param request_user: request user
     :return:
     """
     # Whether to filter data permissions
-    if request.user.is_superuser:
+    if request_user.is_superuser:
         return or_(1 == 1)
 
-    for role in request.user.roles:
+    for role in request_user.roles:
         if not role.is_filter_scopes:
             return or_(1 == 1)
 
-    # Get data range
-    data_scope_ids = set()
-    for role in request.user.roles:
+    # Get data rules
+    data_rules = set()
+    for role in request_user.roles:
         for scope in role.scopes:
             if scope.status:
-                data_scope_ids.add(scope.id)
+                data_rules.update(scope.rules)
 
     # No rules for users not to filter
-    if not list(data_scope_ids):
+    if not list(data_rules):
         return or_(1 == 1)
-
-    # Get data range rules
-    unique_data_rules = {}
-    for data_scope_id in list(data_scope_ids):
-        data_scope_with_relation = await data_scope_dao.get_with_relation(db, data_scope_id)
-        for rule in data_scope_with_relation.rules:
-            unique_data_rules[rule.id] = rule
-
-    # Convert to list
-    data_rule_list = list(unique_data_rules.values())
 
     where_and_list = []
     where_or_list = []
 
-    for data_rule in data_rule_list:
+    for data_rule in list(data_rules):
         # Verification rule model
         rule_model = data_rule.model
         if rule_model not in settings.DATA_PERMISSION_MODELS:
-            raise errors.NotFoundError(msg='Data rule model does not exist')
+            raise errors.NotFoundError(msg='The available model for data rules does not exist')
         model_ins = dynamic_import_data_model(settings.DATA_PERMISSION_MODELS[rule_model])
 
         # Verify rule column
@@ -100,7 +86,7 @@ async def filter_data_permission(db: AsyncSession, request: Request) -> ColumnEl
         ]
         column = data_rule.column
         if column not in model_columns:
-            raise errors.NotFoundError(msg='Data rule model column does not exist')
+            raise errors.NotFoundError(msg='The available model column for the data rule does not exist')
 
         # Create filter conditions
         column_obj = getattr(model_ins, column)

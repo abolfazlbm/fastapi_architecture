@@ -1,14 +1,14 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-from typing import Sequence
+from collections.abc import Sequence
+from typing import Any
 
-from fastapi import Request
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy_crud_plus import CRUDPlus
+from sqlalchemy_crud_plus import CRUDPlus, JoinConfig
 
-from backend.app.admin.model import Dept
+from backend.app.admin.model import Dept, User
 from backend.app.admin.schema.dept import CreateDeptParam, UpdateDeptParam
+from backend.app.admin.schema.user import GetUserInfoWithRelationDetail
 from backend.common.security.permission import filter_data_permission
+from backend.utils.serializers import select_join_serialize
 
 
 class CRUDDept(CRUDPlus[Dept]):
@@ -22,7 +22,7 @@ class CRUDDept(CRUDPlus[Dept]):
         :param dept_id: Department ID
         :return:
         """
-        return await self.select_model_by_column(db, id=dept_id, del_flag=0)
+        return await self.select_model_by_column(db, id=dept_id, del_flag=False)
 
     async def get_by_name(self, db: AsyncSession, name: str) -> Dept | None:
         """
@@ -32,12 +32,12 @@ class CRUDDept(CRUDPlus[Dept]):
         :param name: department name
         :return:
         """
-        return await self.select_model_by_column(db, name=name, del_flag=0)
+        return await self.select_model_by_column(db, name=name, del_flag=False)
 
     async def get_all(
         self,
-        request: Request,
         db: AsyncSession,
+        request_user: GetUserInfoWithRelationDetail,
         name: str | None,
         leader: str | None,
         phone: str | None,
@@ -46,15 +46,15 @@ class CRUDDept(CRUDPlus[Dept]):
         """
         Get all departments
 
-        :param request: FastAPI request object
         :param db: database session
+        :param request_user: request user
         :param name: department name
         :param leader: person in charge
         :param phone: Contact number
         :param status: department status
         :return:
         """
-        filters = {'del_flag': 0}
+        filters = {'del_flag': False}
 
         if name is not None:
             filters['name__like'] = f'%{name}%'
@@ -65,8 +65,8 @@ class CRUDDept(CRUDPlus[Dept]):
         if status is not None:
             filters['status'] = status
 
-        data_filtered = await filter_data_permission(db, request)
-        return await self.select_models_order(db, 'sort', 'desc', data_filtered, **filters)
+        data_filter = filter_data_permission(request_user)
+        return await self.select_models_order(db, 'sort', 'desc', data_filter, **filters)
 
     async def create(self, db: AsyncSession, obj: CreateDeptParam) -> None:
         """
@@ -99,7 +99,7 @@ class CRUDDept(CRUDPlus[Dept]):
         """
         return await self.delete_model_by_column(db, id=dept_id, logical_deletion=True, deleted_flag_column='del_flag')
 
-    async def get_with_relation(self, db: AsyncSession, dept_id: int) -> Dept | None:
+    async def get_join(self, db: AsyncSession, dept_id: int) -> Any | None:
         """
         Obtain department and related data
 
@@ -107,7 +107,12 @@ class CRUDDept(CRUDPlus[Dept]):
         :param dept_id: Department ID
         :return:
         """
-        return await self.select_model(db, dept_id, load_strategies=['users'])
+        result = await self.select_model(
+            db,
+            dept_id,
+            join_conditions=[JoinConfig(model=User, join_on=User.dept_id == self.model.id, fill_result=True)],
+        )
+        return select_join_serialize(result, relationships=['Dept-o2m-User'])
 
     async def get_children(self, db: AsyncSession, dept_id: int) -> Sequence[Dept | None]:
         """
@@ -117,6 +122,6 @@ class CRUDDept(CRUDPlus[Dept]):
         :param dept_id: Department ID
         :return:
         """
-        return await self.select_models(db, parent_id=dept_id, del_flag=0)
+        return await self.select_models(db, parent_id=dept_id, del_flag=False)
 
 dept_dao: CRUDDept = CRUDDept(Dept)

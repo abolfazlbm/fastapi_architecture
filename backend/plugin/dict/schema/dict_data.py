@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 from datetime import datetime
 
 from pydantic import ConfigDict, Field
@@ -14,6 +12,7 @@ class DictDataSchemaBase(SchemaBase):
     type_id: int = Field(description='字典类型 ID')
     label: str = Field(description='字典标签')
     value: str = Field(description='字典值')
+    color: str | None = Field(None, description='标签颜色')
     sort: int = Field(description='排序')
     status: StatusType = Field(description='Status')
     remark: str | None = Field(None, description='备注')

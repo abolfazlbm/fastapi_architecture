@@ -1,25 +1,15 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-import os.path
-
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-import aiofiles
-
 from aiosmtplib import SMTP
+from anyio import open_file
 from jinja2 import Template
-from sqlalchemy import inspect
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.common.enums import StatusType
-from backend.common.exception import errors
 from backend.common.log import log
 from backend.core.conf import settings
 from backend.core.path_conf import PLUGIN_DIR
-from backend.database.db import async_engine
-from backend.plugin.config.crud.crud_config import config_dao
-from backend.utils.serializers import select_list_serialize
+from backend.utils.dynamic_config import load_email_config
 from backend.utils.timezone import timezone
 
 
@@ -39,7 +29,7 @@ async def render_message(subject: str, from_header: str, content: str | dict, te
     message['date'] = timezone.now().strftime('%a, %d %b %Y %H:%M:%S %z')
 
     if template:
-        async with aiofiles.open(os.path.join(PLUGIN_DIR, 'email', 'templates', template), 'r', encoding='utf-8') as f:
+        async with await open_file(PLUGIN_DIR / 'email' / 'templates' / template, encoding='utf-8') as f:
             html = Template(await f.read(), enable_async=True)
         mail_body = MIMEText(await html.render_async(**content), 'html', 'utf-8')
     else:
@@ -56,7 +46,7 @@ async def send_email(
     subject: str,
     content: str | dict,
     template: str | None = None,
-):
+) -> None:
     """
     发送电子邮件
 
@@ -67,52 +57,17 @@ async def send_email(
     :param template: 邮件内容模板
     :return:
     """
-    # 本地配置
-    email_host = settings.EMAIL_HOST
-    email_port = settings.EMAIL_PORT
-    email_ssl = settings.EMAIL_SSL
-    email_username = settings.EMAIL_USERNAME
-    email_password = settings.EMAIL_PASSWORD
-
-    # 动态配置
-    dynamic_config = None
-
-    def get_config_table(conn):
-        inspector = inspect(conn)
-        return inspector.has_table('sys_config', schema=None)
-
-    async with async_engine.begin() as coon:
-        exists = await coon.run_sync(get_config_table)
-        if exists:
-            dynamic_config = await config_dao.get_all(db, 'EMAIL')
-
-    if dynamic_config:
-        _status_key = 'EMAIL_STATUS'
-        _host_key = 'EMAIL_HOST'
-        _port_key = 'EMAIL_PORT'
-        _ssl_key = 'EMAIL_SSL'
-        _username_key = 'EMAIL_USERNAME'
-        _password_key = 'EMAIL_PASSWORD'
-
-        configs = {d['key']: d['value'] for d in select_list_serialize(dynamic_config)}
-        if configs.get(_status_key):
-            if len(dynamic_config) < 6:
-                raise errors.NotFoundError(msg='缺少邮件动态配置，请检查系统参数配置-邮件配置')
-            email_host = configs.get(_host_key)
-            email_port = int(configs.get(_port_key, 0))
-            email_ssl = True if configs.get(_ssl_key, '') == str(StatusType.enable.value) else False
-            email_username = configs.get(_username_key)
-            email_password = configs.get(_password_key)
+    await load_email_config(db)
 
     try:
-        message = await render_message(subject, email_username, content, template)
+        message = await render_message(subject, settings.EMAIL_USERNAME, content, template)
         smtp_client = SMTP(
-            hostname=email_host,
-            port=email_port,
-            use_tls=email_ssl,
+            hostname=settings.EMAIL_HOST,
+            port=settings.EMAIL_PORT,
+            use_tls=settings.EMAIL_SSL,
         )
         async with smtp_client:
-            await smtp_client.login(email_username, email_password)
-            await smtp_client.sendmail(email_username, recipients, message)
+            await smtp_client.login(settings.EMAIL_USERNAME, settings.EMAIL_PASSWORD)
+            await smtp_client.sendmail(settings.EMAIL_USERNAME, recipients, message)
     except Exception as e:
         log.error(f'电子邮件发送失败：{e}')

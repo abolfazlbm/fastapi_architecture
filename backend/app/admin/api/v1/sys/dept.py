@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query, Request
@@ -10,25 +8,31 @@ from backend.common.response.response_schema import ResponseModel, ResponseSchem
 from backend.common.security.jwt import DependsJwtAuth
 from backend.common.security.permission import RequestPermission
 from backend.common.security.rbac import DependsRBAC
+from backend.database.db import CurrentSession, CurrentSessionTransaction
 
 router = APIRouter()
 
 
 @router.get('/{pk}', summary='Get department details', dependencies=[DependsJwtAuth])
-async def get_dept(pk: Annotated[int, Path(description='Department ID')]) -> ResponseSchemaModel[GetDeptDetail]:
-    data = await dept_service.get(pk=pk)
+async def get_dept(
+    db: CurrentSession, pk: Annotated[int, Path(description='Department ID')]
+) -> ResponseSchemaModel[GetDeptDetail]:
+    data = await dept_service.get(db=db, pk=pk)
     return response_base.success(data=data)
 
 
 @router.get('', summary='Obtain department tree', dependencies=[DependsJwtAuth])
 async def get_dept_tree(
+    db: CurrentSession,
     request: Request,
     name: Annotated[str | None, Query(description='department name')] = None,
     leader: Annotated[str | None, Query(description='department head')] = None,
     phone: Annotated[str | None, Query(description='Contact Number')] = None,
     status: Annotated[int | None, Query(description='status')] = None,
 ) -> ResponseSchemaModel[list[GetDeptTree]]:
-    dept = await dept_service.get_tree(request=request, name=name, leader=leader, phone=phone, status=status)
+    dept = await dept_service.get_tree(
+        db=db, request_user=request.user, name=name, leader=leader, phone=phone, status=status
+    )
     return response_base.success(data=dept)
 
 
@@ -40,8 +44,8 @@ async def get_dept_tree(
         DependsRBAC,
     ],
 )
-async def create_dept(obj: CreateDeptParam) -> ResponseModel:
-    await dept_service.create(obj=obj)
+async def create_dept(db: CurrentSessionTransaction, obj: CreateDeptParam) -> ResponseModel:
+    await dept_service.create(db=db, obj=obj)
     return response_base.success()
 
 
@@ -53,8 +57,10 @@ async def create_dept(obj: CreateDeptParam) -> ResponseModel:
         DependsRBAC,
     ],
 )
-async def update_dept(pk: Annotated[int, Path(description='Department ID')], obj: UpdateDeptParam) -> ResponseModel:
-    count = await dept_service.update(pk=pk, obj=obj)
+async def update_dept(
+    db: CurrentSessionTransaction, pk: Annotated[int, Path(description='Department ID')], obj: UpdateDeptParam
+) -> ResponseModel:
+    count = await dept_service.update(db=db, pk=pk, obj=obj)
     if count > 0:
         return response_base.success()
     return response_base.fail()
@@ -68,8 +74,8 @@ async def update_dept(pk: Annotated[int, Path(description='Department ID')], obj
         DependsRBAC,
     ],
 )
-async def delete_dept(pk: Annotated[int, Path(description='Department ID')]) -> ResponseModel:
-    count = await dept_service.delete(pk=pk)
+async def delete_dept(db: CurrentSessionTransaction, pk: Annotated[int, Path(description='Department ID')]) -> ResponseModel:
+    count = await dept_service.delete(db=db, pk=pk)
     if count > 0:
         return response_base.success()
     return response_base.fail()

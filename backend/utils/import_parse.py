@@ -1,10 +1,8 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 import importlib
 import inspect
 
 from functools import lru_cache
-from typing import Any, Type, TypeVar
+from typing import Any, TypeVar
 
 from backend.common.exception import errors
 from backend.common.log import log
@@ -23,7 +21,7 @@ def import_module_cached(module_path: str) -> Any:
     return importlib.import_module(module_path)
 
 
-def dynamic_import_data_model(module_path: str) -> Type[T]:
+def dynamic_import_data_model(module_path: str) -> type[T]:
     """
     Dynamic import of data models
 
@@ -39,7 +37,7 @@ def dynamic_import_data_model(module_path: str) -> Type[T]:
         raise errors.ServerError(msg='Dynamic analysis of data model column failed, please contact the system super administrator')
 
 
-def get_model_object(module_path: str) -> type | None:
+def get_model_objects(module_path: str) -> list[type] | None:
     """
     Get the model object
 
@@ -51,11 +49,13 @@ def get_model_object(module_path: str) -> type | None:
     except ModuleNotFoundError:
         log.warning(f'The module {module_path} does not contain model objects')
         return None
-    except Exception as e:
-        raise RuntimeError(f'Failed to obtain module {module_path} model object：{e}')
+    except Exception:
+        raise
 
-    for name, obj in inspect.getmembers(module):
-        if inspect.isclass(obj):
-            return obj
+    classes = []
 
-    return None
+    for _name, obj in inspect.getmembers(module):
+        if inspect.isclass(obj) and module_path in obj.__module__:
+            classes.append(obj)
+
+    return classes

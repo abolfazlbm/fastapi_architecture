@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 from datetime import datetime
 
 from pydantic import Field
@@ -32,6 +30,7 @@ class GetNewToken(AccessTokenBase):
 class GetLoginToken(AccessTokenBase):
     """Get login token"""
 
+    password_expire_days_remaining: int | None = Field(None, description='密码过期剩余天数')
     user: GetUserInfoDetail = Field(description='User Information')
 
 

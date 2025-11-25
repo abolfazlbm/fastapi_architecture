@@ -1,6 +1,4 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-from typing import Sequence
+from collections.abc import Sequence
 
 from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,9 +21,9 @@ class CRUDDataRule(CRUDPlus[DataRule]):
         """
         return await self.select_model(db, pk)
 
-    async def get_list(self, name: str | None) -> Select:
+    async def get_select(self, name: str | None) -> Select:
         """
-        Get a list of rules
+        Get rule list query expression
 
         :param name: rule name
         :return:
@@ -35,7 +33,7 @@ class CRUDDataRule(CRUDPlus[DataRule]):
         if name is not None:
             filters['name__like'] = f'%{name}%'
 
-        return await self.select_order('id', load_strategies={'scopes': 'noload'}, **filters)
+        return await self.select_order('id', **filters)
 
     async def get_by_name(self, db: AsyncSession, name: str) -> DataRule | None:
         """

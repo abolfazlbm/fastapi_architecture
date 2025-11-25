@@ -1,8 +1,6 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 from enum import Enum
 from enum import IntEnum as SourceIntEnum
-from typing import Any, Type, TypeVar
+from typing import Any, TypeVar
 
 T = TypeVar('T', bound=Enum)
 
@@ -11,17 +9,17 @@ class _EnumBase:
     """Enumer base class, providing general method """
 
     @classmethod
-    def get_member_keys(cls: Type[T]) -> list[str]:
+    def get_member_keys(cls) -> list[str]:
         """Get enumerated member names list"""
-        return [name for name in cls.__members__.keys()]
+        return list(cls.__members__.keys())
 
     @classmethod
-    def get_member_values(cls: Type[T]) -> list:
+    def get_member_values(cls) -> list:
         """Get enumerated member value list"""
         return [item.value for item in cls.__members__.values()]
 
     @classmethod
-    def get_member_dict(cls: Type[T]) -> dict[str, Any]:
+    def get_member_dict(cls) -> dict[str, Any]:
         """Get enumerated member dictionary"""
         return {name: item.value for name, item in cls.__members__.items()}
 
@@ -29,13 +27,9 @@ class _EnumBase:
 class IntEnum(_EnumBase, SourceIntEnum):
     """Integer Enumeration Base Class"""
 
-    pass
-
 
 class StrEnum(_EnumBase, str, Enum):
     """String Enumeration Base Class"""
-
-    pass
 
 
 class MenuType(IntEnum):
@@ -107,14 +101,6 @@ class StatusType(IntEnum):
 
     disable = 0
     enable = 1
-
-
-class UserSocialType(StrEnum):
-    """User social type"""
-
-    github = 'GitHub'
-    google = 'Google'
-    linux_do = 'LinuxDo'
 
 
 class FileType(StrEnum):

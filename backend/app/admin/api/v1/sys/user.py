@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, Path, Query, Request
@@ -14,12 +12,12 @@ from backend.app.admin.schema.user import (
 )
 from backend.app.admin.service.user_service import user_service
 from backend.common.enums import UserPermissionType
-from backend.common.pagination import DependsPagination, PageData, paging_data
+from backend.common.pagination import DependsPagination, PageData
 from backend.common.response.response_schema import ResponseModel, ResponseSchemaModel, response_base
-from backend.common.security.jwt import DependsJwtAuth
+from backend.common.security.jwt import DependsJwtAuth, DependsSuperUser
 from backend.common.security.permission import RequestPermission
 from backend.common.security.rbac import DependsRBAC
-from backend.database.db import CurrentSession
+from backend.database.db import CurrentSession, CurrentSessionTransaction
 
 router = APIRouter()
 
@@ -32,15 +30,18 @@ async def get_current_user(request: Request) -> ResponseSchemaModel[GetCurrentUs
 
 @router.get('/{pk}', summary='Get user information', dependencies=[DependsJwtAuth])
 async def get_userinfo(
+    db: CurrentSession,
     pk: Annotated[int, Path(description='User ID')],
 ) -> ResponseSchemaModel[GetUserInfoWithRelationDetail]:
-    data = await user_service.get_userinfo(pk=pk)
+    data = await user_service.get_userinfo(db=db, pk=pk)
     return response_base.success(data=data)
 
 
 @router.get('/{pk}/roles', summary='Get all roles of users', dependencies=[DependsJwtAuth])
-async def get_user_roles(pk: Annotated[int, Path(description='User ID')]) -> ResponseSchemaModel[list[GetRoleDetail]]:
-    data = await user_service.get_roles(pk=pk)
+async def get_user_roles(
+    db: CurrentSession, pk: Annotated[int, Path(description='User ID')]
+) -> ResponseSchemaModel[list[GetRoleDetail]]:
+    data = await user_service.get_roles(db=db, pk=pk)
     return response_base.success(data=data)
 
 
@@ -52,62 +53,68 @@ async def get_user_roles(pk: Annotated[int, Path(description='User ID')]) -> Res
         DependsPagination,
     ],
 )
-async def get_users_paged(
+async def get_users_paginated(
     db: CurrentSession,
     dept: Annotated[int | None, Query(description='Department ID')] = None,
     username: Annotated[str | None, Query(description='Username')] = None,
     phone: Annotated[str | None, Query(description='Phone number')] = None,
     status: Annotated[int | None, Query(description='status')] = None,
 ) -> ResponseSchemaModel[PageData[GetUserInfoWithRelationDetail]]:
-    user_select = await user_service.get_select(dept=dept, username=username, phone=phone, status=status)
-    page_data = await paging_data(db, user_select)
+    page_data = await user_service.get_list(db=db, dept=dept, username=username, phone=phone, status=status)
     return response_base.success(data=page_data)
 
 
-@router.post('', summary='Create a user', dependencies=[DependsRBAC])
-async def create_user(request: Request, obj: AddUserParam) -> ResponseSchemaModel[GetUserInfoWithRelationDetail]:
-    await user_service.create(request=request, obj=obj)
-    data = await user_service.get_userinfo(username=obj.username)
+@router.post('', summary='Create a user', dependencies=[DependsSuperUser])
+async def create_user(
+    db: CurrentSessionTransaction, obj: AddUserParam
+) -> ResponseSchemaModel[GetUserInfoWithRelationDetail]:
+    await user_service.create(db=db, obj=obj)
+    data = await user_service.get_userinfo(db=db, username=obj.username)
     return response_base.success(data=data)
 
 
-@router.put('/{pk}', summary='Update user information', dependencies=[DependsRBAC])
+@router.put('/{pk}', summary='Update user information', dependencies=[DependsSuperUser])
 async def update_user(
-    request: Request, pk: Annotated[int, Path(description='User ID')], obj: UpdateUserParam
+    db: CurrentSessionTransaction,
+    pk: Annotated[int, Path(description='User ID')],
+    obj: UpdateUserParam,
 ) -> ResponseModel:
-    count = await user_service.update(request=request, pk=pk, obj=obj)
+    count = await user_service.update(db=db, pk=pk, obj=obj)
     if count > 0:
         return response_base.success()
     return response_base.fail()
 
 
-@router.put('/{pk}/permissions', summary='Update user permissions', dependencies=[DependsRBAC])
+@router.put('/{pk}/permissions', summary='Update user permissions', dependencies=[DependsSuperUser])
 async def update_user_permission(
+    db: CurrentSessionTransaction,
     request: Request,
     pk: Annotated[int, Path(description='User ID')],
     type: Annotated[UserPermissionType, Query(description='Permission Type')],
 ) -> ResponseModel:
-    count = await user_service.update_permission(request=request, pk=pk, type=type)
+    count = await user_service.update_permission(db=db, request=request, pk=pk, type=type)
     if count > 0:
         return response_base.success()
     return response_base.fail()
 
 
 @router.put('/me/password', summary='Update the current user password', dependencies=[DependsJwtAuth])
-async def update_user_password(request: Request, obj: ResetPasswordParam) -> ResponseModel:
-    count = await user_service.update_password(request=request, obj=obj)
+async def update_user_password(
+    db: CurrentSessionTransaction, request: Request, obj: ResetPasswordParam
+) -> ResponseModel:
+    count = await user_service.update_password(db=db, user_id=request.user.id, obj=obj)
     if count > 0:
         return response_base.success()
     return response_base.fail()
 
 
-@router.put('/{pk}/password', summary='Reset user password', dependencies=[DependsRBAC])
+@router.put('/{pk}/password', summary='Reset user password', dependencies=[DependsSuperUser])
 async def reset_user_password(
-    request: Request,
+    db: CurrentSessionTransaction,
     pk: Annotated[int, Path(description='User ID')],
     password: Annotated[str, Body(embed=True, description='New Password')],
 ) -> ResponseModel:
-    count = await user_service.reset_password(request=request, pk=pk, password=password)
+    count = await user_service.reset_password(db=db, pk=pk, password=password)
     if count > 0:
         return response_base.success()
     return response_base.fail()
@@ -115,9 +122,11 @@ async def reset_user_password(
 
 @router.put('/me/nickname', summary='Update the current user nickname', dependencies=[DependsJwtAuth])
 async def update_user_nickname(
-    request: Request, nickname: Annotated[str, Body(embed=True, description='User nickname')]
+    db: CurrentSessionTransaction,
+    request: Request,
+    nickname: Annotated[str, Body(embed=True, description='User nickname')],
 ) -> ResponseModel:
-    count = await user_service.update_nickname(request=request, nickname=nickname)
+    count = await user_service.update_nickname(db=db, user_id=request.user.id, nickname=nickname)
     if count > 0:
         return response_base.success()
     return response_base.fail()
@@ -125,9 +134,11 @@ async def update_user_nickname(
 
 @router.put('/me/avatar', summary='Update the current user avatar', dependencies=[DependsJwtAuth])
 async def update_user_avatar(
-    request: Request, avatar: Annotated[str, Body(embed=True, description='User avatar address')]
+    db: CurrentSessionTransaction,
+    request: Request,
+    avatar: Annotated[str, Body(embed=True, description='User avatar address')],
 ) -> ResponseModel:
-    count = await user_service.update_avatar(request=request, avatar=avatar)
+    count = await user_service.update_avatar(db=db, user_id=request.user.id, avatar=avatar)
     if count > 0:
         return response_base.success()
     return response_base.fail()
@@ -135,11 +146,12 @@ async def update_user_avatar(
 
 @router.put('/me/email', summary="Update the current user's email address", dependencies=[DependsJwtAuth])
 async def update_user_email(
+    db: CurrentSessionTransaction,
     request: Request,
     captcha: Annotated[str, Body(embed=True, description='Email verification code')],
     email: Annotated[str, Body(embed=True, description='User email')],
 ) -> ResponseModel:
-    count = await user_service.update_email(request=request, captcha=captcha, email=email)
+    count = await user_service.update_email(db=db, user_id=request.user.id, captcha=captcha, email=email)
     if count > 0:
         return response_base.success()
     return response_base.fail()
@@ -153,8 +165,8 @@ async def update_user_email(
         DependsRBAC,
     ],
 )
-async def delete_user(pk: Annotated[int, Path(description='User ID')]) -> ResponseModel:
-    count = await user_service.delete(pk=pk)
+async def delete_user(db: CurrentSessionTransaction, pk: Annotated[int, Path(description='User ID')]) -> ResponseModel:
+    count = await user_service.delete(db=db, pk=pk)
     if count > 0:
         return response_base.success()
     return response_base.fail()

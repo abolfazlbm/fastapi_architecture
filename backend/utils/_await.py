@@ -3,8 +3,9 @@ import atexit
 import threading
 import weakref
 
+from collections.abc import Awaitable, Callable, Coroutine
 from functools import wraps
-from typing import Any, Awaitable, Callable, Coroutine, TypeVar
+from typing import Any, TypeVar
 
 T = TypeVar('T')
 
@@ -12,13 +13,13 @@ T = TypeVar('T')
 class _TaskRunner:
     """Task runner running asyncio event loop on background thread"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.__loop: asyncio.AbstractEventLoop | None = None
         self.__thread: threading.Thread | None = None
         self.__lock = threading.Lock()
         atexit.register(self.close)
 
-    def close(self):
+    def close(self) -> None:
         """Close the event loop and clean it"""
         with self.__lock:
             if self.__loop:
@@ -30,7 +31,7 @@ class _TaskRunner:
             name = f'TaskRunner-{threading.get_ident()}'
             _runner_map.pop(name, None)
 
-    def _target(self):
+    def _target(self) -> None:
         """Objective function of background thread"""
         try:
             self.__loop.run_forever()
@@ -56,7 +57,7 @@ def run_await(coro: Callable[..., Awaitable[T]] | Callable[..., Coroutine[Any, A
     """Wrap the coroutine in a function until it is executed"""
 
     @wraps(coro)
-    def wrapped(*args, **kwargs):
+    def wrapped(*args, **kwargs):  # noqa: ANN202
         inner = coro(*args, **kwargs)
         if not asyncio.iscoroutine(inner) and not asyncio.isfuture(inner):
             raise TypeError(f'Expected coroutine or future, got {type(inner)}')
