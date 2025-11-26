@@ -30,7 +30,7 @@ class GetNewToken(AccessTokenBase):
 class GetLoginToken(AccessTokenBase):
     """Get login token"""
 
-    password_expire_days_remaining: int | None = Field(None, description='密码过期剩余天数')
+    password_expire_days_remaining: int | None = Field(None, description='Number of days remaining before password expiration')
     user: GetUserInfoDetail = Field(description='User Information')
 
 

@@ -9,7 +9,7 @@ from backend.plugin.code_generator.path_conf import JINJA2_TEMPLATE_DIR
 
 class GenTemplate:
     def __init__(self) -> None:
-        """初始化模板生成器"""
+        """Initialize template generator"""
         self.env = Environment(
             loader=FileSystemLoader(JINJA2_TEMPLATE_DIR),
             autoescape=select_autoescape(enabled_extensions=['jinja']),
@@ -22,9 +22,9 @@ class GenTemplate:
 
     def get_template(self, jinja_file: str) -> Template:
         """
-        获取模板文件
+        Get template file
 
-        :param jinja_file: Jinja2 模板文件
+        :param jinja_file: Jinja2 template file
         :return:
         """
         return self.env.get_template(jinja_file)
@@ -32,7 +32,7 @@ class GenTemplate:
     @staticmethod
     def get_template_files() -> list[str]:
         """
-        获取模板文件列表
+        Get template file list
 
         :return:
         """
@@ -47,9 +47,9 @@ class GenTemplate:
     @staticmethod
     def get_code_gen_paths(business: GenBusiness) -> list[str]:
         """
-        获取代码生成路径列表
+        Get a list of code generation paths
 
-        :param business: 代码生成业务对象
+        :param business: code generation business object
         :return:
         """
         app_name = business.app_name
@@ -64,10 +64,10 @@ class GenTemplate:
 
     def get_code_gen_path(self, tpl_path: str, business: GenBusiness) -> str:
         """
-        获取代码生成路径
+        Get code generation path
 
-        :param tpl_path: 模板文件路径
-        :param business: 代码生成业务对象
+        :param tpl_path: template file path
+        :param business: code generation business object
         :return:
         """
         code_gen_path_mapping = dict(zip(self.get_template_files(), self.get_code_gen_paths(business)))
@@ -76,10 +76,10 @@ class GenTemplate:
     @staticmethod
     def get_vars(business: GenBusiness, models: Sequence[GenColumn]) -> dict[str, str | Sequence[GenColumn]]:
         """
-        获取模板变量
+        Get template variables
 
-        :param business: 代码生成业务对象
-        :param models: 代码生成模型对象列表
+        :param business: code generation business object
+        :param models: code generation model object list
         :return:
         """
         return {

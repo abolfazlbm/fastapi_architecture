@@ -7,15 +7,15 @@ from backend.core.conf import settings
 
 
 class CRUDGen:
-    """代码生成 CRUD 类"""
+    """Code generation CRUD classes"""
 
     @staticmethod
     async def get_all_tables(db: AsyncSession, table_schema: str) -> Sequence[RowMapping]:
         """
-        获取所有表名
+        Get all table names
 
-        :param db: 数据库会话
-        :param table_schema: 数据库 schema 名称
+        :param db: database session
+        :param table_schema: database schema name
         :return:
         """
         if settings.DATABASE_TYPE == 'mysql':
@@ -42,10 +42,10 @@ class CRUDGen:
     @staticmethod
     async def get_table(db: AsyncSession, table_name: str) -> Row[tuple]:
         """
-        获取表信息
+        Get table information
 
-        :param db: 数据库会话
-        :param table_name: 表名
+        :param db: database session
+        :param table_name: table name
         :return:
         """
         if settings.DATABASE_TYPE == 'mysql':
@@ -61,7 +61,7 @@ class CRUDGen:
             FROM pg_class c
             LEFT JOIN pg_namespace n ON n.oid = c.relnamespace
             WHERE c.relkind = 'r'
-            AND n.nspname = 'public' -- schema 通常是 'public'
+            AND n.nspname = 'public' -- schema usually 'public'
             AND c.relname = :table_name
             AND c.relname NOT LIKE 'sys_gen_%';
             """
@@ -72,11 +72,11 @@ class CRUDGen:
     @staticmethod
     async def get_all_columns(db: AsyncSession, table_schema: str, table_name: str) -> Sequence[Row[tuple]]:
         """
-        获取所有列信息
+        Get all column information
 
-        :param db: 数据库会话
-        :param table_schema: 数据库 schema 名称
-        :param table_name: 表名
+        :param db: database session
+        :param table_schema: database schema name
+        :param table_name: table name
         :return:
         """
         if settings.DATABASE_TYPE == 'mysql':
@@ -117,7 +117,7 @@ class CRUDGen:
             FROM pg_attribute a
             JOIN pg_class t ON a.attrelid = t.oid
             JOIN pg_namespace n ON n.oid = t.relnamespace
-            WHERE n.nspname = 'public'  -- 根据你的实际情况修改 schema 名称，通常是 'public'
+            WHERE n.nspname = 'public'  -- Modify the schema name according to your actual situation, usually 'public'
             AND t.relname = :table_name
             AND a.attnum > 0
             AND NOT a.attisdropped

@@ -7,9 +7,9 @@ from backend.plugin.code_generator.enums import GenMySQLColumnType, GenPostgreSQ
 @lru_cache(maxsize=128)
 def sql_type_to_sqlalchemy(typing: str) -> str:
     """
-    将 SQL 类型转换为 SQLAlchemy 类型
+    Convert SQL types to SQLAlchemy types
 
-    :param typing: SQL 类型字符串
+    :param typing: SQL type string
     :return:
     """
     if settings.DATABASE_TYPE == 'mysql':
@@ -24,9 +24,9 @@ def sql_type_to_sqlalchemy(typing: str) -> str:
 @lru_cache(maxsize=128)
 def sql_type_to_pydantic(typing: str) -> str:
     """
-    将 SQL 类型转换为 Pydantic 类型
+    Convert SQL types to Pydantic types
 
-    :param typing: SQL 类型字符串
+    :param typing: SQL type string
     :return:
     """
     try:

@@ -73,7 +73,7 @@ class LoginLogService:
         """
         Batch delete login
 
-        :param db: 数据库会话
+        :param db: database session
         :param obj: Log ID list
         :return:
         """

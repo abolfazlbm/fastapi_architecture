@@ -24,7 +24,7 @@ class DataScopeService:
         """
         Get data range details
 
-        :param db: 数据库会话
+        :param db: database session
         :param pk: Range ID
         :return:
         """
@@ -51,7 +51,7 @@ class DataScopeService:
         """
         Get data range rules
 
-        :param db: 数据库会话
+        :param db: database session
         :param pk: Range ID
         :return:
         """

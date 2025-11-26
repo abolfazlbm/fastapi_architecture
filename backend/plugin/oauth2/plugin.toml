@@ -1,7 +1,7 @@
 [plugin]
 summary = 'OAuth 2.0'
 version = '0.0.10'
-description = '通过 OAuth 2.0 的方式登录系统'
+description = 'Log in to the system through OAuth 2.0'
 author = 'wu-clan'
 
 [app]

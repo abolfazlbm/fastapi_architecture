@@ -1,3 +1,1 @@
-## OAuth2
-
-内置插件，可直接使用
+oauth2BuiltInPlugInCanBeUsedDirectly

@@ -52,7 +52,7 @@ async def get_location_online(ip: str, user_agent: str) -> dict | None:
             return None
 
 
-# 离线 IP 搜索器单例（数据将缓存到内存，缓存大小取决于 IP 数据文件大小）
+# Offline IP searcher singleton (data will be cached to memory, cache size depends on IP data file size)
 __xdb_searcher = XdbSearcher(contentBuff=XdbSearcher.loadContentFromFile(dbfile=STATIC_DIR / 'ip2region_v4.xdb'))
 
 

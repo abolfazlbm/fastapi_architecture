@@ -10,7 +10,7 @@ _sys_config_table_exists: bool | None = None
 
 async def check_sys_config_table_exists() -> bool:
     """
-    检查 sys_config 表是否存在
+    Check if sys_config table exists
 
     :return:
     """
@@ -23,9 +23,9 @@ async def check_sys_config_table_exists() -> bool:
 
 async def load_user_security_config(db: AsyncSession) -> None:  # noqa: C901
     """
-    获取用户安全配置
+    Get user security configuration
 
-    :param db: 数据库会话
+    :param db: database session
     :return:
     """
     if not await check_sys_config_table_exists():
@@ -69,9 +69,9 @@ async def load_user_security_config(db: AsyncSession) -> None:  # noqa: C901
 
 async def load_login_config(db: AsyncSession) -> None:
     """
-    获取登录配置
+    Get login configuration
 
-    :param db: 数据库会话
+    :param db: database session
     :return:
     """
     if not await check_sys_config_table_exists():
@@ -93,9 +93,9 @@ async def load_login_config(db: AsyncSession) -> None:
 
 async def load_email_config(db: AsyncSession) -> None:
     """
-    获取邮箱配置
+    Get email configuration
 
-    :param db: 数据库会话
+    :param db: database session
     :return:
     """
     if not await check_sys_config_table_exists():

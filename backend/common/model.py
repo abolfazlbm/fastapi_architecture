@@ -82,8 +82,8 @@ class TimeZone(TypeDecorator[datetime]):
 class UserMixin(MappedAsDataclass):
     """User Mixin data class"""
 
-    created_by: Mapped[int] = mapped_column(sort_order=998, comment='创建者')
-    updated_by: Mapped[int | None] = mapped_column(init=False, default=None, sort_order=998, comment='修改者')
+    created_by: Mapped[int] = mapped_column(sort_order=998, comment='Creator')
+    updated_by: Mapped[int | None] = mapped_column(init=False, default=None, sort_order=998, comment='Modifier')
 
 
 class DateTimeMixin(MappedAsDataclass):

@@ -124,9 +124,9 @@ class RoleService:
 
         role = await role_dao.get(db, pk)
         if not role:
-            raise errors.NotFoundError(msg='role does not exist')
+            raise errors.NotFoundError(msg='Role does not exist')
         if role.name != obj.name and await role_dao.get_by_name(db, obj.name):
-            raise errors.ConflictError(msg='role already exists')
+            raise errors.ConflictError(msg='Role already exists')
         count = await role_dao.update(db, pk, obj)
         await user_cache_manager.clear_by_role_id(db, [pk])
         return count
@@ -144,11 +144,11 @@ class RoleService:
 
         role = await role_dao.get(db, pk)
         if not role:
-            raise errors.NotFoundError(msg='role does not exist')
+            raise errors.NotFoundError(msg='Role does not exist')
         for menu_id in menu_ids.menus:
             menu = await menu_dao.get(db, menu_id)
             if not menu:
-                raise errors.NotFoundError(msg='menu does not exist')
+                raise errors.NotFoundError(msg='Menu does not exist')
         count = await role_dao.update_menus(db, pk, menu_ids)
         await user_cache_manager.clear_by_role_id(db, [pk])
         return count
@@ -166,7 +166,7 @@ class RoleService:
 
         role = await role_dao.get(db, pk)
         if not role:
-            raise errors.NotFoundError(msg='role does not exist')
+            raise errors.NotFoundError(msg='Role does not exist')
         for scope_id in scope_ids.scopes:
             scope = await data_scope_dao.get(db, scope_id)
             if not scope:

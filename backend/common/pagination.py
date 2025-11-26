@@ -23,7 +23,7 @@ SchemaT = TypeVar('SchemaT')
 class _CustomPageParams(BaseModel, AbstractParams):
     """Custom paging parameters"""
 
-    page: int = Query(1, ge=1, description='page number')
+    page: int = Query(1, ge=1, description='Page number')
     size: int = Query(20, gt=0, le=200, description='Number of per page')
 
     def to_raw_params(self) -> RawParams:
@@ -49,7 +49,7 @@ class _PageDetails(BaseModel):
     items: list = Field([], description='Current page data list')
     total: int = Field(description='Total number of data')
     page: int = Field(description='Current page number')
-    size: int = Field(description='number per page')
+    size: int = Field(description='Number per page')
     total_pages: int = Field(description='Total Pages')
     links: _Links = Field(description='Pagination Link')
 

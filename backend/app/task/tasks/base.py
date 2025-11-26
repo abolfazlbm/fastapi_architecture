@@ -22,7 +22,7 @@ class TaskBase(Task):
         :param task_id: Task ID
         :return:
         """
-        await task_notification(msg=f'task {task_id} starts execution')
+        await task_notification(msg=f'Task {task_id} starts execution')
 
     async def on_success(self, retval: Any, task_id: str, args, kwargs) -> None:  # noqa: ANN001
         """
@@ -43,4 +43,4 @@ class TaskBase(Task):
         :param einfo: Exception information
         :return:
         """
-        asyncio.create_task(task_notification(msg=f'task {task_id} failed to execute'))
+        asyncio.create_task(task_notification(msg=f'Task {task_id} failed to execute'))

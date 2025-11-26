@@ -54,7 +54,7 @@ async def get_businesses_paginated(
 @router.get('/{pk}/columns', summary='Get all model columns of the code generation business', dependencies=[DependsJwtAuth])
 async def get_business_all_columns(
     db: CurrentSession,
-    pk: Annotated[int, Path(description='业务 ID')],
+    pk: Annotated[int, Path(description='Business ID')],
 ) -> ResponseSchemaModel[list[GetGenColumnDetail]]:
     data = await gen_column_service.get_columns(db=db, business_id=pk)
     return response_base.success(data=data)
@@ -102,7 +102,7 @@ async def update_business(
     ],
 )
 async def delete_business(
-    db: CurrentSessionTransaction, pk: Annotated[int, Path(description='业务 ID')]
+    db: CurrentSessionTransaction, pk: Annotated[int, Path(description='Business ID')]
 ) -> ResponseModel:
     count = await gen_business_service.delete(db=db, pk=pk)
     if count > 0:

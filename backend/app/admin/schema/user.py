@@ -14,14 +14,14 @@ class AuthSchemaBase(SchemaBase):
     """Basic Model of User Authentication"""
 
     username: str = Field(description='Username')
-    password: str = Field(description='password')
+    password: str = Field(description='Password')
 
 
 class AuthLoginParam(AuthSchemaBase):
     """User Login Parameters"""
 
     uuid: str | None = Field(None, description='Verification code UUID')
-    captcha: str | None = Field(None, description='verification code')
+    captcha: str | None = Field(None, description='Verification code')
 
 
 class AddUserParam(AuthSchemaBase):
@@ -43,7 +43,7 @@ class AddUserRoleParam(SchemaBase):
 class AddOAuth2UserParam(AuthSchemaBase):
     """Add OAuth2 user parameters"""
 
-    password: str | None = Field(None, description='password')
+    password: str | None = Field(None, description='Password')
     nickname: str | None = Field(None, description='Nickname')
     email: CustomEmailStr | None = Field(None, description='Email')
     avatar: Annotated[HttpUrl, PlainSerializer(ser_string)] | None = Field(None, description='Avatar address')
@@ -52,8 +52,8 @@ class AddOAuth2UserParam(AuthSchemaBase):
 class ResetPasswordParam(SchemaBase):
     """Reset password parameters"""
 
-    old_password: str = Field(description='old password')
-    new_password: str = Field(description='new password')
+    old_password: str = Field(description='Old password')
+    new_password: str = Field(description='New password')
     confirm_password: str = Field(description='Confirm Password')
 
 
@@ -62,7 +62,7 @@ class UserInfoSchemaBase(SchemaBase):
 
     dept_id: int | None = Field(None, description='Department ID')
     username: str = Field(description='Username')
-    nickname: str = Field(description='nickname')
+    nickname: str = Field(description='Nickname')
     avatar: Annotated[HttpUrl, PlainSerializer(ser_string)] | None = Field(None, description='Avatar address')
     email: CustomEmailStr | None = Field(None, description='Email')
     phone: CustomPhoneNumber | None = Field(None, description='Phone Number')

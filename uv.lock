@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version >= '3.13'",
@@ -690,7 +690,7 @@ dependencies = [
     { name = "path" },
     { name = "persiantools" },
     { name = "psutil" },
-    { name = "psycopg", extra = ["binary"] },
+    { name = "psycopg", extra = ["binary", "pool"] },
     { name = "pwdlib" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
@@ -746,7 +746,7 @@ requires-dist = [
     { name = "path", specifier = ">=17.0.0" },
     { name = "persiantools", specifier = ">=5.3.0" },
     { name = "psutil", specifier = ">=7.1.2" },
-    { name = "psycopg", extras = ["binary"], specifier = "==3.2.10" },
+    { name = "psycopg", extras = ["binary", "pool"], specifier = "==3.2.10" },
     { name = "pwdlib", specifier = ">=0.2.1" },
     { name = "pydantic", specifier = ">=2.12.3" },
     { name = "pydantic-settings", specifier = ">=2.11.0" },
@@ -1934,6 +1934,9 @@ wheels = [
 binary = [
     { name = "psycopg-binary", marker = "implementation_name != 'pypy'" },
 ]
+pool = [
+    { name = "psycopg-pool" },
+]
 
 [[package]]
 name = "psycopg-binary"
@@ -1985,6 +1988,18 @@ wheels = [
     { url = "https://mirrors.aliyun.com/pypi/packages/6b/8c/9446e3a84187220a98657ef778518f9b44eba55b1f6c3e8300d229ec9930/psycopg_binary-3.2.10-cp314-cp314-musllinux_1_2_ppc64le.whl", hash = "sha256:1f6982609b8ff8fcd67299b67cd5787da1876f3bb28fedd547262cfa8ddedf94" },
     { url = "https://mirrors.aliyun.com/pypi/packages/b4/e1/f0382c956bfaa951a0dbd4d5a354acf093ef7e5219996958143dfd2bf37d/psycopg_binary-3.2.10-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:bf30dcf6aaaa8d4779a20d2158bdf81cc8e84ce8eee595d748a7671c70c7b890" },
     { url = "https://mirrors.aliyun.com/pypi/packages/5a/dd/464bd739bacb3b745a1c93bc15f20f0b1e27f0a64ec693367794b398673b/psycopg_binary-3.2.10-cp314-cp314-win_amd64.whl", hash = "sha256:d5c6a66a76022af41970bf19f51bc6bf87bd10165783dd1d40484bfd87d6b382" },
+]
+
+[[package]]
+name = "psycopg-pool"
+version = "3.2.8"
+source = { registry = "https://mirrors.aliyun.com/pypi/simple" }
+dependencies = [
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://mirrors.aliyun.com/pypi/packages/b7/20/10064379ed363b7a2a6da3aca986a668c792a8145d7344854ab14c7d7292/psycopg_pool-3.2.8.tar.gz", hash = "sha256:854e17c2a637c3b9f8d8b24faad57d4cf850baf3fc03ca56ef7e5b4998e391b9" }
+wheels = [
+    { url = "https://mirrors.aliyun.com/pypi/packages/e3/5f/947b4b4e51d67c4c9e97626c815caa9b241a62fd66ddd0d00a4a572013f5/psycopg_pool-3.2.8-py3-none-any.whl", hash = "sha256:5474137f3a58e697e0141d0311e70ec067fc4466031496d7f9ef3e2c28a1dc09" },
 ]
 
 [[package]]

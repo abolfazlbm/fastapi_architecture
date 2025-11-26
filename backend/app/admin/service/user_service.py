@@ -37,14 +37,14 @@ class UserService:
         """
         Get user information
 
-        :param db: 数据库会话
+        :param db: database session
         :param pk: User ID
         :param username: Username
         :return:
         """
         user = await user_dao.get_join(db, user_id=pk, username=username)
         if not user:
-            raise errors.NotFoundError(msg='user does not exist')
+            raise errors.NotFoundError(msg='User does not exist')
         return user
 
     @staticmethod
@@ -52,13 +52,13 @@ class UserService:
         """
         Get all roles of users
 
-        :param db: 数据库会话
+        :param db: database session
         :param pk: User ID
         :return:
         """
         user = await user_dao.get_join(db, user_id=pk)
         if not user:
-            raise errors.NotFoundError(msg='user does not exist')
+            raise errors.NotFoundError(msg='User does not exist')
         return user.roles
 
     @staticmethod
@@ -66,7 +66,7 @@ class UserService:
         """
         Get user list
 
-        :param db: 数据库会话
+        :param db: database session
         :param dept: Department ID
         :param username: Username
         :param phone: mobile phone number
@@ -77,7 +77,7 @@ class UserService:
         data = await paging_data(db, user_select)
         if data['items']:
             serialized_items = select_join_serialize(data['items'], relationships=['User-m2o-Dept', 'User-m2m-Role'])
-            # 确保返回的是列表，即使只有一个元素
+            # Make sure a list is returned, even if there is only one element
             data['items'] = [serialized_items] if not isinstance(serialized_items, list) else serialized_items
         return data
 
@@ -99,7 +99,7 @@ class UserService:
             raise errors.NotFoundError(msg='Does not exist')
         for role_id in obj.roles:
             if not await role_dao.get(db, role_id):
-                raise errors.NotFoundError(msg='role does not exist')
+                raise errors.NotFoundError(msg='Role does not exist')
         await user_dao.add(db, obj)
 
     @staticmethod
@@ -141,28 +141,28 @@ class UserService:
             case UserPermissionType.superuser:
                 user = await user_dao.get(db, pk)
                 if not user:
-                    raise errors.NotFoundError(msg='user does not exist')
+                    raise errors.NotFoundError(msg='User does not exist')
                 if pk == request.user.id:
                     raise errors.ForbiddenError(msg='Change changes to its own permissions')
                 count = await user_dao.set_super(db, pk, is_super=not user.status)
             case UserPermissionType.staff:
                 user = await user_dao.get(db, pk)
                 if not user:
-                    raise errors.NotFoundError(msg='user does not exist')
+                    raise errors.NotFoundError(msg='User does not exist')
                 if pk == request.user.id:
                     raise errors.ForbiddenError(msg='Change changes to its own permissions')
                 count = await user_dao.set_staff(db, pk, is_staff=not user.is_staff)
             case UserPermissionType.status:
                 user = await user_dao.get(db, pk)
                 if not user:
-                    raise errors.NotFoundError(msg='user does not exist')
+                    raise errors.NotFoundError(msg='User does not exist')
                 if pk == request.user.id:
                     raise errors.ForbiddenError(msg='Change changes to its own permissions')
                 count = await user_dao.set_status(db, pk, 0 if user.status == 1 else 1)
             case UserPermissionType.multi_login:
                 user = await user_dao.get(db, pk)
                 if not user:
-                    raise errors.NotFoundError(msg='user does not exist')
+                    raise errors.NotFoundError(msg='User does not exist')
                 multi_login = user.is_multi_login if pk != user.id else request.user.is_multi_login
                 new_multi_login = not multi_login
                 count = await user_dao.set_multi_login(db, pk, multi_login=new_multi_login)
@@ -199,7 +199,7 @@ class UserService:
         """
         user = await user_dao.get(db, pk)
         if not user:
-            raise errors.NotFoundError(msg='user does not exist')
+            raise errors.NotFoundError(msg='User does not exist')
 
         await validate_new_password(db, user.id, password)
         count = await user_dao.reset_password(db, user.id, password)
@@ -311,7 +311,7 @@ class UserService:
         """
         user = await user_dao.get(db, pk)
         if not user:
-            raise errors.NotFoundError(msg='user does not exist')
+            raise errors.NotFoundError(msg='User does not exist')
         count = await user_dao.delete(db, user.id)
         key_prefix = [
             f'{settings.TOKEN_REDIS_PREFIX}:{user.id}',

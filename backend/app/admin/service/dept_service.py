@@ -20,7 +20,7 @@ class DeptService:
         """
         Get department details
 
-        :param db: 数据库会话
+        :param db: database session
         :param pk: Department ID
         :return:
         """

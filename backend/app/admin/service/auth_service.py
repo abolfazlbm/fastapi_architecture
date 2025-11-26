@@ -66,7 +66,7 @@ class AuthService:
         """
         Swagger Document Login
 
-        :param db: 数据库会话
+        :param db: database session
         :param obj: Login credentials
         :return:
         """

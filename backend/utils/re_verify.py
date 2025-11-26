@@ -47,9 +47,9 @@ def is_git_url(url: str) -> re.Match[str]:
 
 def is_has_number(value: str) -> re.Match[str]:
     """
-    检查数字
+    Check numbers
 
-    :param value: 待检查的值
+    :param value: value to be checked
     :return:
     """
     number_pattern = r'\d'
@@ -58,9 +58,9 @@ def is_has_number(value: str) -> re.Match[str]:
 
 def is_has_letter(value: str) -> re.Match[str]:
     """
-    检查字母
+    Check letters
 
-    :param value: 待检查的值
+    :param value: value to be checked
     :return:
     """
     letter_pattern = r'[a-zA-Z]'
@@ -69,9 +69,9 @@ def is_has_letter(value: str) -> re.Match[str]:
 
 def is_has_special_char(value: str) -> re.Match[str]:
     """
-    检查特殊字符
+    Check for special characters
 
-    :param value: 待检查的值
+    :param value: value to be checked
     :return:
     """
     special_char_pattern = r'[!@#$%^&*()_+\-=\[\]{};:\'",.<>?/\\|`~]'

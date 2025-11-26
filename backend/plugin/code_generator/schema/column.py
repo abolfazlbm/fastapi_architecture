@@ -5,37 +5,37 @@ from backend.plugin.code_generator.utils.type_conversion import sql_type_to_sqla
 
 
 class GenColumnSchemaBase(SchemaBase):
-    """代码生成模型基础模型"""
+    """Code generation model basic model"""
 
-    name: str = Field(description='列名称')
-    comment: str | None = Field(None, description='列描述')
-    type: str = Field(description='SQLA 模型列类型')
-    default: str | None = Field(None, description='列默认值')
-    sort: int = Field(description='列排序')
-    length: int = Field(description='列长度')
-    is_pk: bool = Field(False, description='是否主键')
-    is_nullable: bool = Field(False, description='是否可为空')
-    gen_business_id: int = Field(description='代码生成业务ID')
+    name: str = Field(description='column name')
+    comment: str | None = Field(None, description='column description')
+    type: str = Field(description='SQLA model column type')
+    default: str | None = Field(None, description='Column default value')
+    sort: int = Field(description='Column sort')
+    length: int = Field(description='column length')
+    is_pk: bool = Field(False, description='Is it the primary key')
+    is_nullable: bool = Field(False, description='Can it be null')
+    gen_business_id: int = Field(description='Code generation business ID')
 
     @field_validator('type')
     @classmethod
     def type_update(cls, v: str) -> str:
-        """更新列类型"""
+        """Update column type"""
         return sql_type_to_sqlalchemy(v)
 
 
 class CreateGenColumnParam(GenColumnSchemaBase):
-    """创建代码生成模型列参数"""
+    """Create code generation model column parameters"""
 
 
 class UpdateGenColumnParam(GenColumnSchemaBase):
-    """更新代码生成模型列参数"""
+    """Update code generation model column parameters"""
 
 
 class GetGenColumnDetail(GenColumnSchemaBase):
-    """获取代码生成模型列详情"""
+    """Get code generation model column details"""
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: int = Field(description='主键 ID')
-    pd_type: str = Field(description='列类型对应的 pydantic 类型')
+    id: int = Field(description='primary key ID')
+    pd_type: str = Field(description='The pydantic type corresponding to the column type')

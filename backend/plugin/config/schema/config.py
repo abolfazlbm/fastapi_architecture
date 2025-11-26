@@ -6,35 +6,35 @@ from backend.common.schema import SchemaBase
 
 
 class ConfigSchemaBase(SchemaBase):
-    """参数配置基础模型"""
+    """Parameter configuration basic model"""
 
-    name: str = Field(description='参数配置名称')
-    type: str | None = Field(None, description='参数配置类型')
-    key: str = Field(description='参数配置键名')
-    value: str = Field(description='参数配置值')
-    is_frontend: bool = Field(description='是否前端参数配置')
-    remark: str | None = Field(None, description='备注')
+    name: str = Field(description='Parameter configuration name')
+    type: str | None = Field(None, description='Parameter configuration type')
+    key: str = Field(description='Parameter configuration key name')
+    value: str = Field(description='Parameter configuration value')
+    is_frontend: bool = Field(description='Whether the front-end parameters are configured')
+    remark: str | None = Field(None, description='Remarks')
 
 
 class CreateConfigParam(ConfigSchemaBase):
-    """创建参数配置参数"""
+    """Create parameter configuration parameters"""
 
 
 class UpdateConfigParam(ConfigSchemaBase):
-    """更新参数配置参数"""
+    """Update parameter configuration parameters"""
 
 
 class UpdateConfigsParam(UpdateConfigParam):
-    """批量更新参数配置参数"""
+    """Batch update parameter configuration parameters"""
 
-    id: int = Field(description='参数配置 ID')
+    id: int = Field(description='Parameter configuration ID')
 
 
 class GetConfigDetail(ConfigSchemaBase):
-    """参数配置详情"""
+    """Parameter configuration details"""
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: int = Field(description='参数配置 ID')
-    created_time: datetime = Field(description='创建时间')
-    updated_time: datetime | None = Field(None, description='更新时间')
+    id: int = Field(description='Parameter configuration ID')
+    created_time: datetime = Field(description='Creation time')
+    updated_time: datetime | None = Field(None, description='Update time')

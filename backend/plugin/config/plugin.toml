@@ -1,7 +1,7 @@
 [plugin]
-summary = '参数配置'
+summary = 'Parameter configuration'
 version = '0.0.2'
-description = '通常用于动态配置系统参数/前端工程数据展示'
+description = 'Usually used to dynamically configure system parameters/front-end engineering data display'
 author = 'wu-clan'
 
 [app]
@@ -9,4 +9,4 @@ extend = 'admin'
 
 [api.config]
 prefix = '/configs'
-tags = '系统参数配置'
+tags = 'System parameter configuration'

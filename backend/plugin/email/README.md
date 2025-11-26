@@ -1,5 +1,5 @@
-## 参数配置
+## Parameter configuration
 
-默认使用本地电子邮件配置
+Use local email configuration by default
 
-支持通过 `config 插件` 动态配置电子邮件参数，当动态配置 `EMAIL_STATUS` 为 `1` 时，将自动应用动态配置
+Supports dynamic configuration of email parameters through the `config plug-in`. When the dynamic configuration `EMAIL_STATUS` is `1`, the dynamic configuration will be automatically applied

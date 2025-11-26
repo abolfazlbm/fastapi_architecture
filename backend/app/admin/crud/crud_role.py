@@ -33,10 +33,10 @@ class CRUDRole(CRUDPlus[Role]):
     @staticmethod
     async def get_menus(db: AsyncSession, role_id: int) -> Sequence[Menu] | None:
         """
-        获取角色菜单
+        Get character menu
 
-        :param db: 数据库会话
-        :param role_id: 角色 ID
+        :param db: database session
+        :param role_id: role ID
         :return:
         """
         menu_stmt = select(Menu).join(role_menu, Menu.id == role_menu.c.menu_id).where(role_menu.c.role_id == role_id)

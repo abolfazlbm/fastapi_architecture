@@ -79,21 +79,21 @@ class Settings(BaseSettings):
         rf'^{FASTAPI_API_V1_PATH}/monitors/(redis|server)$',
     ]
 
-    # 用户安全
+    # User security
     USER_LOCK_REDIS_PREFIX: str = 'fba:user:lock'
-    USER_LOCK_THRESHOLD: int = 5  # 用户密码错误锁定阈值，0 表示禁用锁定
-    USER_LOCK_SECONDS: int = 60 * 5  # 5 分钟
-    USER_PASSWORD_EXPIRY_DAYS: int = 365  # 用户密码有效期，0 表示永不过期
-    USER_PASSWORD_REMINDER_DAYS: int = 7  # 用户密码到期提醒，0 表示不提醒
+    USER_LOCK_THRESHOLD: int = 5  # User password error lockout threshold, 0 means lockout is disabled
+    USER_LOCK_SECONDS: int = 60 * 5  # 5 Minute
+    USER_PASSWORD_EXPIRY_DAYS: int = 365  # User password validity period, 0 means never expires
+    USER_PASSWORD_REMINDER_DAYS: int = 7  # User password expiration reminder, 0 means no reminder
     USER_PASSWORD_HISTORY_CHECK_COUNT: int = 3
     USER_PASSWORD_MIN_LENGTH: int = 6
     USER_PASSWORD_MAX_LENGTH: int = 32
     USER_PASSWORD_REQUIRE_SPECIAL_CHAR: bool = False
 
-    # 登录
+    # Log in
     LOGIN_CAPTCHA_ENABLED: bool = True
     LOGIN_CAPTCHA_REDIS_PREFIX: str = 'fba:login:captcha'
-    LOGIN_CAPTCHA_EXPIRE_SECONDS: int = 60 * 5  # 5 分钟
+    LOGIN_CAPTCHA_EXPIRE_SECONDS: int = 60 * 5  # 5 Minute
     LOGIN_FAILURE_PREFIX: str = 'fba:login:failure'
 
     # JWT
@@ -108,7 +108,7 @@ class Settings(BaseSettings):
 
     # Cookie
     COOKIE_REFRESH_TOKEN_KEY: str = 'fba_refresh_token'
-    COOKIE_REFRESH_TOKEN_EXPIRE_SECONDS: int = 60 * 60 * 24 * 7  # 7 day
+    COOKIE_REFRESH_TOKEN_EXPIRE_SECONDS: int = 60 * 60 * 24 * 7  # 7 Day
 
     # Data permissions
     DATA_PERMISSION_MODELS: dict[str, str] = {  # SQLA model that allows data filtering, which must be defined as a module string

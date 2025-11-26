@@ -1,3 +1,3 @@
-## 字典管理
+## Dictionary management
 
-内置插件，可直接使用
+Built-in plug-in, can be used directly

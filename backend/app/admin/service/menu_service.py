@@ -26,7 +26,7 @@ class MenuService:
 
         menu = await menu_dao.get(db, menu_id=pk)
         if not menu:
-            raise errors.NotFoundError(msg='menu does not exist')
+            raise errors.NotFoundError(msg='Menu does not exist')
         return menu
 
     @staticmethod
@@ -81,7 +81,7 @@ class MenuService:
 
         title = await menu_dao.get_by_title(db, obj.title)
         if title:
-            raise errors.ConflictError(msg='menu title already exists')
+            raise errors.ConflictError(msg='Menu title already exists')
         if obj.parent_id:
             parent_menu = await menu_dao.get(db, obj.parent_id)
             if not parent_menu:
@@ -101,9 +101,9 @@ class MenuService:
 
         menu = await menu_dao.get(db, pk)
         if not menu:
-            raise errors.NotFoundError(msg='menu does not exist')
+            raise errors.NotFoundError(msg='Menu does not exist')
         if menu.title != obj.title and await menu_dao.get_by_title(db, obj.title):
-            raise errors.ConflictError(msg='menu title already exists')
+            raise errors.ConflictError(msg='Menu title already exists')
         if obj.parent_id:
             parent_menu = await menu_dao.get(db, obj.parent_id)
             if not parent_menu:

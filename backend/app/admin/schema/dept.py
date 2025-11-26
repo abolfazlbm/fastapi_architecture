@@ -38,6 +38,6 @@ class GetDeptDetail(DeptSchemaBase):
 
 
 class GetDeptTree(GetDeptDetail):
-    """Obtain department tree"""
+    """Obtain a department tree"""
 
     children: list['GetDeptTree'] | None = Field(None, description='Submenu')

@@ -70,7 +70,7 @@ class PluginService:
             raise errors.RequestError(msg='Disable uninstalling plug-ins in non-development environments')
         plugin_dir = anyio.Path(PLUGIN_DIR / plugin)
         if not await plugin_dir.exists():
-            raise errors.NotFoundError(msg='plugin does not exist')
+            raise errors.NotFoundError(msg='Plugin does not exist')
         await uninstall_requirements_async(plugin)
         bacup_dir = PLUGIN_DIR / f'{plugin}.{timezone.now().strftime("%Y%m%d%H%M%S")}.backup'
         shutil.move(plugin_dir, bacup_dir)
@@ -87,7 +87,7 @@ class PluginService:
         """
         plugin_info = await redis_client.get(f'{settings.PLUGIN_REDIS_PREFIX}:{plugin}')
         if not plugin_info:
-            raise errors.NotFoundError(msg='plugin does not exist')
+            raise errors.NotFoundError(msg='Plugin does not exist')
         plugin_info = json.loads(plugin_info)
 
         # Update persistent cache status
@@ -109,7 +109,7 @@ class PluginService:
         """
         plugin_dir = anyio.Path(PLUGIN_DIR / plugin)
         if not await plugin_dir.exists():
-            raise errors.NotFoundError(msg='plugin does not exist')
+            raise errors.NotFoundError(msg='Plugin does not exist')
 
         bio = io.BytesIO()
         with zipfile.ZipFile(bio, 'w') as zf:

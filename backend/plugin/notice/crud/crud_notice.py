@@ -9,25 +9,25 @@ from backend.plugin.notice.schema.notice import CreateNoticeParam, UpdateNoticeP
 
 
 class CRUDNotice(CRUDPlus[Notice]):
-    """通知公告数据库操作类"""
+    """Notification Announcement Database Operation Class"""
 
     async def get(self, db: AsyncSession, pk: int) -> Notice | None:
         """
-        获取通知公告
+        Get notification announcements
 
-        :param db: 数据库会话
-        :param pk: 通知公告 ID
+        :param db: database session
+        :param pk: notification announcement ID
         :return:
         """
         return await self.select_model(db, pk)
 
     async def get_select(self, title: str, type: int | None, status: int | None) -> Select:
         """
-        获取通知公告列表查询表达式
+        Get notification announcement list query expression
 
-        :param title: 通知公告标题
-        :param type: 通知公告类型
-        :param status: 通知公告状态
+        :param title: Notification announcement title
+        :param type: notification announcement type
+        :param status: notification announcement status
         :return:
         """
         filters = {}
@@ -43,40 +43,40 @@ class CRUDNotice(CRUDPlus[Notice]):
 
     async def get_all(self, db: AsyncSession) -> Sequence[Notice]:
         """
-        获取所有通知公告
+        Get all notifications and announcements
 
-        :param db: 数据库会话
+        :param db: database session
         :return:
         """
         return await self.select_models(db)
 
     async def create(self, db: AsyncSession, obj: CreateNoticeParam) -> None:
         """
-        创建通知公告
+        Create notification announcement
 
-        :param db: 数据库会话
-        :param obj: 创建通知公告参数
+        :param db: database session
+        :param obj: Create notification announcement parameters
         :return:
         """
         await self.create_model(db, obj)
 
     async def update(self, db: AsyncSession, pk: int, obj: UpdateNoticeParam) -> int:
         """
-        更新通知公告
+        Update notification announcement
 
-        :param db: 数据库会话
-        :param pk: 通知公告 ID
-        :param obj: 更新通知公告参数
+        :param db: database session
+        :param pk: notification announcement ID
+        :param obj: update notification announcement parameters
         :return:
         """
         return await self.update_model(db, pk, obj)
 
     async def delete(self, db: AsyncSession, pks: list[int]) -> int:
         """
-        批量删除通知公告
+        Bulk deletion notification announcement
 
-        :param db: 数据库会话
-        :param pks: 通知公告 ID 列表
+        :param db: database session
+        :param pks: Notification announcement ID list
         :return:
         """
         return await self.delete_model_by_column(db, allow_multiple=True, id__in=pks)

@@ -5,25 +5,25 @@ from backend.plugin.oauth2.enums import UserSocialType
 
 
 class UserSocialSchemaBase(SchemaBase):
-    """用户社交基础模型"""
+    """User social basic model"""
 
-    sid: str = Field(description='第三方User ID')
-    source: UserSocialType = Field(description='社交平台')
+    sid: str = Field(description='Third-party User ID')
+    source: UserSocialType = Field(description='social platform')
 
 
 class CreateUserSocialParam(UserSocialSchemaBase):
-    """创建用户社交参数"""
+    """Create user social parameters"""
 
     user_id: int = Field(description='User ID')
 
 
 class UpdateUserSocialParam(SchemaBase):
-    """更新用户社交参数"""
+    """Update user social parameters"""
 
 
 class GetUserSocialDetail(CreateUserSocialParam):
-    """获取用户社交详情"""
+    """Get user social details"""
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: int = Field(description='用户社交 ID')
+    id: int = Field(description='User social ID')

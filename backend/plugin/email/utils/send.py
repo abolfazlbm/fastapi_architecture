@@ -15,12 +15,12 @@ from backend.utils.timezone import timezone
 
 async def render_message(subject: str, from_header: str, content: str | dict, template: str | None) -> bytes:
     """
-    渲染邮件内容
+    Render email content
 
-    :param subject: 邮件内容主题
-    :param from_header: 邮件来源
-    :param content: 邮件内容
-    :param template: 邮件内容模板
+    :param subject: email content subject
+    :param from_header: Email source
+    :param content: Email content
+    :param template: email content template
     :return:
     """
     message = MIMEMultipart()
@@ -48,13 +48,13 @@ async def send_email(
     template: str | None = None,
 ) -> None:
     """
-    发送电子邮件
+    Send email
 
-    :param db: 数据库会话
-    :param recipients: 邮件接收者
-    :param subject: 邮件内容主题
-    :param content: 邮件内容
-    :param template: 邮件内容模板
+    :param db: database session
+    :param recipients: email recipients
+    :param subject: email content subject
+    :param content: Email content
+    :param template: email content template
     :return:
     """
     await load_email_config(db)
@@ -70,4 +70,4 @@ async def send_email(
             await smtp_client.login(settings.EMAIL_USERNAME, settings.EMAIL_PASSWORD)
             await smtp_client.sendmail(settings.EMAIL_USERNAME, recipients, message)
     except Exception as e:
-        log.error(f'电子邮件发送失败：{e}')
+        log.error(f'Email Delivery Failed：{e}')

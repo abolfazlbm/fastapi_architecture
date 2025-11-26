@@ -80,7 +80,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def get_db_transaction() -> AsyncGenerator[AsyncSession, None]:
-    """获取带有事务的数据库会话"""
+    """Get a database session with a transaction"""
     async with async_db_session.begin() as session:
         yield session
 
