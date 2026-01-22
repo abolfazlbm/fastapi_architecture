@@ -2,7 +2,8 @@ from typing import Any
 
 from fastapi import Request, Response
 from fastapi.security.utils import get_authorization_scheme_param
-from starlette.authentication import AuthCredentials, AuthenticationBackend, AuthenticationError
+from starlette.authentication import AuthCredentials, AuthenticationBackend
+from starlette.authentication import AuthenticationError as StarletteAuthenticationError
 from starlette.requests import HTTPConnection
 
 from backend.app.admin.schema.user import GetUserInfoWithRelationDetail
@@ -13,7 +14,7 @@ from backend.core.conf import settings
 from backend.utils.serializers import MsgSpecJSONResponse
 
 
-class _AuthenticationError(AuthenticationError):
+class AuthenticationError(StarletteAuthenticationError):
     """Rewrite internal authentication error class"""
 
     def __init__(
@@ -40,7 +41,7 @@ class JwtAuthMiddleware(AuthenticationBackend):
     """JWT certification middleware"""
 
     @staticmethod
-    def auth_exception_handler(conn: HTTPConnection, exc: _AuthenticationError) -> Response:
+    def auth_exception_handler(conn: HTTPConnection, exc: AuthenticationError) -> Response:
         """
         Overwrite internal authentication error handling
 
@@ -50,15 +51,16 @@ class JwtAuthMiddleware(AuthenticationBackend):
         """
         return MsgSpecJSONResponse(content={'code': exc.code, 'msg': exc.msg, 'data': None}, status_code=exc.code)
 
-    async def authenticate(self, request: Request) -> tuple[AuthCredentials, GetUserInfoWithRelationDetail] | None:
+    @staticmethod
+    def extract_token(request: Request) -> str | None:
         """
-        Authentication request
+        Extract Bearer Token from request
 
         :param request: FastAPI request object
         :return:
         """
-        token = request.headers.get('Authorization')
-        if not token:
+        authorization = request.headers.get('Authorization')
+        if not authorization:
             return None
 
         path = request.url.path
@@ -68,17 +70,30 @@ class JwtAuthMiddleware(AuthenticationBackend):
             if pattern.match(path):
                 return None
 
-        scheme, token = get_authorization_scheme_param(token)
+        scheme, token = get_authorization_scheme_param(authorization)
         if scheme.lower() != 'bearer':
+            return None
+
+        return token
+
+    async def authenticate(self, request: Request) -> tuple[AuthCredentials, GetUserInfoWithRelationDetail] | None:
+        """
+        Authentication request
+
+        :param request: FastAPI request object
+        :return:
+        """
+        token = self.extract_token(request)
+        if token is None:
             return None
 
         try:
             user = await jwt_authentication(token)
         except TokenError as exc:
-            raise _AuthenticationError(code=exc.code, msg=exc.detail, headers=exc.headers)
+            raise AuthenticationError(code=exc.code, msg=exc.detail, headers=exc.headers)
         except Exception as e:
             log.exception(f'JWT Authorization exception：{e}')
-            raise _AuthenticationError(code=getattr(e, 'code', 500), msg=getattr(e, 'msg', 'Internal Server Error'))
+            raise AuthenticationError(code=getattr(e, 'code', 500), msg=getattr(e, 'msg', 'Internal Server Error'))
 
         # Please note that this return uses non-standard mode, so some standard features will be lost when the authentication is passed.
         # For standard return mode, please check: https://www.starlette.io/authentication/

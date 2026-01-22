@@ -1,3 +1,5 @@
+import shutil
+
 from functools import lru_cache
 from re import Pattern
 from typing import Any, Literal
@@ -5,14 +7,14 @@ from typing import Any, Literal
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from backend.core.path_conf import BASE_PATH
+from backend.core.path_conf import ENV_EXAMPLE_FILE_PATH, ENV_FILE_PATH
 
 
 class Settings(BaseSettings):
     """Global configuration"""
 
     model_config = SettingsConfigDict(
-        env_file=f'{BASE_PATH}/.env',
+        env_file=ENV_FILE_PATH,
         env_file_encoding='utf-8',
         extra='ignore',
         case_sensitive=True,
@@ -23,7 +25,7 @@ class Settings(BaseSettings):
 
     # FastAPI
     FASTAPI_API_V1_PATH: str = '/api/v1'
-    FASTAPI_TITLE: str = 'FastAPI'
+    FASTAPI_TITLE: str = 'fba'
     FASTAPI_DESCRIPTION: str = 'FastAPI Best Architecture'
     FASTAPI_DOCS_URL: str = '/docs'
     FASTAPI_REDOC_URL: str = '/redoc'
@@ -42,6 +44,7 @@ class Settings(BaseSettings):
     DATABASE_POOL_ECHO: bool | Literal['debug'] = False
     DATABASE_SCHEMA: str = 'fba'
     DATABASE_CHARSET: str = 'utf8mb4'
+    DATABASE_PK_MODE: Literal['autoincrement', 'snowflake'] = 'autoincrement'
 
     # .env Redis
     REDIS_HOST: str
@@ -111,10 +114,7 @@ class Settings(BaseSettings):
     COOKIE_REFRESH_TOKEN_EXPIRE_SECONDS: int = 60 * 60 * 24 * 7  # 7 Day
 
     # Data permissions
-    DATA_PERMISSION_MODELS: dict[str, str] = {  # SQLA model that allows data filtering, which must be defined as a module string
-        'Dept': 'backend.app.admin.model.Dept',
-    }
-    DATA_PERMISSION_COLUMN_EXCLUDE: list[str] = [  # Exclude SQL model columns that allow data filtering
+    DATA_PERMISSION_COLUMN_EXCLUDE: list[str] = [  # Exclude SQLA model columns that allow data filtering
         'id',
         'sort',
         'del_flag',
@@ -184,9 +184,6 @@ class Settings(BaseSettings):
     LOG_ACCESS_FILENAME: str = 'fba_access.log'
     LOG_ERROR_FILENAME: str = 'fba_error.log'
 
-    # .env Operation log
-    OPERA_LOG_ENCRYPT_SECRET_KEY: str  # key os.urandom(32), you need to convert to str using the bytes.hex() method
-
     # Operation log
     OPERA_LOG_PATH_EXCLUDE: list[str] = [
         '/favicon.ico',
@@ -196,10 +193,8 @@ class Settings(BaseSettings):
         f'{FASTAPI_API_V1_PATH}/auth/login/swagger',
         f'{FASTAPI_API_V1_PATH}/oauth2/github/callback',
         f'{FASTAPI_API_V1_PATH}/oauth2/google/callback',
-        f'{FASTAPI_API_V1_PATH}/oauth2/linux-do/callback',
     ]
-    OPERA_LOG_ENCRYPT_TYPE: int = 1  # 0: AES (performance loss); 1: md5; 2: ItsDangerous; 3: Not encrypted, others: Replace with *******
-    OPERA_LOG_ENCRYPT_KEY_INCLUDE: list[str] = [ # Enter the encrypted interface into the value corresponding to the parameter
+    OPERA_LOG_REDACT_KEYS: list[str] = [
         'password',
         'old_password',
         'new_password',
@@ -216,6 +211,11 @@ class Settings(BaseSettings):
 
     # I18n deploy
     I18N_DEFAULT_LANGUAGE: str = 'zh-CN'
+
+    # Grafana
+    GRAFANA_METRICS: bool = False
+    GRAFANA_APP_NAME: str = 'fba_server'
+    GRAFANA_OTLP_GRPC_ENDPOINT: str = 'fba_alloy:4317'
 
     ##################################################
     # [ App ] task
@@ -249,15 +249,12 @@ class Settings(BaseSettings):
     OAUTH2_GITHUB_CLIENT_SECRET: str
     OAUTH2_GOOGLE_CLIENT_ID: str
     OAUTH2_GOOGLE_CLIENT_SECRET: str
-    OAUTH2_LINUX_DO_CLIENT_ID: str
-    OAUTH2_LINUX_DO_CLIENT_SECRET: str
 
     # Basic configuration
     OAUTH2_STATE_REDIS_PREFIX: str = 'fba:oauth2:state'
     OAUTH2_STATE_EXPIRE_SECONDS: int = 60 * 3  # 3 minute
     OAUTH2_GITHUB_REDIRECT_URI: str = 'http://127.0.0.1:8000/api/v1/oauth2/github/callback'
     OAUTH2_GOOGLE_REDIRECT_URI: str = 'http://127.0.0.1:8000/api/v1/oauth2/google/callback'
-    OAUTH2_LINUX_DO_REDIRECT_URI: str = 'http://127.0.0.1:8000/api/v1/oauth2/linux-do/callback'
     OAUTH2_FRONTEND_LOGIN_REDIRECT_URI: str = 'http://localhost:5173/oauth2/callback'
     OAUTH2_FRONTEND_BINDING_REDIRECT_URI: str = 'http://localhost:5173/profile'
 
@@ -293,6 +290,8 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     """Get global configuration singleton"""
+    if not ENV_FILE_PATH.exists():
+        shutil.copy(ENV_EXAMPLE_FILE_PATH, ENV_FILE_PATH)
     return Settings()
 
 

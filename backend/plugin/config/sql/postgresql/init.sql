@@ -1,6 +1,6 @@
 insert into sys_config (id, name, type, "key", value, is_frontend, remark, created_time, updated_time)
 values
-(1, 'STATUS', 'EMAIL', 'EMAIL_STATUS', '1', false, null, now(), null),
+(1, 'STATUS', 'EMAIL', 'EMAIL_CONFIG_STATUS', '1', false, null, now(), null),
 (2, 'Server address', 'EMAIL', 'EMAIL_HOST', 'smtp.qq.com', false, null, now(), null),
 (3, 'Server port', 'EMAIL', 'EMAIL_PORT', '465', false, null, now(), null),
 (4, 'Email account', 'EMAIL', 'EMAIL_USERNAME', 'fba@qq.com', false, null, now(), null),

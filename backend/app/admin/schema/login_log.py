@@ -15,7 +15,7 @@ class LoginLogSchemaBase(SchemaBase):
     country: str | None = Field(None, description='Country')
     region: str | None = Field(None, description='region')
     city: str | None = Field(None, description='City')
-    user_agent: str = Field(description='User agent')
+    user_agent: str | None = Field(description='User agent')
     browser: str | None = Field(None, description='Browser')
     os: str | None = Field(None, description='OS')
     device: str | None = Field(None, description='Device')

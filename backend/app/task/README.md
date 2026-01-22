@@ -16,8 +16,7 @@ Write relevant task code in the `backend/app/task/tasks/tasks.py` file
 If you want to divide the task into a directory level to make the task structure clearer, you can create any new directory, but you must pay attention to it
 
 1. Create a new python package directory under the `backend/app/task/tasks` directory
-2. After creating a new directory, be sure to update `CELERY_TASKS_PACKAGES` in the `conf.py` configuration and add the path to the new directory module to this list.
-3. In the new directory, be sure to add the `tasks.py` file and write the relevant task code in this file.
+2. In the new directory, be sure to add the `tasks.py` file and write the relevant task code in this file
 
 ## Message Proxy
 

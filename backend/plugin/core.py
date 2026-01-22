@@ -1,19 +1,14 @@
 import json
 import os
-import subprocess
-import sys
 import warnings
 
 from functools import lru_cache
-from importlib.metadata import PackageNotFoundError, distribution
 from typing import Any
 
 import anyio
 import rtoml
 
 from fastapi import APIRouter, Depends, Request
-from packaging.requirements import Requirement
-from starlette.concurrency import run_in_threadpool
 
 from backend.common.enums import DataBaseType, PrimaryKeyType, StatusType
 from backend.common.exception import errors
@@ -21,8 +16,8 @@ from backend.common.log import log
 from backend.core.conf import settings
 from backend.core.path_conf import PLUGIN_DIR
 from backend.database.redis import RedisCli, redis_client
-from backend.utils._await import run_await
-from backend.utils.import_parse import get_model_objects, import_module_cached
+from backend.utils.async_helper import run_await
+from backend.utils.dynamic_import import get_model_objects, import_module_cached
 
 
 class PluginConfigError(Exception):
@@ -31,10 +26,6 @@ class PluginConfigError(Exception):
 
 class PluginInjectError(Exception):
     """Plugin injection error"""
-
-
-class PluginInstallError(Exception):
-    """Plugin installation error"""
 
 
 @lru_cache
@@ -55,15 +46,15 @@ def get_plugins() -> list[str]:
     return plugin_packages
 
 
-def get_plugin_models() -> list[type]:
+def get_plugin_models() -> list[object]:
     """Get all model classes in the plugin"""
     objs = []
 
     for plugin in get_plugins():
         module_path = f'backend.plugin.{plugin}.model'
-        obj = get_model_objects(module_path)
-        if obj:
-            objs.extend(obj)
+        model_objs = get_model_objects(module_path)
+        if model_objs:
+            objs.extend(model_objs)
 
     return objs
 
@@ -79,16 +70,16 @@ async def get_plugin_sql(plugin: str, db_type: DataBaseType, pk_type: PrimaryKey
     """
     if db_type == DataBaseType.mysql:
         mysql_dir = PLUGIN_DIR / plugin / 'sql' / 'mysql'
-        if pk_type == PrimaryKeyType.autoincrement:
-            sql_file = mysql_dir / 'init.sql'
-        else:
-            sql_file = mysql_dir / 'init_snowflake.sql'
+        sql_file = (
+            mysql_dir / 'init.sql' if pk_type == PrimaryKeyType.autoincrement else mysql_dir / 'init_snowflake.sql'
+        )
     else:
         postgresql_dir = PLUGIN_DIR / plugin / 'sql' / 'postgresql'
-        if pk_type == PrimaryKeyType.autoincrement:
-            sql_file = postgresql_dir / 'init.sql'
-        else:
-            sql_file = postgresql_dir / 'init_snowflake.sql'
+        sql_file = (
+            postgresql_dir / 'init.sql'
+            if pk_type == PrimaryKeyType.autoincrement
+            else postgresql_dir / 'init_snowflake.sql'
+        )
 
     path = anyio.Path(sql_file)
     if not await path.exists():
@@ -122,6 +113,7 @@ def parse_plugin_config() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
 
     # Use independent singletons to avoid conflicts with the main thread
     current_redis_client = RedisCli()
+    run_await(current_redis_client.init)()
 
     # Clean up unknown plug-in information
     run_await(current_redis_client.delete_prefix)(
@@ -276,155 +268,6 @@ def build_final_router() -> APIRouter:
         inject_app_router(plugin, main_router)
 
     return main_router
-
-
-def _ensure_pip_available() -> bool:
-    """Make sure pip is available in the virtual environment"""
-    try:
-        result = subprocess.run([sys.executable, '-m', 'pip', '--version'], capture_output=True, text=True)
-        if result.returncode == 0:
-            return True
-    except (subprocess.TimeoutExpired, subprocess.SubprocessError, FileNotFoundError):
-        pass
-
-    # Try using ensurepip
-    try:
-        subprocess.check_call(
-            [sys.executable, '-m', 'ensurepip', '--default-pip'],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-        result = subprocess.run([sys.executable, '-m', 'pip', '--version'], capture_output=True, text=True)
-        if result.returncode == 0:
-            return True
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, subprocess.SubprocessError, FileNotFoundError):
-        pass
-
-    # Try downloading and installing
-    try:
-        import os
-        import tempfile
-
-        import httpx
-
-        try:
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
-                with httpx.Client(timeout=3) as client:
-                    get_pip_url = 'https://bootstrap.pypa.io/get-pip.py'
-                    response = client.get(get_pip_url)
-                    response.raise_for_status()
-                    f.write(response.text)
-                    temp_file = f.name
-        except Exception:  # noqa: ignore
-            return False
-
-        try:
-            subprocess.check_call([sys.executable, temp_file], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            result = subprocess.run([sys.executable, '-m', 'pip', '--version'], capture_output=True, text=True)
-            return result.returncode == 0
-        finally:
-            try:
-                os.unlink(temp_file)
-            except OSError:
-                pass
-    except Exception:  # noqa: ignore
-        pass
-
-    return False
-
-
-def install_requirements(plugin: str | None) -> None:  # noqa: C901
-    """
-    Install plugin dependencies
-
-    :param plugin: Specify the plugin name, otherwise check all plugins
-    :return:
-    """
-    plugins = [plugin] if plugin else get_plugins()
-
-    for plugin in plugins:
-        requirements_file = PLUGIN_DIR / plugin / 'requirements.txt'
-        missing_dependencies = False
-        if os.path.exists(requirements_file):
-            with open(requirements_file, encoding='utf-8') as f:
-                for line in f:
-                    line = line.strip()
-                    if not line or line.startswith('#'):
-                        continue
-                    try:
-                        req = Requirement(line)
-                        dependency = req.name.lower()
-                    except Exception as e:
-                        raise PluginInstallError(f'Plugin {plugin} Dependency {line} Format error: {e!s}') from e
-                    try:
-                        distribution(dependency)
-                    except PackageNotFoundError:
-                        missing_dependencies = True
-
-        if missing_dependencies:
-            try:
-                if not _ensure_pip_available():
-                    raise PluginInstallError(f'pip The installation failed and cannot continue to install the plugin {plugin} dependencies')
-
-                pip_install = [sys.executable, '-m', 'pip', 'install', '-r', requirements_file]
-                if settings.PLUGIN_PIP_CHINA:
-                    pip_install.extend(['-i', settings.PLUGIN_PIP_INDEX_URL])
-
-                max_retries = settings.PLUGIN_PIP_MAX_RETRY
-                for attempt in range(max_retries):
-                    try:
-                        subprocess.check_call(
-                            pip_install,
-                            stdout=subprocess.DEVNULL,
-                            stderr=subprocess.DEVNULL,
-                        )
-                        break
-                    except subprocess.TimeoutExpired:
-                        if attempt == max_retries - 1:
-                            raise PluginInstallError(f'Plug-in {plugin} depends on installation timeout')
-                        continue
-                    except subprocess.CalledProcessError as e:
-                        if attempt == max_retries - 1:
-                            raise PluginInstallError(f'Plug-in {plugin} dependency installation failed: {e}') from e
-                        continue
-            except subprocess.CalledProcessError as e:
-                raise PluginInstallError(f'Plugin {plugin} Dependency installation failed: {e}') from e
-
-
-def uninstall_requirements(plugin: str) -> None:
-    """
-    Uninstall plugin dependencies
-
-    :param plugin: plugin name
-    :return:
-    """
-    requirements_file = PLUGIN_DIR / plugin / 'requirements.txt'
-    if os.path.exists(requirements_file):
-        try:
-            pip_uninstall = [sys.executable, '-m', 'pip', 'uninstall', '-r', requirements_file, '-y']
-            subprocess.check_call(pip_uninstall, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        except subprocess.CalledProcessError as e:
-            raise PluginInstallError(f'Plugin {plugin} Dependency uninstall failed: {e}') from e
-
-
-async def install_requirements_async(plugin: str | None = None) -> None:
-    """
-    Asynchronous installation of plug-in dependencies
-
-    Due to Windows platform limitations, a perfect fully asynchronous solution cannot be implemented. Details:
-    https://stackoverflow.com/questions/44633458/why-am-i-getting-notimplementederror-with-async-and-await-on-windows
-    """
-    await run_in_threadpool(install_requirements, plugin)
-
-
-async def uninstall_requirements_async(plugin: str) -> None:
-    """
-    Asynchronous uninstall plug-in dependencies
-
-    :param plugin: plugin name
-    :return:
-    """
-    await run_in_threadpool(uninstall_requirements, plugin)
 
 
 class PluginStatusChecker:

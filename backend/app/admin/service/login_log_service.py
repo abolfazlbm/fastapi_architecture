@@ -8,6 +8,7 @@ from backend.app.admin.schema.login_log import CreateLoginLogParam, DeleteLoginL
 from backend.common.context import ctx
 from backend.common.log import log
 from backend.common.pagination import paging_data
+from backend.database.db import async_db_session
 
 
 class LoginLogService:
@@ -30,7 +31,6 @@ class LoginLogService:
     @staticmethod
     async def create(
         *,
-        db: AsyncSession,
         user_uuid: str,
         username: str,
         login_time: datetime,
@@ -40,7 +40,6 @@ class LoginLogService:
         """
         Create a login log
 
-        :param db: database session
         :param user_uuid: user UUID
         :param username: username
         :param login_time: login time
@@ -64,7 +63,9 @@ class LoginLogService:
                 msg=msg,
                 login_time=login_time,
             )
-            await login_log_dao.create(db, obj)
+            # 为后台任务创建独立数据库会话
+            async with async_db_session.begin() as db:
+                await login_log_dao.create(db, obj)
         except Exception as e:
             log.error(f'Login log creation failed: {e}')
 

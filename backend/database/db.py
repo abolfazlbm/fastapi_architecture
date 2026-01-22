@@ -1,7 +1,7 @@
 import sys
 
 from collections.abc import AsyncGenerator
-from typing import Annotated
+from typing import Annotated, Any
 from uuid import uuid4
 
 from fastapi import Depends
@@ -13,41 +13,47 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
+from backend.common.enums import DataBaseType
 from backend.common.log import log
 from backend.common.model import MappedBase
 from backend.core.conf import settings
 
 
-def create_database_url(*, unittest: bool = False) -> URL:
+def create_database_url(*, unittest: bool = False, with_database: bool = True) -> URL:
     """
     Create a database link
 
-    :param unittest: Whether it is used for unit testing
+    :param unittest: whether to use for unit testing
+    :param with_database: whether to include the database name (not required when creating the database)
     :return:
     """
+    if with_database:
+        database = settings.DATABASE_SCHEMA if not unittest else f'{settings.DATABASE_SCHEMA}_test'
+    else:
+        database = None if DataBaseType.mysql == settings.DATABASE_TYPE else 'postgres'
+
     url = URL.create(
-        drivername='mysql+asyncmy' if settings.DATABASE_TYPE == 'mysql' else 'postgresql+asyncpg',
+        drivername='mysql+asyncmy' if DataBaseType.mysql == settings.DATABASE_TYPE else 'postgresql+asyncpg',
         username=settings.DATABASE_USER,
         password=settings.DATABASE_PASSWORD,
         host=settings.DATABASE_HOST,
         port=settings.DATABASE_PORT,
-        database=settings.DATABASE_SCHEMA if not unittest else f'{settings.DATABASE_SCHEMA}_test',
+        database=database,
     )
-    if settings.DATABASE_TYPE == 'mysql':
-        url.update_query_dict({'charset': settings.DATABASE_CHARSET})
+    if DataBaseType.mysql == settings.DATABASE_TYPE and with_database:
+        url = url.update_query_dict({'charset': settings.DATABASE_CHARSET})
     return url
 
 
-def create_async_engine_and_session(url: str | URL) -> tuple[AsyncEngine, async_sessionmaker[AsyncSession]]:
+def create_database_async_engine(url: str | URL) -> AsyncEngine:
     """
-    Create a database engine and a session
+    Create a database asynchronous engine
 
-    :param url: database connection URL
+    :param url: database connection address
     :return:
     """
     try:
-        # Database Engine
-        engine = create_async_engine(
+        return create_async_engine(
             url,
             echo=settings.DATABASE_ECHO,
             echo_pool=settings.DATABASE_POOL_ECHO,
@@ -61,16 +67,23 @@ def create_async_engine_and_session(url: str | URL) -> tuple[AsyncEngine, async_
             pool_use_lifo=False, # Low: False High: True
         )
     except Exception as e:
-        log.error('❌ Database link failed {}', e)
+        log.error(f'Database connection failed {e}')
         sys.exit()
-    else:
-        db_session = async_sessionmaker(
-            bind=engine,
-            class_=AsyncSession,
-            autoflush=False,  # Disable automatic refresh
-            expire_on_commit=False, # Disable expiration of commit
-        )
-        return engine, db_session
+
+
+def create_database_async_session(engine: AsyncEngine) -> async_sessionmaker[AsyncSession | Any]:
+    """
+    Create a database asynchronous session
+
+    :param engine: database asynchronous engine
+    :return:
+    """
+    return async_sessionmaker(
+        bind=engine,
+        class_=AsyncSession,
+        autoflush=False,  # Disable automatic refresh
+        expire_on_commit=False, # Disable expiration of commit
+    )
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
@@ -91,6 +104,12 @@ async def create_tables() -> None:
         await coon.run_sync(MappedBase.metadata.create_all)
 
 
+async def drop_tables() -> None:
+    """Drop database table"""
+    async with async_engine.begin() as conn:
+        await conn.run_sync(MappedBase.metadata.drop_all)
+
+
 def uuid4_str() -> str:
     """Database Engine UUID Type Compatibility Solution"""
     return str(uuid4())
@@ -100,7 +119,8 @@ def uuid4_str() -> str:
 SQLALCHEMY_DATABASE_URL = create_database_url()
 
 # SALA Asynchronous Engine and Session
-async_engine, async_db_session = create_async_engine_and_session(SQLALCHEMY_DATABASE_URL)
+async_engine = create_database_async_engine(SQLALCHEMY_DATABASE_URL)
+async_db_session = create_database_async_session(async_engine)
 
 # Session Annotated
 CurrentSession = Annotated[AsyncSession, Depends(get_db)]

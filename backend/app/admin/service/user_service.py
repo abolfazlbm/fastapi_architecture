@@ -1,5 +1,3 @@
-import random
-
 from collections.abc import Sequence
 from typing import Any
 
@@ -92,7 +90,6 @@ class UserService:
         """
         if await user_dao.get_by_username(db, obj.username):
             raise errors.ConflictError(msg='Username registered')
-        obj.nickname = obj.nickname or f'#{random.randrange(88888, 99999)}'
         if not obj.password:
             raise errors.RequestError(msg='Password is not allowed to be empty')
         if not await dept_dao.get(db, obj.dept_id):
@@ -100,6 +97,7 @@ class UserService:
         for role_id in obj.roles:
             if not await role_dao.get(db, role_id):
                 raise errors.NotFoundError(msg='Role does not exist')
+        obj.nickname = obj.nickname or obj.username
         await user_dao.add(db, obj)
 
     @staticmethod
@@ -144,7 +142,7 @@ class UserService:
                     raise errors.NotFoundError(msg='User does not exist')
                 if pk == request.user.id:
                     raise errors.ForbiddenError(msg='Change changes to its own permissions')
-                count = await user_dao.set_super(db, pk, is_super=not user.status)
+                count = await user_dao.set_super(db, pk, is_super=not user.is_superuser)
             case UserPermissionType.staff:
                 user = await user_dao.get(db, pk)
                 if not user:

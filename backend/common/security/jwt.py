@@ -4,9 +4,8 @@ import uuid
 from datetime import timedelta
 from typing import Any
 
-from fastapi import Depends, HTTPException, Request
+from fastapi import Depends, Request
 from fastapi.security import HTTPBearer
-from fastapi.security.http import HTTPAuthorizationCredentials
 from fastapi.security.utils import get_authorization_scheme_param
 from jose import ExpiredSignatureError, JWTError, jwt
 from pydantic_core import from_json
@@ -16,31 +15,13 @@ from backend.app.admin.model import User
 from backend.app.admin.schema.user import GetUserInfoWithRelationDetail
 from backend.common.dataclasses import AccessToken, NewToken, RefreshToken, TokenPayload
 from backend.common.exception import errors
-from backend.common.exception.errors import TokenError
 from backend.core.conf import settings
 from backend.database.db import async_db_session
 from backend.database.redis import redis_client
 from backend.utils.timezone import timezone
 
-
-class CustomHTTPBearer(HTTPBearer):
-    """
-    Customize HTTPBearer authentication class
-
-    Issues: https://github.com/fastapi/fastapi/issues/10177
-    """
-
-    async def __call__(self, request: Request) -> HTTPAuthorizationCredentials | None:
-        try:
-            return await super().__call__(request)
-        except HTTPException as e:
-            if e.status_code == 403:
-                raise TokenError
-            raise
-
-
-# JWT authorizes dependency injection
-DependsJwtAuth = Depends(CustomHTTPBearer())
+# JWT dependency injection
+DependsJwtAuth = Depends(HTTPBearer())
 
 
 def jwt_encode(payload: dict[str, Any]) -> str:
@@ -236,6 +217,30 @@ async def get_current_user(db: AsyncSession, pk: int) -> User:
     return user
 
 
+async def get_jwt_user(user_id: int) -> GetUserInfoWithRelationDetail:
+    """
+    获取 JWT 用户
+
+    :param user_id:
+    :return:
+    """
+    cache_user = await redis_client.get(f'{settings.JWT_USER_REDIS_PREFIX}:{user_id}')
+    if not cache_user:
+        async with async_db_session() as db:
+            current_user = await get_current_user(db, user_id)
+            user = GetUserInfoWithRelationDetail.model_validate(current_user)
+            await redis_client.setex(
+                f'{settings.JWT_USER_REDIS_PREFIX}:{user_id}',
+                settings.TOKEN_EXPIRE_SECONDS,
+                user.model_dump_json(),
+            )
+    else:
+        # TODO: 在恰当的时机，应替换为使用 model_validate_json
+        # https://docs.pydantic.dev/latest/concepts/json/#partial-json-parsing
+        user = GetUserInfoWithRelationDetail.model_validate(from_json(cache_user, allow_partial=True))
+    return user
+
+
 def superuser_verify(request: Request, _token: str = DependsJwtAuth) -> bool:
     """
     Verify the current user's super administrator rights
@@ -266,21 +271,7 @@ async def jwt_authentication(token: str) -> GetUserInfoWithRelationDetail:
     if token != redis_token:
         raise errors.TokenError(msg='Token have expired')
 
-    cache_user = await redis_client.get(f'{settings.JWT_USER_REDIS_PREFIX}:{user_id}')
-    if not cache_user:
-        async with async_db_session() as db:
-            current_user = await get_current_user(db, user_id)
-            user = GetUserInfoWithRelationDetail.model_validate(current_user)
-            await redis_client.setex(
-                f'{settings.JWT_USER_REDIS_PREFIX}:{user_id}',
-                settings.TOKEN_EXPIRE_SECONDS,
-                user.model_dump_json(),
-            )
-    else:
-        # TODO: At the right time, it should be replaced by using model_validate_json
-        # https://docs.pydantic.dev/latest/concepts/json/#partial-json-parsing
-        user = GetUserInfoWithRelationDetail.model_validate(from_json(cache_user, allow_partial=True))
-    return user
+    return await get_jwt_user(user_id)
 
 
 # Super administrator authentication dependency injection

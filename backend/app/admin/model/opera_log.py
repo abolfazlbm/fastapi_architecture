@@ -23,7 +23,7 @@ class OperaLog(DataClassBase):
     country: Mapped[str | None] = mapped_column(sa.String(64), comment='Country')
     region: Mapped[str | None] = mapped_column(sa.String(64), comment='region')
     city: Mapped[str | None] = mapped_column(sa.String(64), comment='City')
-    user_agent: Mapped[str] = mapped_column(sa.String(512), comment='request header')
+    user_agent: Mapped[str | None] = mapped_column(sa.String(512), comment='request header')
     os: Mapped[str | None] = mapped_column(sa.String(64), comment='OS')
     browser: Mapped[str | None] = mapped_column(sa.String(64), comment='browser')
     device: Mapped[str | None] = mapped_column(sa.String(64), comment='device')

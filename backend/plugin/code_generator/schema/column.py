@@ -19,8 +19,8 @@ class GenColumnSchemaBase(SchemaBase):
 
     @field_validator('type')
     @classmethod
-    def type_update(cls, v: str) -> str:
-        """Update column type"""
+    def normalize_type(cls, v: str) -> str:
+        """Normalized Type"""
         return sql_type_to_sqlalchemy(v)
 
 

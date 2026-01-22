@@ -1,3 +1,146 @@
+<a id="v1.12.3"></a>
+# [v1.12.3](https://github.com/fastapi-practices/fastapi_best_architecture/releases/tag/v1.12.3) - 2026-01-13
+
+## What's Changed
+* Update changelog for v1.12.2 by [@wu-clan](https://github.com/wu-clan) in [#995](https://github.com/fastapi-practices/fastapi_best_architecture/pull/995)
+* Update login log request header column length by [@wu-clan](https://github.com/wu-clan) in [#996](https://github.com/fastapi-practices/fastapi_best_architecture/pull/996)
+* Fix opera log non-json data overload by [@shj366](https://github.com/shj366) in [#998](https://github.com/fastapi-practices/fastapi_best_architecture/pull/998)
+* Remove the opera log desensitization asynchronous by [@wu-clan](https://github.com/wu-clan) in [#999](https://github.com/fastapi-practices/fastapi_best_architecture/pull/999)
+* Update redis and server monitor implementations by [@wu-clan](https://github.com/wu-clan) in [#1000](https://github.com/fastapi-practices/fastapi_best_architecture/pull/1000)
+* Optimize definitions of multiple utility functions by [@wu-clan](https://github.com/wu-clan) in [#1001](https://github.com/fastapi-practices/fastapi_best_architecture/pull/1001)
+* Update code generation part file naming by [@wu-clan](https://github.com/wu-clan) in [#1002](https://github.com/fastapi-practices/fastapi_best_architecture/pull/1002)
+* Update nickname generation when create user by [@wu-clan](https://github.com/wu-clan) in [#1004](https://github.com/fastapi-practices/fastapi_best_architecture/pull/1004)
+* Update the plugin dependency install method by [@wu-clan](https://github.com/wu-clan) in [#1007](https://github.com/fastapi-practices/fastapi_best_architecture/pull/1007)
+* Update i18n language storage and loading by [@wu-clan](https://github.com/wu-clan) in [#1008](https://github.com/fastapi-practices/fastapi_best_architecture/pull/1008)
+
+## New Contributors
+* [@shj366](https://github.com/shj366) made their first contribution in [#998](https://github.com/fastapi-practices/fastapi_best_architecture/pull/998)
+
+**Full Changelog**: https://github.com/fastapi-practices/fastapi_best_architecture/compare/v1.12.2...v1.12.3
+
+## Contributors
+
+<a href="https://github.com/shj366"><img src="https://wsrv.nl/?url=https%3A%2F%2Fgithub.com%2Fshj366.png&w=128&h=128&fit=cover&mask=circle" width="64" height="64" alt="@shj366"></a>
+<a href="https://github.com/wu-clan"><img src="https://wsrv.nl/?url=https%3A%2F%2Fgithub.com%2Fwu-clan.png&w=128&h=128&fit=cover&mask=circle" width="64" height="64" alt="@wu-clan"></a>
+
+[Changes][v1.12.3]
+
+
+<a id="v1.12.2"></a>
+# [v1.12.2](https://github.com/fastapi-practices/fastapi_best_architecture/releases/tag/v1.12.2) - 2026-01-07
+
+## What's Changed
+* Update changelog for v1.12.1 by [@wu-clan](https://github.com/wu-clan) in [#983](https://github.com/fastapi-practices/fastapi_best_architecture/pull/983)
+* Fix environment variable file auto init by [@wu-clan](https://github.com/wu-clan) in [#985](https://github.com/fastapi-practices/fastapi_best_architecture/pull/985)
+* Simplify the desensitization of operation log data by [@wu-clan](https://github.com/wu-clan) in [#987](https://github.com/fastapi-practices/fastapi_best_architecture/pull/987)
+* Remove invalid configs of operation log by [@wu-clan](https://github.com/wu-clan) in [#988](https://github.com/fastapi-practices/fastapi_best_architecture/pull/988)
+* Fix operation log queue status management by [@wu-clan](https://github.com/wu-clan) in [#989](https://github.com/fastapi-practices/fastapi_best_architecture/pull/989)
+* Fix SQL scripts error in config plugin by [@wu-clan](https://github.com/wu-clan) in [#991](https://github.com/fastapi-practices/fastapi_best_architecture/pull/991)
+* Fix the key of the refresh token removed by [@wu-clan](https://github.com/wu-clan) in [#993](https://github.com/fastapi-practices/fastapi_best_architecture/pull/993)
+* Remove Linux Do OAuth2 login by [@wu-clan](https://github.com/wu-clan) in [#994](https://github.com/fastapi-practices/fastapi_best_architecture/pull/994)
+
+
+**Full Changelog**: https://github.com/fastapi-practices/fastapi_best_architecture/compare/v1.12.1...v1.12.2
+
+## Contributors
+
+<a href="https://github.com/wu-clan"><img src="https://wsrv.nl/?url=https%3A%2F%2Fgithub.com%2Fwu-clan.png&w=128&h=128&fit=cover&mask=circle" width="64" height="64" alt="@wu-clan"></a>
+
+[Changes][v1.12.2]
+
+
+<a id="v1.12.1"></a>
+# [v1.12.1](https://github.com/fastapi-practices/fastapi_best_architecture/releases/tag/v1.12.1) - 2025-12-31
+
+## What's Changed
+* Update changelog for v1.12.0 by [@wu-clan](https://github.com/wu-clan) in [#963](https://github.com/fastapi-practices/fastapi_best_architecture/pull/963)
+* Update Grafana security and user default config by [@wu-clan](https://github.com/wu-clan) in [#964](https://github.com/fastapi-practices/fastapi_best_architecture/pull/964)
+* Rename the pre start script to migrate by [@wu-clan](https://github.com/wu-clan) in [#965](https://github.com/fastapi-practices/fastapi_best_architecture/pull/965)
+* Add code generation and notice SQL scripts by [@wu-clan](https://github.com/wu-clan) in [#966](https://github.com/fastapi-practices/fastapi_best_architecture/pull/966)
+* Fix support for special character passwords by [@wu-clan](https://github.com/wu-clan) in [#968](https://github.com/fastapi-practices/fastapi_best_architecture/pull/968)
+* Add an independent contribution document by [@wu-clan](https://github.com/wu-clan) in [#971](https://github.com/fastapi-practices/fastapi_best_architecture/pull/971)
+* Fix i18n target language error when concurrent by [@wu-clan](https://github.com/wu-clan) in [#970](https://github.com/fastapi-practices/fastapi_best_architecture/pull/970)
+* Add observability instrument for redis client by [@wu-clan](https://github.com/wu-clan) in [#972](https://github.com/fastapi-practices/fastapi_best_architecture/pull/972)
+* Add OTEL semantic specification metrics config by [@wu-clan](https://github.com/wu-clan) in [#973](https://github.com/fastapi-practices/fastapi_best_architecture/pull/973)
+* Fix case where the user agent was empty by [@wu-clan](https://github.com/wu-clan) in [#976](https://github.com/fastapi-practices/fastapi_best_architecture/pull/976)
+* Optimize login log database session calls by [@wu-clan](https://github.com/wu-clan) in [#977](https://github.com/fastapi-practices/fastapi_best_architecture/pull/977)
+* Add the auto init project CLI command by [@wu-clan](https://github.com/wu-clan) in [#978](https://github.com/fastapi-practices/fastapi_best_architecture/pull/978)
+* Bump dependencies and pre-commits by [@wu-clan](https://github.com/wu-clan) in [#979](https://github.com/fastapi-practices/fastapi_best_architecture/pull/979)
+* Add observability instrument for httpx request by [@wu-clan](https://github.com/wu-clan) in [#980](https://github.com/fastapi-practices/fastapi_best_architecture/pull/980)
+* Update git and docker ignore files by [@wu-clan](https://github.com/wu-clan) in [#981](https://github.com/fastapi-practices/fastapi_best_architecture/pull/981)
+
+
+**Full Changelog**: https://github.com/fastapi-practices/fastapi_best_architecture/compare/v1.12.0...v1.12.1
+
+## Contributors
+
+<a href="https://github.com/wu-clan"><img src="https://wsrv.nl/?url=https%3A%2F%2Fgithub.com%2Fwu-clan.png&w=128&h=128&fit=cover&mask=circle" width="64" height="64" alt="@wu-clan"></a>
+
+[Changes][v1.12.1]
+
+
+<a id="v1.12.0"></a>
+# [v1.12.0](https://github.com/fastapi-practices/fastapi_best_architecture/releases/tag/v1.12.0) - 2025-12-15
+
+## What's Changed
+* Update changelog for v1.11.2 by [@wu-clan](https://github.com/wu-clan) in [#942](https://github.com/fastapi-practices/fastapi_best_architecture/pull/942)
+* Update celery related docker container independence by [@wu-clan](https://github.com/wu-clan) in [#943](https://github.com/fastapi-practices/fastapi_best_architecture/pull/943)
+* Fix super value in update user permissions by [@wu-clan](https://github.com/wu-clan) in [#948](https://github.com/fastapi-practices/fastapi_best_architecture/pull/948)
+* Optimize data permission logic and usage by [@wu-clan](https://github.com/wu-clan) in [#947](https://github.com/fastapi-practices/fastapi_best_architecture/pull/947)
+* Update pre-commit to prek in pre-commit script by [@wu-clan](https://github.com/wu-clan) in [#949](https://github.com/fastapi-practices/fastapi_best_architecture/pull/949)
+* Optimize the coupling of user social plugin by [@wu-clan](https://github.com/wu-clan) in [#950](https://github.com/fastapi-practices/fastapi_best_architecture/pull/950)
+* Add the database primary key mode config by [@wu-clan](https://github.com/wu-clan) in [#953](https://github.com/fastapi-practices/fastapi_best_architecture/pull/953)
+* Optimize the coupling of code generation CLI by [@wu-clan](https://github.com/wu-clan) in [#951](https://github.com/fastapi-practices/fastapi_best_architecture/pull/951)
+* Add CLI init project database support by [@wu-clan](https://github.com/wu-clan) in [#952](https://github.com/fastapi-practices/fastapi_best_architecture/pull/952)
+* Update the init project database CLI to subcommand by [@wu-clan](https://github.com/wu-clan) in [#954](https://github.com/fastapi-practices/fastapi_best_architecture/pull/954)
+* Fix CLI command for code generation by [@wu-clan](https://github.com/wu-clan) in [#956](https://github.com/fastapi-practices/fastapi_best_architecture/pull/956)
+* Fix the IP address in the request log by [@wuyuemushi](https://github.com/wuyuemushi) in [#959](https://github.com/fastapi-practices/fastapi_best_architecture/pull/959)
+* Add the Grafana observability suite by [@wu-clan](https://github.com/wu-clan) in [#961](https://github.com/fastapi-practices/fastapi_best_architecture/pull/961)
+* Update the version number to 1.12.0 by [@wu-clan](https://github.com/wu-clan) in [#962](https://github.com/fastapi-practices/fastapi_best_architecture/pull/962)
+
+## New Contributors
+* [@wuyuemushi](https://github.com/wuyuemushi) made their first contribution in [#959](https://github.com/fastapi-practices/fastapi_best_architecture/pull/959)
+
+**Full Changelog**: https://github.com/fastapi-practices/fastapi_best_architecture/compare/v1.11.2...v1.12.0
+
+## Contributors
+
+<a href="https://github.com/wu-clan"><img src="https://wsrv.nl/?url=https%3A%2F%2Fgithub.com%2Fwu-clan.png&w=128&h=128&fit=cover&mask=circle" width="64" height="64" alt="@wu-clan"></a>
+<a href="https://github.com/wuyuemushi"><img src="https://wsrv.nl/?url=https%3A%2F%2Fgithub.com%2Fwuyuemushi.png&w=128&h=128&fit=cover&mask=circle" width="64" height="64" alt="@wuyuemushi"></a>
+
+[Changes][v1.12.0]
+
+
+<a id="v1.11.2"></a>
+# [v1.11.2](https://github.com/fastapi-practices/fastapi_best_architecture/releases/tag/v1.11.2) - 2025-11-28
+
+## What's Changed
+* Update changelog for v1.11.1 by [@wu-clan](https://github.com/wu-clan) in [#923](https://github.com/fastapi-practices/fastapi_best_architecture/pull/923)
+* Fix typos in data rule sql scripts by [@wu-clan](https://github.com/wu-clan) in [#926](https://github.com/fastapi-practices/fastapi_best_architecture/pull/926)
+* Restore captcha uuid naming in the login params by [@wu-clan](https://github.com/wu-clan) in [#928](https://github.com/fastapi-practices/fastapi_best_architecture/pull/928)
+* Add distributed deployment support for snowflake ID by [@downdawn](https://github.com/downdawn) in [#927](https://github.com/fastapi-practices/fastapi_best_architecture/pull/927)
+* Add env reqs for plugin install and uninstall by [@wu-clan](https://github.com/wu-clan) in [#929](https://github.com/fastapi-practices/fastapi_best_architecture/pull/929)
+* Optimize the use of some LRU caches by [@wu-clan](https://github.com/wu-clan) in [#932](https://github.com/fastapi-practices/fastapi_best_architecture/pull/932)
+* Update the i18n language file init location by [@wu-clan](https://github.com/wu-clan) in [#934](https://github.com/fastapi-practices/fastapi_best_architecture/pull/934)
+* Fix get column types in code generation by [@wu-clan](https://github.com/wu-clan) in [#935](https://github.com/fastapi-practices/fastapi_best_architecture/pull/935)
+* Bump dependencies and pre-commits by [@wu-clan](https://github.com/wu-clan) in [#936](https://github.com/fastapi-practices/fastapi_best_architecture/pull/936)
+* Update the files interface filename to file by [@wu-clan](https://github.com/wu-clan) in [#937](https://github.com/fastapi-practices/fastapi_best_architecture/pull/937)
+* Update task application interface definitions by [@wu-clan](https://github.com/wu-clan) in [#938](https://github.com/fastapi-practices/fastapi_best_architecture/pull/938)
+* Update code generation interface definitions by [@wu-clan](https://github.com/wu-clan) in [#939](https://github.com/fastapi-practices/fastapi_best_architecture/pull/939)
+* Update the fba run CLI command output by [@wu-clan](https://github.com/wu-clan) in [#941](https://github.com/fastapi-practices/fastapi_best_architecture/pull/941)
+* Update the version number to 1.11.2 by [@wu-clan](https://github.com/wu-clan) in [#940](https://github.com/fastapi-practices/fastapi_best_architecture/pull/940)
+
+
+**Full Changelog**: https://github.com/fastapi-practices/fastapi_best_architecture/compare/v1.11.1...v1.11.2
+
+## Contributors
+
+<a href="https://github.com/downdawn"><img src="https://wsrv.nl/?url=https%3A%2F%2Fgithub.com%2Fdowndawn.png&w=128&h=128&fit=cover&mask=circle" width="64" height="64" alt="@downdawn"></a>
+<a href="https://github.com/wu-clan"><img src="https://wsrv.nl/?url=https%3A%2F%2Fgithub.com%2Fwu-clan.png&w=128&h=128&fit=cover&mask=circle" width="64" height="64" alt="@wu-clan"></a>
+
+[Changes][v1.11.2]
+
+
 <a id="v1.11.1"></a>
 # [v1.11.1](https://github.com/fastapi-practices/fastapi_best_architecture/releases/tag/v1.11.1) - 2025-11-16
 
@@ -1161,6 +1304,11 @@
 [Changes][v1.0.0]
 
 
+[v1.12.3]: https://github.com/fastapi-practices/fastapi_best_architecture/compare/v1.12.2...v1.12.3
+[v1.12.2]: https://github.com/fastapi-practices/fastapi_best_architecture/compare/v1.12.1...v1.12.2
+[v1.12.1]: https://github.com/fastapi-practices/fastapi_best_architecture/compare/v1.12.0...v1.12.1
+[v1.12.0]: https://github.com/fastapi-practices/fastapi_best_architecture/compare/v1.11.2...v1.12.0
+[v1.11.2]: https://github.com/fastapi-practices/fastapi_best_architecture/compare/v1.11.1...v1.11.2
 [v1.11.1]: https://github.com/fastapi-practices/fastapi_best_architecture/compare/v1.11.0...v1.11.1
 [v1.11.0]: https://github.com/fastapi-practices/fastapi_best_architecture/compare/v1.10.4...v1.11.0
 [v1.10.4]: https://github.com/fastapi-practices/fastapi_best_architecture/compare/v1.10.3...v1.10.4

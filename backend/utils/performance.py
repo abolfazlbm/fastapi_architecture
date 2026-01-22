@@ -3,47 +3,9 @@ import functools
 import time
 
 from collections.abc import Callable
-from math import ceil
 from typing import Any
 
-from fastapi import FastAPI, Request, Response
-from fastapi.routing import APIRoute
-
-from backend.common.exception import errors
 from backend.common.log import log
-from backend.common.response.response_code import StandardResponseCode
-
-
-def ensure_unique_route_names(app: FastAPI) -> None:
-    """
-    Check if the route name is unique
-
-    :param app: FastAPI application example
-    :return:
-    """
-    temp_routes = set()
-    for route in app.routes:
-        if isinstance(route, APIRoute):
-            if route.name in temp_routes:
-                raise ValueError(f'Non-unique route name: {route.name}')
-            temp_routes.add(route.name)
-
-
-async def http_limit_callback(request: Request, response: Response, expire: int) -> None:  # noqa: RUF029
-    """
-    Default callback function when requesting limits
-
-    :param request: FastAPI request object
-    :param response: FastAPI response object
-    :param expire: milliseconds remaining
-    :return:
-    """
-    expires = ceil(expire / 1000)
-    raise errors.HTTPError(
-        code=StandardResponseCode.HTTP_429,
-        msg='Requests are too frequent, please try again later',
-        headers={'Retry-After': str(expires)},
-    )
 
 
 def timer(func) -> Callable:  # noqa: ANN001

@@ -19,6 +19,8 @@ volumes:
     name: fba_static_upload
   fba_rabbitmq:
     name: fba_rabbitmq
+  fba_prometheus_data:
+    name: fba_prometheus_data
 
 services:
   fba_server:
@@ -30,11 +32,12 @@ services:
       - "8001:8001"
     container_name: fba_server
     restart: always
+    environment:
+      - TZ=Asia/Shanghai
     # If you are a mysql user, you should change fba_postgres to fba_mysql
     depends_on:
       - fba_postgres
       - fba_redis
-      - fba_celery
     volumes:
       - ./deploy/backend/docker-compose/.env.server:/fba/backend/.env
       - fba_static:/fba/backend/app/static
@@ -167,17 +170,18 @@ services:
     networks:
       - fba_network
 
-  fba_celery:
+  fba_celery_worker:
     build:
       context: .
       dockerfile: Dockerfile
       args:
-        - SERVER_TYPE=fba_celery
-    image: fba_celery:latest
-    ports:
-      - "8555:8555"
-    container_name: fba_celery
+        - SERVER_TYPE=fba_celery_worker
+    image: fba_celery_worker:latest
+    # If you need to deploy workers distributedly, you must remove this container_name configuration
+    container_name: fba_celery_worker
     restart: always
+    environment:
+      - TZ=Asia/Shanghai
     depends_on:
       - fba_rabbitmq
     volumes:
@@ -191,3 +195,154 @@ services:
         wait-for-it -s fba_rabbitmq:5672 -t 300
         supervisord -c /etc/supervisor/supervisord.conf
         supervisorctl restart
+
+  fba_celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - SERVER_TYPE=fba_celery_beat
+    image: fba_celery_beat:latest
+    container_name: fba_celery_beat
+    restart: always
+    environment:
+      - TZ=Asia/Shanghai
+    depends_on:
+      - fba_rabbitmq
+      - fba_celery_worker
+    volumes:
+      - ./deploy/backend/docker-compose/.env.server:/fba/backend/.env
+    networks:
+      - fba_network
+    command:
+      - bash
+      - -c
+      - |
+        wait-for-it -s fba_rabbitmq:5672 -t 300
+        supervisord -c /etc/supervisor/supervisord.conf
+        supervisorctl restart
+
+  fba_celery_flower:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - SERVER_TYPE=fba_celery_flower
+    image: fba_celery_flower:latest
+    ports:
+      - "8555:8555"
+    container_name: fba_celery_flower
+    restart: always
+    environment:
+      - TZ=Asia/Shanghai
+    depends_on:
+      - fba_rabbitmq
+      - fba_celery_worker
+    volumes:
+      - ./deploy/backend/docker-compose/.env.server:/fba/backend/.env
+    networks:
+      - fba_network
+    command:
+      - bash
+      - -c
+      - |
+        wait-for-it -s fba_rabbitmq:5672 -t 300
+        supervisord -c /etc/supervisor/supervisord.conf
+        supervisorctl restart
+
+  fba_celery_exporter:
+    image: danihodovic/celery-exporter
+    restart: always
+    ports:
+      - "9808:9808"
+    container_name: fba_celery_exporter
+    environment:
+      - CE_BROKER_URL=amqp://guest:guest@fba_rabbitmq:5672//
+    depends_on:
+      - fba_rabbitmq
+    networks:
+      - fba_network
+
+  fba_loki:
+    image: grafana/loki
+    restart: always
+    ports:
+      - "3100:3100"
+    container_name: fba_loki
+    networks:
+      - fba_network
+    command: -config.file=/etc/loki/local-config.yaml
+
+  fba_prometheus:
+    image: prom/prometheus
+    restart: always
+    ports:
+      - "9090:9090"
+    container_name: fba_prometheus
+    depends_on:
+      - fba_loki
+    volumes:
+      - ./deploy/backend/grafana/fba_prometheus.yml:/workspace/fba_prometheus.yml
+      - fba_prometheus_data:/prometheus
+    networks:
+      - fba_network
+    command:
+      - --web.enable-remote-write-receiver
+      - --enable-feature=exemplar-storage
+      - --config.file=/workspace/fba_prometheus.yml
+
+  fba_alloy:
+    image: grafana/alloy
+    restart: always
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+      - "12345:12345"
+    container_name: fba_alloy
+    depends_on:
+      - fba_loki
+    volumes:
+      - ./deploy/backend/grafana/fba_config.alloy:/etc/alloy/fba_config.alloy
+    networks:
+      - fba_network
+    command:
+      - run
+      - /etc/alloy/fba_config.alloy
+      - --server.http.listen-addr=0.0.0.0:12345
+
+  fba_tempo:
+    image: grafana/tempo:latest
+    restart: always
+    ports:
+      - "3200:3200"
+    expose:
+      - 4317
+      - 4318
+    container_name: fba_tempo
+    depends_on:
+      - fba_loki
+    volumes:
+      - ./deploy/backend/grafana/fba_tempo.yml:/etc/tempo/fba_tempo.yml
+    networks:
+      - fba_network
+    command:
+      - -config.file=/etc/tempo/fba_tempo.yml
+      - -auth.enabled=false
+
+  fba_grafana:
+    image: grafana/grafana
+    restart: always
+    ports:
+      - "3000:3000"
+    container_name: fba_grafana
+    depends_on:
+      - fba_loki
+      - fba_prometheus
+    volumes:
+      - ./deploy/backend/grafana/fba_grafana.ini:/etc/grafana/grafana.ini
+      - ./deploy/backend/grafana/dashboards/fba_celery.json:/etc/grafana/dashboards/fba_celery.json
+      - ./deploy/backend/grafana/dashboards/fba_server.json:/etc/grafana/dashboards/fba_server.json
+      - ./deploy/backend/grafana/fba_dashboards.yml:/etc/grafana/provisioning/dashboards/fba_dashboards.yml
+      - ./deploy/backend/grafana/fba_datasource.yml:/etc/grafana/provisioning/datasources/fba_datasource.yml
+    networks:
+      - fba_network

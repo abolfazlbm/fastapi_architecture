@@ -1,12 +1,14 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Path, Query, Request
+from fastapi import APIRouter, Depends, Path, Query
+from sqlalchemy import ColumnElement
 
+from backend.app.admin.model import Dept
 from backend.app.admin.schema.dept import CreateDeptParam, GetDeptDetail, GetDeptTree, UpdateDeptParam
 from backend.app.admin.service.dept_service import dept_service
 from backend.common.response.response_schema import ResponseModel, ResponseSchemaModel, response_base
 from backend.common.security.jwt import DependsJwtAuth
-from backend.common.security.permission import RequestPermission
+from backend.common.security.permission import DataPermissionFilter, RequestPermission
 from backend.common.security.rbac import DependsRBAC
 from backend.database.db import CurrentSession, CurrentSessionTransaction
 
@@ -24,14 +26,14 @@ async def get_dept(
 @router.get('', summary='Obtain department tree', dependencies=[DependsJwtAuth])
 async def get_dept_tree(
     db: CurrentSession,
-    request: Request,
+    data_filter: Annotated[ColumnElement[bool], Depends(DataPermissionFilter(Dept))],
     name: Annotated[str | None, Query(description='department name')] = None,
     leader: Annotated[str | None, Query(description='department head')] = None,
     phone: Annotated[str | None, Query(description='Contact Number')] = None,
     status: Annotated[int | None, Query(description='status')] = None,
 ) -> ResponseSchemaModel[list[GetDeptTree]]:
     dept = await dept_service.get_tree(
-        db=db, request_user=request.user, name=name, leader=leader, phone=phone, status=status
+        db=db, data_filter=data_filter, name=name, leader=leader, phone=phone, status=status
     )
     return response_base.success(data=dept)
 

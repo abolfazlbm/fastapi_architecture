@@ -44,4 +44,4 @@ class GetDataRuleColumnDetail(SchemaBase):
     """Data rules available model fields details"""
 
     key: str = Field(description='field name')
-    comment: str = Field(description='field comment')
+    comment: str | None = Field(description='field comment')

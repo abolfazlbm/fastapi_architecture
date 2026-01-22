@@ -10,32 +10,56 @@ from backend.core.conf import settings
 class RedisCli(Redis):
     """Redis Client"""
 
-    def __init__(self) -> None:
-        """Initialize Redis Client"""
+    def __init__(
+        self,
+        host: str = settings.REDIS_HOST,
+        port: int = settings.REDIS_PORT,
+        password: str = settings.REDIS_PASSWORD,
+        db: int = settings.REDIS_DATABASE,
+        socket_timeout: int = settings.REDIS_TIMEOUT,
+        socket_connect_timeout: int = settings.REDIS_TIMEOUT,
+        *,
+        socket_keepalive: bool = True,
+        health_check_interval: int = 30,
+        decode_responses: bool = True,
+    ) -> None:
+        """
+        Initialize the Redis client
+
+        :param host: host address of the Redis server
+        :param port: the port number of the Redis server
+        :param password: Redis authentication password
+        :param db: Redis logical database index used
+        :param socket_timeout: timeout for Socket read and write operations
+        :param socket_connect_timeout: timeout when establishing TCP connection
+        :param socket_keepalive: Whether to enable TCP Keepalive detection
+        :param health_check_interval: health check interval (seconds)
+        :param decode_responses: Whether to automatically decode the byte stream (bytes) returned by Redis into a string (utf-8)
+        """
         super().__init__(
-            host=settings.REDIS_HOST,
-            port=settings.REDIS_PORT,
-            password=settings.REDIS_PASSWORD,
-            db=settings.REDIS_DATABASE,
-            socket_timeout=settings.REDIS_TIMEOUT,
-            socket_connect_timeout=settings.REDIS_TIMEOUT,
-            socket_keepalive=True, # Stay connected
-            health_check_interval=30, # Health check interval
-            decode_responses=True, # Transcoding utf-8
+            host=host,
+            port=port,
+            password=password,
+            db=db,
+            socket_timeout=socket_timeout,
+            socket_connect_timeout=socket_connect_timeout,
+            socket_keepalive=socket_keepalive,
+            health_check_interval=health_check_interval,
+            decode_responses=decode_responses,
         )
 
-    async def open(self) -> None:
-        """Trigger initialization connection"""
+    async def init(self) -> None:
+        """Initialize Redis server"""
         try:
             await self.ping()
         except TimeoutError:
-            log.error('❌ Database redis connection timed out')
+            log.error('Redis server connection timed out')
             sys.exit()
         except AuthenticationError:
-            log.error('❌ Database redis connection authentication failed')
+            log.error('Redis server connection authentication failed')
             sys.exit()
         except Exception as e:
-            log.error('❌ Database redis connection exception {}', e)
+            log.error('Redis server connection exception {}', e)
             sys.exit()
 
     async def delete_prefix(self, prefix: str, exclude: str | list[str] | None = None, batch_size: int = 1000) -> None:

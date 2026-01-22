@@ -1,8 +1,10 @@
 from datetime import datetime
 
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, field_validator
 
+from backend.common.exception import errors
 from backend.common.schema import SchemaBase
+from backend.utils.pattern_validate import is_english_identifier
 
 
 class GenBusinessSchemaBase(SchemaBase):
@@ -15,10 +17,18 @@ class GenBusinessSchemaBase(SchemaBase):
     class_name: str | None = Field(None, description='Used for python code base class names')
     schema_name: str | None = Field(None, description='Used for python Schema code base class names')
     filename: str | None = Field(None, description='Used for python code base filenames')
-    default_datetime_column: bool = Field(True, description='Is there a default time column?')
+    datetime_mixin: bool = Field(True, description='Whether to include the time Mixin column')
     api_version: str = Field('v1', description='Code Generation Api Version')
     gen_path: str | None = Field(None, description='Code Generation Path')
     remark: str | None = Field(None, description='Remark')
+
+    @field_validator('app_name', 'table_name')
+    @classmethod
+    def validate_english_only(cls, v: str) -> str:
+        """Validate English fields"""
+        if not is_english_identifier(v):
+            raise errors.RequestError(msg='Must start with an English letter and contain only English letters and underscores')
+        return v
 
 
 class CreateGenBusinessParam(GenBusinessSchemaBase):

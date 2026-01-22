@@ -1,12 +1,15 @@
-from fastapi import Request
-from sqlalchemy import ColumnElement, and_, or_
+from typing import Any
 
-from backend.app.admin.schema.user import GetUserInfoWithRelationDetail
+from fastapi import Request
+from sqlalchemy import Alias, ColumnElement, Table, and_, or_
+from sqlalchemy.orm.util import AliasedClass
+from sqlalchemy_crud_plus.types import Model
+
 from backend.common.context import ctx
 from backend.common.enums import RoleDataRuleExpressionType, RoleDataRuleOperatorType
 from backend.common.exception import errors
 from backend.core.conf import settings
-from backend.utils.import_parse import dynamic_import_data_model
+from backend.utils.dynamic_import import get_all_models
 
 
 class RequestPermission:
@@ -41,75 +44,94 @@ class RequestPermission:
             ctx.permission = self.value
 
 
-def filter_data_permission(request_user: GetUserInfoWithRelationDetail) -> ColumnElement[bool]:  # noqa: C901
+def get_data_permission_models() -> dict[str, object]:
+    """Get all models available for data permissions"""
+    return {getattr(model, '__name__', str(model)): model for model in get_all_models()}
+
+
+def filter_data_permission(  # noqa: C901
+    request: Request, *models: type[Model] | AliasedClass | Alias | Table
+) -> ColumnElement[bool]:
     """
     Filter data permissions to control the user's visible data range
 
     Use scenarios:
         - Control what data users can see
 
-    :param request_user: request user
+    :param request: FastAPI request object
+    :param models: model classes that require application data permissions
     :return:
     """
-    # Whether to filter data permissions
-    if request_user.is_superuser:
+    #Super administrator does not filter
+    if request.user.is_superuser:
         return or_(1 == 1)
 
-    for role in request_user.roles:
+    # Role does not have data permission filtering enabled
+    for role in request.user.roles:
         if not role.is_filter_scopes:
             return or_(1 == 1)
 
     # Get data rules
     data_rules = set()
-    for role in request_user.roles:
+    for role in request.user.roles:
         for scope in role.scopes:
             if scope.status:
                 data_rules.update(scope.rules)
 
-    # No rules for users not to filter
-    if not list(data_rules):
+    if not data_rules:
         return or_(1 == 1)
+
+    # GetTargetModel
+    model_map = (
+        {getattr(model, '__name__', str(model)): model for model in models} if models else get_data_permission_models()
+    )
 
     where_and_list = []
     where_or_list = []
 
-    for data_rule in list(data_rules):
-        # Verification rule model
-        rule_model = data_rule.model
-        if rule_model not in settings.DATA_PERMISSION_MODELS:
-            raise errors.NotFoundError(msg='The available model for data rules does not exist')
-        model_ins = dynamic_import_data_model(settings.DATA_PERMISSION_MODELS[rule_model])
+    for data_rule in data_rules:
+        target_model = model_map.get(data_rule.model)
+        if target_model is None:
+            continue
 
-        # Verify rule column
-        model_columns = [
-            key for key in model_ins.__table__.columns.keys() if key not in settings.DATA_PERMISSION_COLUMN_EXCLUDE
-        ]
-        column = data_rule.column
-        if column not in model_columns:
-            raise errors.NotFoundError(msg='The available model column for the data rule does not exist')
+        table = target_model if isinstance(target_model, Table) else target_model.__table__
+        rule_column = data_rule.column
+        if rule_column not in table.columns.keys():
+            continue
+        if rule_column in settings.DATA_PERMISSION_COLUMN_EXCLUDE:
+            continue
 
         # Create filter conditions
-        column_obj = getattr(model_ins, column)
-        rule_expression = data_rule.expression
+        column_obj = (
+            getattr(target_model, rule_column) if not isinstance(target_model, Table) else table.columns[rule_column]
+        )
+        column_type = table.columns[rule_column].type.python_type
+
+        def cast_value(value: Any) -> Any:
+            """Type Conversion"""
+            try:
+                return column_type(value) if column_type is not str else value
+            except (ValueError, TypeError):
+                return value
         condition = None
-        match rule_expression:
+        match data_rule.expression:
             case RoleDataRuleExpressionType.eq:
-                condition = column_obj == data_rule.value
+                condition = column_obj == cast_value(data_rule.value)
             case RoleDataRuleExpressionType.ne:
-                condition = column_obj != data_rule.value
+                condition = column_obj != cast_value(data_rule.value)
             case RoleDataRuleExpressionType.gt:
-                condition = column_obj > data_rule.value
+                condition = column_obj > cast_value(data_rule.value)
             case RoleDataRuleExpressionType.ge:
-                condition = column_obj >= data_rule.value
+                condition = column_obj >= cast_value(data_rule.value)
             case RoleDataRuleExpressionType.lt:
-                condition = column_obj < data_rule.value
+                condition = column_obj < cast_value(data_rule.value)
             case RoleDataRuleExpressionType.le:
-                condition = column_obj <= data_rule.value
+                condition = column_obj <= cast_value(data_rule.value)
             case RoleDataRuleExpressionType.in_:
-                values = data_rule.value.split(',') if isinstance(data_rule.value, str) else data_rule.value
+                values = [cast_value(v.strip()) for v in data_rule.value.split(',')]
                 condition = column_obj.in_(values)
             case RoleDataRuleExpressionType.not_in:
-                values = data_rule.value.split(',') if isinstance(data_rule.value, str) else data_rule.value
+                values = [cast_value(v.strip()) for v in data_rule.value.split(',')]
                 condition = column_obj.not_in(values)
 
         # Add to the corresponding list according to the operator
@@ -128,3 +150,24 @@ def filter_data_permission(request_user: GetUserInfoWithRelationDetail) -> Colum
         where_list.append(or_(*where_or_list))
 
     return or_(*where_list) if where_list else or_(1 == 1)
+
+
+# This function is to simplify the calling method, but it currently does not work properly: https://github.com/fastapi/fastapi/discussions/14438
+# def DataPermissionFilter(*models: type[Model] | AliasedClass | Alias | Table) -> type[ColumnElement[bool]]:
+#     """
+#     Specify the data permission filter for the model
+#
+#     :param models: model class (optional, multiple supported)
+#     :return:
+#     """
+#     return Annotated[ColumnElement[bool], Depends(partial(filter_data_permission, *models))]
+
+
+class DataPermissionFilter:
+    """Specify data permission filters for models"""
+
+    def __init__(self, *models: type[Model] | AliasedClass | Alias | Table) -> None:
+        self.models = models
+
+    async def __call__(self, request: Request) -> ColumnElement[bool]:
+        return filter_data_permission(request, *self.models)

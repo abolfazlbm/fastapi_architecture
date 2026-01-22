@@ -1,13 +1,12 @@
 from collections.abc import Sequence
 from typing import Any
 
+from sqlalchemy import ColumnElement
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus, JoinConfig
 
 from backend.app.admin.model import Dept, User
 from backend.app.admin.schema.dept import CreateDeptParam, UpdateDeptParam
-from backend.app.admin.schema.user import GetUserInfoWithRelationDetail
-from backend.common.security.permission import filter_data_permission
 from backend.utils.serializers import select_join_serialize
 
 
@@ -37,7 +36,7 @@ class CRUDDept(CRUDPlus[Dept]):
     async def get_all(
         self,
         db: AsyncSession,
-        request_user: GetUserInfoWithRelationDetail,
+        data_filter: ColumnElement[bool],
         name: str | None,
         leader: str | None,
         phone: str | None,
@@ -47,7 +46,7 @@ class CRUDDept(CRUDPlus[Dept]):
         Get all departments
 
         :param db: database session
-        :param request_user: request user
+        :param data_filter: request user
         :param name: department name
         :param leader: person in charge
         :param phone: Contact number
@@ -65,7 +64,6 @@ class CRUDDept(CRUDPlus[Dept]):
         if status is not None:
             filters['status'] = status
 
-        data_filter = filter_data_permission(request_user)
         return await self.select_models_order(db, 'sort', 'desc', data_filter, **filters)
 
     async def create(self, db: AsyncSession, obj: CreateDeptParam) -> None:

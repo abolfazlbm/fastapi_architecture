@@ -9,8 +9,8 @@ from backend.common.security.permission import RequestPermission
 from backend.common.security.rbac import DependsRBAC
 from backend.core.conf import settings
 from backend.database.db import CurrentSession, CurrentSessionTransaction
-from backend.plugin.code_generator.schema.code import ImportParam
-from backend.plugin.code_generator.service.code_service import gen_service
+from backend.plugin.code_generator.schema.gen import ImportParam
+from backend.plugin.code_generator.service.gen_service import gen_service
 
 router = APIRouter()
 
@@ -37,7 +37,7 @@ async def import_table(db: CurrentSessionTransaction, obj: ImportParam) -> Respo
     return response_base.success()
 
 
-@router.get('/{pk}/previews', summary='Code generation preview', dependencies=[DependsJwtAuth])
+@router.get('/{pk}/preview', summary='Code generation preview', dependencies=[DependsJwtAuth])
 async def preview_code(
     db: CurrentSession, pk: Annotated[int, Path(description='Business ID')]
 ) -> ResponseSchemaModel[dict[str, bytes]]:
@@ -54,7 +54,7 @@ async def get_generate_paths(
 
 
 @router.post(
-    '/{pk}/generation',
+    '/{pk}',
     summary='Code Generation',
     description='File disk writing, please operate with caution',
     dependencies=[

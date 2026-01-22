@@ -19,7 +19,7 @@ class OperaLogSchemaBase(SchemaBase):
     country: str | None = Field(None, description='Country')
     region: str | None = Field(None, description='region')
     city: str | None = Field(None, description='City')
-    user_agent: str = Field(description='user agent')
+    user_agent: str | None = Field(description='user agent')
     os: str | None = Field(None, description='OS')
     browser: str | None = Field(None, description='browser')
     device: str | None = Field(None, description='device')

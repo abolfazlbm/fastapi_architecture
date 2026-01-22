@@ -1,32 +1,49 @@
 import asyncio
+import re
+import secrets
 import subprocess
+import sys
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Annotated, Literal
 
+import anyio
 import cappa
 import granian
 
 from cappa.output import error_format
 from rich.panel import Panel
-from rich.prompt import IntPrompt
+from rich.prompt import IntPrompt, Prompt
 from rich.table import Table
 from rich.text import Text
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncConnection, AsyncSession
 from watchfiles import PythonFilter
 
 from backend import __version__
 from backend.common.enums import DataBaseType, PrimaryKeyType
 from backend.common.exception.errors import BaseExceptionError
+from backend.common.model import MappedBase
 from backend.core.conf import settings
-from backend.database.db import async_db_session
-from backend.plugin.code_generator.schema.code import ImportParam
-from backend.plugin.code_generator.service.business_service import gen_business_service
-from backend.plugin.code_generator.service.code_service import gen_service
-from backend.plugin.tools import get_plugin_sql
-from backend.utils._await import run_await
+from backend.core.path_conf import (
+    ENV_EXAMPLE_FILE_PATH,
+    ENV_FILE_PATH,
+    MYSQL_SCRIPT_DIR,
+    POSTGRESQL_SCRIPT_DIR,
+)
+from backend.database.db import (
+    async_db_session,
+    create_database_async_engine,
+    create_database_async_session,
+    create_database_url,
+)
+from backend.database.redis import RedisCli, redis_client
+from backend.plugin.core import get_plugin_sql, get_plugins
+from backend.plugin.installer import install_git_plugin, install_zip_plugin
 from backend.utils.console import console
-from backend.utils.file_ops import install_git_plugin, install_zip_plugin, parse_sql_script
+from backend.utils.dynamic_import import import_module_cached
+from backend.utils.sql_parser import parse_sql_script
 
 output_help = '\nMore information, try "[cyan]--help[/]"'
 
@@ -38,6 +55,210 @@ class CustomReloadFilter(PythonFilter):
         super().__init__(extra_extensions=['.json', '.yaml', '.yml'])
 
 
+def setup_env_file() -> bool:
+    if not ENV_EXAMPLE_FILE_PATH.exists():
+        console.print('.env.example 文件不存在', style='red')
+        return False
+
+    try:
+        env_content = Path(ENV_EXAMPLE_FILE_PATH).read_text(encoding='utf-8')
+        console.print('配置数据库连接信息...', style='white')
+        db_type = Prompt.ask('数据库类型', choices=['mysql', 'postgresql'], default='postgresql')
+        db_host = Prompt.ask('数据库主机', default='127.0.0.1')
+        db_port = Prompt.ask('数据库端口', default='5432' if db_type == 'postgresql' else '3306')
+        db_user = Prompt.ask('数据库用户名', default='postgres' if db_type == 'postgresql' else 'root')
+        db_password = Prompt.ask('数据库密码', password=True, default='123456')
+
+        console.print('配置 Redis 连接信息...', style='white')
+        redis_host = Prompt.ask('Redis 主机', default='127.0.0.1')
+        redis_port = Prompt.ask('Redis 端口', default='6379')
+        redis_password = Prompt.ask('Redis 密码（留空表示无密码）', password=True, default='')
+        redis_db = Prompt.ask('Redis 数据库编号', default='0')
+
+        console.print('生成 Token 密钥...', style='white')
+        token_secret = secrets.token_urlsafe(32)
+
+        console.print('写入 .env 文件...', style='white')
+        env_content = env_content.replace("DATABASE_TYPE='postgresql'", f"DATABASE_TYPE='{db_type}'")
+        settings.DATABASE_TYPE = db_type
+        env_content = env_content.replace("DATABASE_HOST='127.0.0.1'", f"DATABASE_HOST='{db_host}'")
+        settings.DATABASE_HOST = db_host
+        env_content = env_content.replace('DATABASE_PORT=5432', f'DATABASE_PORT={db_port}')
+        settings.DATABASE_PORT = db_port
+        env_content = env_content.replace("DATABASE_USER='postgres'", f"DATABASE_USER='{db_user}'")
+        settings.DATABASE_USER = db_user
+        env_content = env_content.replace("DATABASE_PASSWORD='123456'", f"DATABASE_PASSWORD='{db_password}'")
+        settings.DATABASE_PASSWORD = db_password
+        env_content = env_content.replace("REDIS_HOST='127.0.0.1'", f"REDIS_HOST='{redis_host}'")
+        settings.REDIS_HOST = redis_host
+        env_content = env_content.replace('REDIS_PORT=6379', f'REDIS_PORT={redis_port}')
+        settings.REDIS_PORT = redis_port
+        env_content = env_content.replace("REDIS_PASSWORD=''", f"REDIS_PASSWORD='{redis_password}'")
+        settings.REDIS_PASSWORD = redis_password
+        env_content = env_content.replace('REDIS_DATABASE=0', f'REDIS_DATABASE={redis_db}')
+        settings.REDIS_DATABASE = redis_db
+        env_content = re.sub(r"TOKEN_SECRET_KEY='[^']*'", f"TOKEN_SECRET_KEY='{token_secret}'", env_content)
+        settings.TOKEN_SECRET_KEY = token_secret
+
+        Path(ENV_FILE_PATH).write_text(env_content, encoding='utf-8')
+        console.print('.env 文件创建成功', style='green')
+    except Exception as e:
+        console.print(f'.env 文件创建失败: {e}', style='red')
+        return False
+    else:
+        return True
+
+
+async def create_database(conn: AsyncConnection) -> bool:
+    try:
+        terminate_sql = None
+        if DataBaseType.mysql == settings.DATABASE_TYPE:
+            check_sql = f"SHOW DATABASES LIKE '{settings.DATABASE_SCHEMA}'"
+            drop_sql = f'DROP DATABASE IF EXISTS `{settings.DATABASE_SCHEMA}`'
+            create_sql = (
+                f'CREATE DATABASE `{settings.DATABASE_SCHEMA}` CHARACTER SET {settings.DATABASE_CHARSET} '
+                f'COLLATE {settings.DATABASE_CHARSET}_unicode_ci'
+            )
+        else:
+            check_sql = f"SELECT 1 FROM pg_database WHERE datname = '{settings.DATABASE_SCHEMA}'"
+            drop_sql = f'DROP DATABASE IF EXISTS {settings.DATABASE_SCHEMA}'
+            create_sql = f'CREATE DATABASE {settings.DATABASE_SCHEMA}'
+            terminate_sql = (
+                f'SELECT pg_terminate_backend(pid) FROM pg_stat_activity '
+                f"WHERE datname = '{settings.DATABASE_SCHEMA}' AND pid <> pg_backend_pid()"
+            )
+
+        result = await conn.execute(text(check_sql))
+        exists = result.fetchone() is not None
+        console.print(f'重建 {settings.DATABASE_SCHEMA} 数据库...', style='white')
+        if exists:
+            if terminate_sql:
+                await conn.execute(text(terminate_sql))
+            await conn.execute(text(drop_sql))
+        await conn.execute(text(create_sql))
+        console.print('数据库创建成功', style='green')
+    except Exception as e:
+        console.print(f'数据库创建失败: {e}', style='red')
+        return False
+    else:
+        return True
+
+
+async def auto_init() -> None:
+    """自动化初始化流程"""
+    console.print('\n[bold cyan]步骤 1/3:[/] 配置环境变量', style='bold')
+    panel_content = Text()
+    panel_content.append('【环境变量配置】', style='bold green')
+    panel_content.append('\n\n  • 数据库连接信息')
+    panel_content.append('\n  • Redis 连接信息')
+    panel_content.append('\n  • Token 密钥（自动生成）')
+
+    console.print(Panel(panel_content, title=f'fba (v{__version__}) - 环境变量', border_style='cyan', padding=(1, 2)))
+    if not setup_env_file():
+        raise cappa.Exit('.env 文件配置失败', code=1)
+
+    console.print('\n[bold cyan]步骤 2/3:[/] 数据库创建', style='bold')
+    panel_content = Text()
+    panel_content.append('【数据库配置】', style='bold green')
+    panel_content.append('\n\n  • 类型: ')
+    panel_content.append(f'{settings.DATABASE_TYPE}', style='yellow')
+    panel_content.append('\n  • 主机：')
+    panel_content.append(f'{settings.DATABASE_HOST}:{settings.DATABASE_PORT}', style='yellow')
+    panel_content.append('\n  • 数据库：')
+    panel_content.append(f'{settings.DATABASE_SCHEMA}', style='yellow')
+    panel_content.append('\n  • 主键模式：')
+    panel_content.append(f'{settings.DATABASE_PK_MODE}', style='yellow')
+
+    console.print(Panel(panel_content, title=f'fba (v{__version__}) - 数据库', border_style='cyan', padding=(1, 2)))
+    ok = Prompt.ask('即将[red]新建/重建数据库[/red]，确认继续吗？', choices=['y', 'n'], default='n')
+
+    if ok.lower() == 'y':
+        async_init_engine = create_database_async_engine(create_database_url(with_database=False))
+        async with async_init_engine.connect() as conn:
+            await conn.execution_options(isolation_level='AUTOCOMMIT')
+            if not await create_database(conn):
+                raise cappa.Exit('数据库创建失败', code=1)
+    else:
+        console.print('已取消数据库操作', style='yellow')
+
+    console.print('\n[bold cyan]步骤 3/3:[/] 初始化数据库表和数据', style='bold')
+    async_init_engine = create_database_async_engine(create_database_url())
+    async_init_db_session = create_database_async_session(async_init_engine)
+    redis_init_client = RedisCli(
+        host=settings.REDIS_HOST,
+        port=settings.REDIS_PORT,
+        password=settings.REDIS_PASSWORD,
+        db=settings.REDIS_DATABASE,
+    )
+    await redis_init_client.init()
+    async with async_init_db_session.begin() as db:
+        await init(db, redis_init_client)
+
+
+async def init(db: AsyncSession, redis: RedisCli) -> None:
+    panel_content = Text()
+    panel_content.append('【数据库配置】', style='bold green')
+    panel_content.append('\n\n  • 类型: ')
+    panel_content.append(f'{settings.DATABASE_TYPE}', style='yellow')
+    panel_content.append('\n  • 主机：')
+    panel_content.append(f'{settings.DATABASE_HOST}:{settings.DATABASE_PORT}', style='yellow')
+    panel_content.append('\n  • 数据库：')
+    panel_content.append(f'{settings.DATABASE_SCHEMA}', style='yellow')
+    panel_content.append('\n  • 主键模式：')
+    panel_content.append(f'{settings.DATABASE_PK_MODE}', style='yellow')
+    pk_details = panel_content.from_markup(
+        '[link=https://fastapi-practices.github.io/fastapi_best_architecture_docs/backend/reference/pk.html]（了解详情）[/]'
+    )
+    panel_content.append(pk_details)
+    panel_content.append('\n\n【Redis 配置】', style='bold green')
+    panel_content.append('\n\n  • 主机：')
+    panel_content.append(f'{settings.REDIS_HOST}:{settings.REDIS_PORT}', style='yellow')
+    panel_content.append('\n  • 数据库：')
+    panel_content.append(f'{settings.REDIS_DATABASE}', style='yellow')
+    plugins = get_plugins()
+    panel_content.append('\n\n【已安装插件】', style='bold green')
+    panel_content.append('\n\n  • ')
+    if plugins:
+        panel_content.append(f'{", ".join(plugins)}', style='yellow')
+    else:
+        panel_content.append('无', style='dim')
+
+    console.print(Panel(panel_content, title=f'fba (v{__version__}) - 初始化', border_style='cyan', padding=(1, 2)))
+    ok = Prompt.ask(
+        '即将[red]新建/重建数据库表[/red]并[red]执行所有数据库脚本[/red]，确认继续吗？', choices=['y', 'n'], default='n'
+    )
+
+    if ok.lower() == 'y':
+        console.print('开始初始化...', style='white')
+        try:
+            console.print('清理 Redis 缓存', style='white')
+            for prefix in [
+                settings.JWT_USER_REDIS_PREFIX,
+                settings.TOKEN_EXTRA_INFO_REDIS_PREFIX,
+                settings.TOKEN_REDIS_PREFIX,
+                settings.TOKEN_REFRESH_REDIS_PREFIX,
+            ]:
+                await redis.delete_prefix(prefix)
+
+            console.print('重建数据库表', style='white')
+            conn = await db.connection()
+            await conn.run_sync(MappedBase.metadata.drop_all)
+            await conn.run_sync(MappedBase.metadata.create_all)
+
+            console.print('执行 SQL 脚本', style='white')
+            sql_scripts = await get_sql_scripts()
+            for sql_script in sql_scripts:
+                console.print(f'正在执行：{sql_script}', style='white')
+                await execute_sql_scripts(db, sql_script, is_init=True)
+
+            console.print('初始化成功', style='green')
+            console.print('\n快试试 [bold cyan]fba run[/bold cyan] 启动服务吧~')
+        except Exception as e:
+            raise cappa.Exit(f'初始化失败：{e}', code=1)
+    else:
+        console.print('已取消初始化操作', style='yellow')
+
+
 def run(host: str, port: int, reload: bool, workers: int) -> None:  # noqa: FBT001
     url = f'http://{host}:{port}'
     docs_url = url + settings.FASTAPI_DOCS_URL
@@ -45,16 +266,32 @@ def run(host: str, port: int, reload: bool, workers: int) -> None:  # noqa: FBT0
     openapi_url = url + (settings.FASTAPI_OPENAPI_URL or '')
 
     panel_content = Text()
-    panel_content.append(f'Current version: v{__version__}')
-    panel_content.append(f'\nService address: {url}')
-    panel_content.append('\nOfficial documentation: ')
+    panel_content.append('Python version：', style='bold cyan')
+    panel_content.append(f'{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}', style='white')
+
+    panel_content.append('\nAPI RequestAddress: ', style='bold cyan')
+    panel_content.append(f'{url}{settings.FASTAPI_API_V1_PATH}', style='blue')
+
+    panel_content.append('\n\nambient mode：', style='bold green')
+    env_style = 'yellow' if settings.ENVIRONMENT == 'dev' else 'green'
+    panel_content.append(f'{settings.ENVIRONMENT.upper()}', style=env_style)
+
+    plugins = get_plugins()
+    panel_content.append('\nPlugin installed：', style='bold green')
+    if plugins:
+        panel_content.append(f'{", ".join(plugins)}', style='yellow')
+    else:
+        panel_content.append('No', style='white')
 
     if settings.ENVIRONMENT == 'dev':
-        panel_content.append(f'\n\n📖 Swagger Document: {docs_url}', style='yellow')
-        panel_content.append(f'\n📚 Redoc   Document: {redoc_url}', style='blue')
-        panel_content.append(f'\n📡 OpenAPI JSON: {openapi_url}', style='green')
+        panel_content.append(f'\n\n📖 Swagger Document: {docs_url}', style='bold magenta')
+        panel_content.append(f'\n📚 Redoc   Document: {redoc_url}', style='bold magenta')
+        panel_content.append(f'\n📡 OpenAPI JSON: {openapi_url}', style='bold magenta')
 
-    console.print(Panel(panel_content, title='fba service information', border_style='purple', padding=(1, 2)))
+    panel_content.append('\n🌐 Architecture official documentation: ', style='bold magenta')
+    panel_content.append('#')
+
+    console.print(Panel(panel_content, title=f'fba (v{__version__})', border_style='purple', padding=(1, 2)))
     granian.Granian(
         target='backend.main:app',
         interface='asgi',
@@ -107,7 +344,7 @@ async def install_plugin(
         raise cappa.Exit('path and repo_url cannot be specified at the same time', code=1)
 
     plugin_name = None
-    console.print(Text('Start installing plugin...', style='bold cyan'))
+    console.print('Start installing plugin...', style='bold cyan')
 
     try:
         if path:
@@ -115,27 +352,50 @@ async def install_plugin(
         if repo_url:
             plugin_name = await install_git_plugin(repo_url=repo_url)
 
-        console.print(Text(f'plugin {plugin_name} installed successfully', style='bold green'))
+        console.print(f'plugin {plugin_name} installed successfully', style='bold green')
 
         sql_file = await get_plugin_sql(plugin_name, db_type, pk_type)
         if sql_file and not no_sql:
-            console.print(Text('Start auto-executing plugin SQL scripts...', style='bold cyan'))
-            await execute_sql_scripts(sql_file)
+            console.print('Start auto-executing plugin SQL scripts...', style='bold cyan')
+            async with async_db_session.begin() as db:
+                await execute_sql_scripts(db, sql_file)
 
     except Exception as e:
         raise cappa.Exit(e.msg if isinstance(e, BaseExceptionError) else str(e), code=1)
 
 
-async def execute_sql_scripts(sql_scripts: str) -> None:
-    async with async_db_session.begin() as db:
-        try:
-            stmts = await parse_sql_script(sql_scripts)
-            for stmt in stmts:
-                await db.execute(text(stmt))
-        except Exception as e:
-            raise cappa.Exit(f'SQL Script execution failed：{e}', code=1)
+async def get_sql_scripts() -> list[str]:
+    sql_scripts = []
+    db_script_dir = MYSQL_SCRIPT_DIR if DataBaseType.mysql == settings.DATABASE_TYPE else POSTGRESQL_SCRIPT_DIR
+    main_sql_file = (
+        db_script_dir / 'init_test_data.sql'
+        if PrimaryKeyType.autoincrement == settings.DATABASE_PK_MODE
+        else db_script_dir / 'init_snowflake_test_data.sql'
+    )
 
-    console.print(Text('The SQL script has been executed', style='bold green'))
+    main_sql_path = anyio.Path(main_sql_file)
+    if await main_sql_path.exists():
+        sql_scripts.append(str(main_sql_file))
+
+    plugins = get_plugins()
+    for plugin in plugins:
+        plugin_sql = await get_plugin_sql(plugin, settings.DATABASE_TYPE, settings.DATABASE_PK_MODE)
+        if plugin_sql:
+            sql_scripts.append(str(plugin_sql))
+
+    return sql_scripts
+
+
+async def execute_sql_scripts(db: AsyncSession, sql_scripts: str, *, is_init: bool = False) -> None:
+    try:
+        stmts = await parse_sql_script(sql_scripts)
+        for stmt in stmts:
+            await db.execute(text(stmt))
+    except Exception as e:
+        raise cappa.Exit(f'SQL Script execution failed：{e}', code=1)
+
+    if not is_init:
+        console.print('The SQL script has been executed', style='bold green')
 
 
 async def import_table(
@@ -143,18 +403,27 @@ async def import_table(
     table_schema: str,
     table_name: str,
 ) -> None:
+    from backend.plugin.code_generator.schema.gen import ImportParam
+    from backend.plugin.code_generator.service.gen_service import gen_service
+
     try:
         obj = ImportParam(app=app, table_schema=table_schema, table_name=table_name)
         async with async_db_session.begin() as db:
             await gen_service.import_business_and_model(db=db, obj=obj)
+        console.log('Code generation business and model columns are imported successfully', style='bold green')
+        console.log('\nTry it quickly [bold cyan]fba codegen[/bold cyan] Generate code~')
     except Exception as e:
         raise cappa.Exit(e.msg if isinstance(e, BaseExceptionError) else str(e), code=1)
 
 
-def generate() -> None:
+async def generate() -> None:
+    from backend.plugin.code_generator.service.business_service import gen_business_service
+    from backend.plugin.code_generator.service.gen_service import gen_service
+
     try:
         ids = []
-        results = run_await(gen_business_service.get_all)()
+        async with async_db_session() as db:
+            results = await gen_business_service.get_all(db=db)
 
         if not results:
             raise cappa.Exit('[red]No code generation business available! Please import first through the import command！[/]')
@@ -175,14 +444,31 @@ def generate() -> None:
             )
 
         console.print(table)
-        business = IntPrompt.ask('Please select a business number from', choices=[str(_id) for _id in ids])
+        business = IntPrompt.ask('Please select a business number from', choices=[str(id_) for id_ in ids])
 
-        gen_path = run_await(gen_service.generate)(pk=business)
+        async with async_db_session.begin() as db:
+            gen_path = await gen_service.generate(db=db, pk=business)
     except Exception as e:
         raise cappa.Exit(e.msg if isinstance(e, BaseExceptionError) else str(e), code=1)
 
-    console.print(Text('\nThe code has been generated', style='bold green'))
-    console.print(Text('\nPlease check for details：'), Text(gen_path, style='bold magenta'))
+    console.print('\nThe code has been generated', style='bold green')
+    console.print(Text('\nPlease check for details：'), Text(str(gen_path), style='bold magenta'))
+
+
+@cappa.command(help='Initialize project', default_long=True)
+@dataclass
+class Init:
+    auto: Annotated[
+        bool,
+        cappa.Arg(default=False, help='Automated initialization mode: automatically create .env, install dependencies, create database and initialize table structure'),
+    ]
+
+    async def __call__(self) -> None:
+        if self.auto:
+            await auto_init()
+        else:
+            async with async_db_session.begin() as db:
+                await init(db, redis_client)
 
 
 @cappa.command(help='Run API Service', default_long=True)
@@ -276,7 +562,7 @@ class Add:
     ]
     db_type: Annotated[
         DataBaseType,
-        cappa.Arg(default='mysql', help='Database type for executing plugin SQL scripts'),
+        cappa.Arg(default='postgresql', help='Database type for executing plugin SQL scripts'),
     ]
     pk_type: Annotated[
         PrimaryKeyType,
@@ -303,17 +589,29 @@ class Import:
         cappa.Arg(short='tn', help='Database table name'),
     ]
 
+    def __post_init__(self) -> None:
+        try:
+            import_module_cached('backend.plugin.code_generator')
+        except ImportError:
+            raise cappa.Exit('The code generation plug-in does not exist, please install this plug-in first')
+
     async def __call__(self) -> None:
         await import_table(self.app, self.table_schema, self.table_name)
 
 
 @cappa.command(name='codegen', help='Code generation (experience the complete functions, please deploy the fba vben front-end project yourself)', default_long=True)
 @dataclass
-class CodeGenerate:
+class CodeGenerator:
     subcmd: cappa.Subcommands[Import | None] = None
 
-    def __call__(self) -> None:
-        generate()
+    def __post_init__(self) -> None:
+        try:
+            import_module_cached('backend.plugin.code_generator')
+        except ImportError:
+            raise cappa.Exit('The code generation plug-in does not exist, please install this plug-in first')
+
+    async def __call__(self) -> None:
+        await generate()
 
 
 @cappa.command(help='一An efficient fba command line interface', default_long=True)
@@ -323,11 +621,12 @@ class FbaCli:
         str,
         cappa.Arg(value_name='PATH', default='', show_default=False, help='Execute SQL scripts in transaction'),
     ]
-    subcmd: cappa.Subcommands[Run | Celery | Add | CodeGenerate | None] = None
+    subcmd: cappa.Subcommands[Init | Run | Celery | Add | CodeGenerator | None] = None
 
     async def __call__(self) -> None:
         if self.sql:
-            await execute_sql_scripts(self.sql)
+            async with async_db_session.begin() as db:
+                await execute_sql_scripts(db, self.sql)
 
 
 def main() -> None:
