@@ -30,7 +30,7 @@ router = APIRouter()
 @router.get('', summary='server monitor', dependencies=[DependsJwtAuth])
 async def get_server_info() -> ResponseSchemaModel[ServerMonitorInfo]:  # noqa: C901
     def get_all_info() -> ServerMonitorInfo:  # noqa: C901
-        # CPU 信息
+        # CPU information
         cpu_data = {
             'usage': round(psutil.cpu_percent(interval=0.1), 2),
             'logical_num': psutil.cpu_count(logical=True) or 0,

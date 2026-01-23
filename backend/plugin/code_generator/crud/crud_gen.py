@@ -8,15 +8,15 @@ from backend.core.conf import settings
 
 
 class CRUDGen:
-    """代码生成 CRUD 类"""
+    """Code generation CRUD class"""
 
     @staticmethod
     async def get_all_tables(db: AsyncSession, table_schema: str) -> Sequence[RowMapping]:
         """
-        获取所有表名
+        Get all table names
 
-        :param db: 数据库会话
-        :param table_schema: 数据库 schema 名称
+        :param db: database session
+        :param table_schema: database schema name
         :return:
         """
         if DataBaseType.mysql == settings.DATABASE_TYPE:
@@ -50,11 +50,11 @@ class CRUDGen:
     @staticmethod
     async def get_table(db: AsyncSession, table_schema: str, table_name: str) -> RowMapping | None:
         """
-        获取表信息
+        Get table information
 
-        :param db: 数据库会话
-        :param table_schema: 数据库 schema 名称
-        :param table_name: 表名
+        :param db: database session
+        :param table_schema: database schema name
+        :param table_name: table name
         :return:
         """
         if DataBaseType.mysql == settings.DATABASE_TYPE:
@@ -91,11 +91,11 @@ class CRUDGen:
     @staticmethod
     async def get_all_columns(db: AsyncSession, table_schema: str, table_name: str) -> Sequence[RowMapping]:
         """
-        获取所有列信息
+        Get all column information
 
-        :param db: 数据库会话
-        :param table_schema: 数据库 schema 名称
-        :param table_name: 表名
+        :param db: database session
+        :param table_schema: database schema name
+        :param table_name: table name
         :return:
         """
         if DataBaseType.mysql == settings.DATABASE_TYPE:

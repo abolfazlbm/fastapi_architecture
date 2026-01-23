@@ -80,9 +80,9 @@ def is_has_special_char(value: str) -> re.Match[str]:
 
 def is_english_identifier(value: str) -> re.Match[str]:
     """
-    检查英文标识符
+    Check English identifier
 
-    :param value: 待检查的值
+    :param value: value to be checked
     :return:
     """
     identifier_pattern = r'^[a-zA-Z][a-zA-Z_]*$'

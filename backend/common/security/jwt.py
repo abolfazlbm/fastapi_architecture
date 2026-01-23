@@ -219,7 +219,7 @@ async def get_current_user(db: AsyncSession, pk: int) -> User:
 
 async def get_jwt_user(user_id: int) -> GetUserInfoWithRelationDetail:
     """
-    获取 JWT 用户
+    Get JWT user
 
     :param user_id:
     :return:
@@ -235,7 +235,7 @@ async def get_jwt_user(user_id: int) -> GetUserInfoWithRelationDetail:
                 user.model_dump_json(),
             )
     else:
-        # TODO: 在恰当的时机，应替换为使用 model_validate_json
+        # TODO: When appropriate, use model_validate_json instead
         # https://docs.pydantic.dev/latest/concepts/json/#partial-json-parsing
         user = GetUserInfoWithRelationDetail.model_validate(from_json(cache_user, allow_partial=True))
     return user

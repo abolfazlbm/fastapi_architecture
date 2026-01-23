@@ -8,16 +8,16 @@ from backend.common.response.response_code import StandardResponseCode
 
 async def http_limit_callback(request: Request, response: Response, expire: int) -> None:  # noqa: RUF029
     """
-    请求限制时的默认回调函数
+    Default callback function when requesting limits
 
-    :param request: FastAPI 请求对象
-    :param response: FastAPI 响应对象
-    :param expire: 剩余毫秒数
+    :param request: FastAPI request object
+    :param response: FastAPI response object
+    :param expire: remaining milliseconds
     :return:
     """
     expires = ceil(expire / 1000)
     raise errors.HTTPError(
         code=StandardResponseCode.HTTP_429,
-        msg='请求过于频繁，请稍后重试',
+        msg='The request is too frequent, please try again later.',
         headers={'Retry-After': str(expires)},
     )

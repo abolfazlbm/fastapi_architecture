@@ -24,9 +24,9 @@ from backend.database.redis import redis_client
 
 def _init_tracer(resource: Resource) -> None:
     """
-    初始化追踪器
+    Initialize tracker
 
-    :param resource: 遥测资源
+    :param resource: telemetry resource
     :return:
     """
     tracer_provider = TracerProvider(resource=resource)
@@ -38,9 +38,9 @@ def _init_tracer(resource: Resource) -> None:
 
 def _init_metrics(resource: Resource) -> None:
     """
-    初始化指标
+    Initialize indicator
 
-    :param resource: 遥测资源
+    :param resource: telemetry resource
     :return:
     """
     metric_exporter = OTLPMetricExporter(endpoint=settings.GRAFANA_OTLP_GRPC_ENDPOINT, insecure=True)
@@ -54,9 +54,9 @@ def _init_metrics(resource: Resource) -> None:
 
 def _init_logging(resource: Resource) -> None:
     """
-    初始化日志
+    Initialization log
 
-    :param resource: 遥测资源
+    :param resource: telemetry resource
     :return:
     """
     logger_provider = LoggerProvider(resource=resource)
@@ -76,9 +76,9 @@ def _init_logging(resource: Resource) -> None:
 
 def init_otel(app: FastAPI) -> None:
     """
-    初始化 OpenTelemetry
+    Initialize OpenTelemetry
 
-    :param app: FastAPI 应用实例
+    :param app: FastAPI application example
     :return:
     """
     from backend import __version__

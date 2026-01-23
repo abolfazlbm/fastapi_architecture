@@ -1,5 +1,5 @@
 def fmt_seconds(seconds: int) -> str:
-    """格式化秒数为可读的时间字符串"""
+    """Format seconds into a human-readable time string"""
     days, rem = divmod(int(seconds), 86400)
     hours, rem = divmod(rem, 3600)
     minutes, secs = divmod(rem, 60)

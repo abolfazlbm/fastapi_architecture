@@ -63,7 +63,7 @@ class LoginLogService:
                 msg=msg,
                 login_time=login_time,
             )
-            # 为后台任务创建独立数据库会话
+            # Create a separate database session for background tasks
             async with async_db_session.begin() as db:
                 await login_log_dao.create(db, obj)
         except Exception as e:

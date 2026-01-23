@@ -43,9 +43,9 @@ def sql_type_to_pydantic(typing: str) -> str:
 @lru_cache(maxsize=128)
 def sql_type_to_sqlalchemy_name(typing: str) -> str:
     """
-    将 SQL 类型转换为有效的 SQLAlchemy 类型名称(用于代码生成)
+    Convert SQL types to valid SQLAlchemy type names (for code generation)
 
-    :param typing: SQL 类型字符串
+    :param typing: SQL type string
     :return:
     """
     pg_type_mapping = {

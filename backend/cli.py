@@ -57,28 +57,28 @@ class CustomReloadFilter(PythonFilter):
 
 def setup_env_file() -> bool:
     if not ENV_EXAMPLE_FILE_PATH.exists():
-        console.print('.env.example 文件不存在', style='red')
+        console.print('.env.example File does not exist', style='red')
         return False
 
     try:
         env_content = Path(ENV_EXAMPLE_FILE_PATH).read_text(encoding='utf-8')
-        console.print('配置数据库连接信息...', style='white')
-        db_type = Prompt.ask('数据库类型', choices=['mysql', 'postgresql'], default='postgresql')
-        db_host = Prompt.ask('数据库主机', default='127.0.0.1')
-        db_port = Prompt.ask('数据库端口', default='5432' if db_type == 'postgresql' else '3306')
-        db_user = Prompt.ask('数据库用户名', default='postgres' if db_type == 'postgresql' else 'root')
-        db_password = Prompt.ask('数据库密码', password=True, default='123456')
+        console.print('Configuring database connection information...', style='white')
+        db_type = Prompt.ask('database type', choices=['mysql', 'postgresql'], default='postgresql')
+        db_host = Prompt.ask('database host', default='127.0.0.1')
+        db_port = Prompt.ask('database port', default='5432' if db_type == 'postgresql' else '3306')
+        db_user = Prompt.ask('database username', default='postgres' if db_type == 'postgresql' else 'root')
+        db_password = Prompt.ask('database password', password=True, default='123456')
 
-        console.print('配置 Redis 连接信息...', style='white')
-        redis_host = Prompt.ask('Redis 主机', default='127.0.0.1')
-        redis_port = Prompt.ask('Redis 端口', default='6379')
-        redis_password = Prompt.ask('Redis 密码（留空表示无密码）', password=True, default='')
-        redis_db = Prompt.ask('Redis 数据库编号', default='0')
+        console.print('Configure Redis connection information...', style='white')
+        redis_host = Prompt.ask('Redis host', default='127.0.0.1')
+        redis_port = Prompt.ask('Redis port', default='6379')
+        redis_password = Prompt.ask('Redis password (leave blank to indicate no password)', password=True, default='')
+        redis_db = Prompt.ask('Redis database number', default='0')
 
-        console.print('生成 Token 密钥...', style='white')
+        console.print('Generate Token key...', style='white')
         token_secret = secrets.token_urlsafe(32)
 
-        console.print('写入 .env 文件...', style='white')
+        console.print('Write to .env file...', style='white')
         env_content = env_content.replace("DATABASE_TYPE='postgresql'", f"DATABASE_TYPE='{db_type}'")
         settings.DATABASE_TYPE = db_type
         env_content = env_content.replace("DATABASE_HOST='127.0.0.1'", f"DATABASE_HOST='{db_host}'")
@@ -101,9 +101,9 @@ def setup_env_file() -> bool:
         settings.TOKEN_SECRET_KEY = token_secret
 
         Path(ENV_FILE_PATH).write_text(env_content, encoding='utf-8')
-        console.print('.env 文件创建成功', style='green')
+        console.print('.env file created successfully', style='green')
     except Exception as e:
-        console.print(f'.env 文件创建失败: {e}', style='red')
+        console.print(f'.env file creation failed: {e}', style='red')
         return False
     else:
         return True
@@ -130,58 +130,58 @@ async def create_database(conn: AsyncConnection) -> bool:
 
         result = await conn.execute(text(check_sql))
         exists = result.fetchone() is not None
-        console.print(f'重建 {settings.DATABASE_SCHEMA} 数据库...', style='white')
+        console.print(f'Rebuild {settings.DATABASE_SCHEMA} database...', style='white')
         if exists:
             if terminate_sql:
                 await conn.execute(text(terminate_sql))
             await conn.execute(text(drop_sql))
         await conn.execute(text(create_sql))
-        console.print('数据库创建成功', style='green')
+        console.print('Database created successfully', style='green')
     except Exception as e:
-        console.print(f'数据库创建失败: {e}', style='red')
+        console.print(f'Database creation failed: {e}', style='red')
         return False
     else:
         return True
 
 
 async def auto_init() -> None:
-    """自动化初始化流程"""
-    console.print('\n[bold cyan]步骤 1/3:[/] 配置环境变量', style='bold')
+    """Automated initialization process"""
+    console.print('\n[bold cyan]Step 1/3:[/] Configure environment variables', style='bold')
     panel_content = Text()
-    panel_content.append('【环境变量配置】', style='bold green')
-    panel_content.append('\n\n  • 数据库连接信息')
-    panel_content.append('\n  • Redis 连接信息')
-    panel_content.append('\n  • Token 密钥（自动生成）')
+    panel_content.append('[Environment variable configuration]', style='bold green')
+    panel_content.append('\n\n • Database connection information')
+    panel_content.append('\n • Redis connection information')
+    panel_content.append('\n • Token key (automatically generated)')
 
-    console.print(Panel(panel_content, title=f'fba (v{__version__}) - 环境变量', border_style='cyan', padding=(1, 2)))
+    console.print(Panel(panel_content, title=f'fba (v{__version__}) - environment variable', border_style='cyan', padding=(1, 2)))
     if not setup_env_file():
-        raise cappa.Exit('.env 文件配置失败', code=1)
+        raise cappa.Exit('.env file configuration failed', code=1)
 
-    console.print('\n[bold cyan]步骤 2/3:[/] 数据库创建', style='bold')
+    console.print('\n[bold cyan]Step 2/3:[/] Database creation', style='bold')
     panel_content = Text()
-    panel_content.append('【数据库配置】', style='bold green')
-    panel_content.append('\n\n  • 类型: ')
+    panel_content.append('[Database Configuration]', style='bold green')
+    panel_content.append('\n\n • Type: ')
     panel_content.append(f'{settings.DATABASE_TYPE}', style='yellow')
-    panel_content.append('\n  • 主机：')
+    panel_content.append('\n • Host: ')
     panel_content.append(f'{settings.DATABASE_HOST}:{settings.DATABASE_PORT}', style='yellow')
-    panel_content.append('\n  • 数据库：')
+    panel_content.append('\n • Database: ')
     panel_content.append(f'{settings.DATABASE_SCHEMA}', style='yellow')
-    panel_content.append('\n  • 主键模式：')
+    panel_content.append('\n • Primary key mode: ')
     panel_content.append(f'{settings.DATABASE_PK_MODE}', style='yellow')
 
-    console.print(Panel(panel_content, title=f'fba (v{__version__}) - 数据库', border_style='cyan', padding=(1, 2)))
-    ok = Prompt.ask('即将[red]新建/重建数据库[/red]，确认继续吗？', choices=['y', 'n'], default='n')
+    console.print(Panel(panel_content, title=f'fba (v{__version__}) - database', border_style='cyan', padding=(1, 2)))
+    ok = Prompt.ask('The database will be created/rebuilt soon[red][/red], are you sure to continue?', choices=['y', 'n'], default='n')
 
     if ok.lower() == 'y':
         async_init_engine = create_database_async_engine(create_database_url(with_database=False))
         async with async_init_engine.connect() as conn:
             await conn.execution_options(isolation_level='AUTOCOMMIT')
             if not await create_database(conn):
-                raise cappa.Exit('数据库创建失败', code=1)
+                raise cappa.Exit('Database creation failed', code=1)
     else:
-        console.print('已取消数据库操作', style='yellow')
+        console.print('Database operation canceled', style='yellow')
 
-    console.print('\n[bold cyan]步骤 3/3:[/] 初始化数据库表和数据', style='bold')
+    console.print('\n[bold cyan]Step 3/3:[/] Initialize database tables and data', style='bold')
     async_init_engine = create_database_async_engine(create_database_url())
     async_init_db_session = create_database_async_session(async_init_engine)
     redis_init_client = RedisCli(
@@ -197,41 +197,41 @@ async def auto_init() -> None:
 
 async def init(db: AsyncSession, redis: RedisCli) -> None:
     panel_content = Text()
-    panel_content.append('【数据库配置】', style='bold green')
-    panel_content.append('\n\n  • 类型: ')
+    panel_content.append('【Database configuration】', style='bold green')
+    panel_content.append('\n\n  • type: ')
     panel_content.append(f'{settings.DATABASE_TYPE}', style='yellow')
-    panel_content.append('\n  • 主机：')
+    panel_content.append('\n  • host：')
     panel_content.append(f'{settings.DATABASE_HOST}:{settings.DATABASE_PORT}', style='yellow')
-    panel_content.append('\n  • 数据库：')
+    panel_content.append('\n  • database：')
     panel_content.append(f'{settings.DATABASE_SCHEMA}', style='yellow')
-    panel_content.append('\n  • 主键模式：')
+    panel_content.append('\n  • primaryKeyMode：')
     panel_content.append(f'{settings.DATABASE_PK_MODE}', style='yellow')
     pk_details = panel_content.from_markup(
-        '[link=https://fastapi-practices.github.io/fastapi_best_architecture_docs/backend/reference/pk.html]（了解详情）[/]'
+        '[link=https://fastapi-practices.github.io/fastapi_best_architecture_docs/backend/reference/pk.html]（LearnMore）[/]'
     )
     panel_content.append(pk_details)
-    panel_content.append('\n\n【Redis 配置】', style='bold green')
-    panel_content.append('\n\n  • 主机：')
+    panel_content.append('\n\n【Redis deploy】', style='bold green')
+    panel_content.append('\n\n  • host：')
     panel_content.append(f'{settings.REDIS_HOST}:{settings.REDIS_PORT}', style='yellow')
-    panel_content.append('\n  • 数据库：')
+    panel_content.append('\n  • database：')
     panel_content.append(f'{settings.REDIS_DATABASE}', style='yellow')
     plugins = get_plugins()
-    panel_content.append('\n\n【已安装插件】', style='bold green')
+    panel_content.append('\n\n【Plugin Installed】', style='bold green')
     panel_content.append('\n\n  • ')
     if plugins:
         panel_content.append(f'{", ".join(plugins)}', style='yellow')
     else:
-        panel_content.append('无', style='dim')
+        panel_content.append('no', style='dim')
 
-    console.print(Panel(panel_content, title=f'fba (v{__version__}) - 初始化', border_style='cyan', padding=(1, 2)))
+    console.print(Panel(panel_content, title=f'fba (v{__version__}) - initialize', border_style='cyan', padding=(1, 2)))
     ok = Prompt.ask(
-        '即将[red]新建/重建数据库表[/red]并[red]执行所有数据库脚本[/red]，确认继续吗？', choices=['y', 'n'], default='n'
+        'We are about to [red]create/rebuild database tables[/red] and [red]execute all database scripts[/red]. Are you sure to continue? ', choices=['y', 'n'], default='n'
     )
 
     if ok.lower() == 'y':
-        console.print('开始初始化...', style='white')
+        console.print('Start initialization...', style='white')
         try:
-            console.print('清理 Redis 缓存', style='white')
+            console.print('Clear Redis cache', style='white')
             for prefix in [
                 settings.JWT_USER_REDIS_PREFIX,
                 settings.TOKEN_EXTRA_INFO_REDIS_PREFIX,
@@ -240,23 +240,23 @@ async def init(db: AsyncSession, redis: RedisCli) -> None:
             ]:
                 await redis.delete_prefix(prefix)
 
-            console.print('重建数据库表', style='white')
+            console.print('Rebuild database table', style='white')
             conn = await db.connection()
             await conn.run_sync(MappedBase.metadata.drop_all)
             await conn.run_sync(MappedBase.metadata.create_all)
 
-            console.print('执行 SQL 脚本', style='white')
+            console.print('Execute SQL script', style='white')
             sql_scripts = await get_sql_scripts()
             for sql_script in sql_scripts:
-                console.print(f'正在执行：{sql_script}', style='white')
+                console.print(f'Executing: {sql_script}', style='white')
                 await execute_sql_scripts(db, sql_script, is_init=True)
 
-            console.print('初始化成功', style='green')
-            console.print('\n快试试 [bold cyan]fba run[/bold cyan] 启动服务吧~')
+            console.print('Initialization successful', style='green')
+            console.print('\nQuickly try [bold cyan]fba run[/bold cyan] to start the service~')
         except Exception as e:
-            raise cappa.Exit(f'初始化失败：{e}', code=1)
+            raise cappa.Exit(f'Initialization failed: {e}', code=1)
     else:
-        console.print('已取消初始化操作', style='yellow')
+        console.print('Initialization operation canceled', style='yellow')
 
 
 def run(host: str, port: int, reload: bool, workers: int) -> None:  # noqa: FBT001

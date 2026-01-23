@@ -4,95 +4,95 @@ from backend.common.schema import SchemaBase
 
 
 class CpuInfo(SchemaBase):
-    """CPU 信息"""
+    """CPU information"""
 
-    usage: float = Field(description='CPU 使用率 (%)')
-    logical_num: int = Field(description='逻辑核心数')
-    physical_num: int = Field(description='物理核心数')
-    max_freq: float = Field(description='最大频率 (MHz)')
-    min_freq: float = Field(description='最小频率 (MHz)')
-    current_freq: float = Field(description='当前频率 (MHz)')
+    usage: float = Field(description='CPU usage (%)')
+    logical_num: int = Field(description='logical core number')
+    physical_num: int = Field(description='Physical core number')
+    max_freq: float = Field(description='Maximum frequency (MHz)')
+    min_freq: float = Field(description='Minimum frequency (MHz)')
+    current_freq: float = Field(description='Current frequency (MHz)')
 
 
 class MemInfo(SchemaBase):
-    """内存信息"""
+    """Memory information"""
 
-    total: float = Field(description='总内存 (GB)')
-    used: float = Field(description='已使用内存 (GB)')
-    free: float = Field(description='可用内存 (GB)')
-    usage: float = Field(description='内存使用率 (%)')
+    total: float = Field(description='Total memory (GB)')
+    used: float = Field(description='Memory used (GB)')
+    free: float = Field(description='Available memory (GB)')
+    usage: float = Field(description='Memory usage (%)')
 
 
 class SysInfo(SchemaBase):
-    """系统信息"""
+    """System information"""
 
-    name: str = Field(description='主机名')
-    ip: str = Field(description='IP 地址')
-    os: str = Field(description='操作系统')
-    arch: str = Field(description='系统架构')
+    name: str = Field(description='hostname')
+    ip: str = Field(description='IP address')
+    os: str = Field(description='operating system')
+    arch: str = Field(description='system architecture')
 
 
 class DiskInfo(SchemaBase):
-    """磁盘信息"""
+    """Disk information"""
 
-    dir: str = Field(description='挂载点')
-    type: str = Field(description='文件系统类型')
-    device: str = Field(description='设备名称')
-    total: str = Field(description='总容量')
-    free: str = Field(description='可用容量')
-    used: str = Field(description='已使用容量')
-    usage: str = Field(description='使用率')
+    dir: str = Field(description='mount point')
+    type: str = Field(description='File system type')
+    device: str = Field(description='device name')
+    total: str = Field(description='Total capacity')
+    free: str = Field(description='Available capacity')
+    used: str = Field(description='Used capacity')
+    usage: str = Field(description='usage rate')
 
 
 class ServiceInfo(SchemaBase):
-    """服务信息"""
+    """Service information"""
 
-    name: str = Field(description='服务名称')
-    version: str = Field(description='版本')
-    home: str = Field(description='安装路径')
-    cpu_usage: str = Field(description='CPU 使用率')
-    mem_vms: str = Field(description='虚拟内存')
-    mem_rss: str = Field(description='物理内存')
-    mem_free: str = Field(description='可用内存')
-    startup: str = Field(description='启动时间')
-    elapsed: str = Field(description='运行时长')
+    name: str = Field(description='Service Name')
+    version: str = Field(description='version')
+    home: str = Field(description='Installation path')
+    cpu_usage: str = Field(description='CPU usage')
+    mem_vms: str = Field(description='virtual memory')
+    mem_rss: str = Field(description='physical memory')
+    mem_free: str = Field(description='Available memory')
+    startup: str = Field(description='Startup time')
+    elapsed: str = Field(description='running time')
 
 
 class ServerMonitorInfo(SchemaBase):
-    """服务器监控信息"""
+    """Server monitoring information"""
 
-    cpu: CpuInfo = Field(description='CPU 信息')
-    mem: MemInfo = Field(description='内存信息')
-    sys: SysInfo = Field(description='系统信息')
-    disk: list[DiskInfo] = Field(description='磁盘信息列表')
-    service: ServiceInfo = Field(description='服务信息')
+    cpu: CpuInfo = Field(description='CPU information')
+    mem: MemInfo = Field(description='memory information')
+    sys: SysInfo = Field(description='System Information')
+    disk: list[DiskInfo] = Field(description='Disk information list')
+    service: ServiceInfo = Field(description='Service Information')
 
 
 class RedisServerInfo(SchemaBase):
-    """Redis 服务器信息"""
+    """Redis server information"""
 
-    redis_version: str = Field(description='Redis 版本')
-    redis_mode: str = Field(description='运行模式')
-    os: str = Field(description='操作系统')
-    arch_bits: str = Field(description='架构位数')
-    tcp_port: str = Field(description='TCP 端口')
-    uptime_in_seconds: str = Field(description='运行时长')
-    connected_clients: str = Field(description='已连接客户端数')
-    used_memory_human: str = Field(description='已使用内存')
-    used_memory_peak_human: str = Field(description='内存使用峰值')
-    maxmemory_human: str = Field(description='最大内存限制')
-    keys_num: str = Field(description='键总数')
+    redis_version: str = Field(description='Redis version')
+    redis_mode: str = Field(description='Run Mode')
+    os: str = Field(description='operating system')
+    arch_bits: str = Field(description='architecture bits')
+    tcp_port: str = Field(description='TCP port')
+    uptime_in_seconds: str = Field(description='running time')
+    connected_clients: str = Field(description='Number of connected clients')
+    used_memory_human: str = Field(description='Memory used')
+    used_memory_peak_human: str = Field(description='Memory usage peak')
+    maxmemory_human: str = Field(description='Maximum memory limit')
+    keys_num: str = Field(description='Total number of keys')
 
 
 class RedisCommandStat(SchemaBase):
-    """Redis 命令统计"""
+    """Redis command statistics"""
 
-    name: str = Field(description='命令名称')
-    value: str = Field(description='调用次数')
+    name: str = Field(description='command name')
+    value: str = Field(description='Number of calls')
 
 
 class RedisMonitorInfo(SchemaBase):
-    """Redis 监控信息"""
+    """Redis monitoring information"""
 
-    info: RedisServerInfo = Field(description='服务器信息')
-    stats: list[RedisCommandStat] = Field(description='命令统计列表')
+    info: RedisServerInfo = Field(description='Server Information')
+    stats: list[RedisCommandStat] = Field(description='Command statistics list')

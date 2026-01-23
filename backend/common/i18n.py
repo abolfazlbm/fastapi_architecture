@@ -22,7 +22,7 @@ class I18n:
 
     @property
     def current_language(self) -> str:
-        """获取当前请求的语言"""
+        """Get the current requested language"""
         try:
             return ctx.language
         except (AttributeError, LookupError, ContextDoesNotExistError):
@@ -30,7 +30,7 @@ class I18n:
 
     @current_language.setter
     def current_language(self, language: str) -> None:
-        """设置当前请求的语言"""
+        """Set the language of the current request"""
         ctx.language = language
 
     def load_locales(self) -> None:

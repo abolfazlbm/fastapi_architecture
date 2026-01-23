@@ -10,12 +10,12 @@
         "enable": true,
         "hide": true,
         "iconColor": "rgba(0, 211, 255, 1)",
-        "name": "注释与警报",
+        "name": "Notes And Alerts",
         "type": "dashboard"
       }
     ]
   },
-  "description": "Celery 分布式任务队列监控仪表盘 - 实时监控 Worker 状态、任务执行情况、队列长度和性能指标",
+  "description": "Celery distributed task queue monitoring dashboard - real-time monitoring of Worker status, task execution, queue length and performance indicators",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -31,7 +31,7 @@
         "fba_server"
       ],
       "targetBlank": true,
-      "title": "FastAPI 监控",
+      "title": "FastAPI monitor",
       "type": "dashboards"
     }
   ],
@@ -45,7 +45,7 @@
         "y": 0
       },
       "id": 100,
-      "title": "🖥️ Worker 概览",
+      "title": "🖥️ Worker overview",
       "type": "row"
     },
     {
@@ -53,7 +53,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "显示每个 Celery Worker 的运行状态。绿色表示在线，红色表示离线",
+      "description": "Display the running status of each Celery Worker. Green means online, red means offline",
       "fieldConfig": {
         "defaults": {
           "mappings": [
@@ -61,11 +61,11 @@
               "options": {
                 "0": {
                   "color": "#E74C3C",
-                  "text": "离线"
+                  "text": "offline"
                 },
                 "1": {
                   "color": "#2ECC71",
-                  "text": "在线"
+                  "text": "online"
                 }
               },
               "type": "value"
@@ -123,7 +123,7 @@
           "refId": "A"
         }
       ],
-      "title": "Worker 状态",
+      "title": "Worker status",
       "type": "stat"
     },
     {
@@ -131,7 +131,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "当前在线的 Worker 数量",
+      "description": "Number of Workers currently online",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -187,7 +187,7 @@
           "refId": "A"
         }
       ],
-      "title": "在线 Worker",
+      "title": "online Worker",
       "type": "stat"
     },
     {
@@ -195,7 +195,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "当前正在执行的任务数量",
+      "description": "The number of tasks currently being executed",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -251,7 +251,7 @@
           "refId": "A"
         }
       ],
-      "title": "执行中任务",
+      "title": "Task in progress",
       "type": "stat"
     },
     {
@@ -259,7 +259,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "任务成功率 = 成功任务数 / (成功 + 失败)",
+      "description": "Task success rate = number of successful tasks / (success + failure)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -325,7 +325,7 @@
           "refId": "A"
         }
       ],
-      "title": "任务成功率",
+      "title": "Task success rate",
       "type": "stat"
     },
     {
@@ -333,7 +333,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "各队列中等待处理的任务数量",
+      "description": "The number of tasks waiting to be processed in each queue",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -396,7 +396,7 @@
           "refId": "A"
         }
       ],
-      "title": "队列长度",
+      "title": "Queue length",
       "type": "stat"
     },
     {
@@ -404,7 +404,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "各 Worker 当前处理的任务数量分布",
+      "description": "Distribution of the number of tasks currently processed by each Worker",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -460,7 +460,7 @@
           "refId": "A"
         }
       ],
-      "title": "Worker 负载分布",
+      "title": "Worker load distribution",
       "type": "piechart"
     },
     {
@@ -472,7 +472,7 @@
         "y": 5
       },
       "id": 101,
-      "title": "📊 任务统计",
+      "title": "📊 Mission Statistics",
       "type": "row"
     },
     {
@@ -480,7 +480,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "已发送到队列的任务总数（累计值）",
+      "description": "Total number of tasks sent to the queue (cumulative value)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -535,7 +535,7 @@
           "refId": "A"
         }
       ],
-      "title": "已发送",
+      "title": "Sent",
       "type": "stat"
     },
     {
@@ -543,7 +543,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Worker 已接收的任务总数（累计值）",
+      "description": "Total number of tasks received by Worker (cumulative value)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -598,7 +598,7 @@
           "refId": "A"
         }
       ],
-      "title": "已接收",
+      "title": "Received",
       "type": "stat"
     },
     {
@@ -606,7 +606,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "已开始执行的任务总数（累计值）",
+      "description": "Total number of tasks that have been started (cumulative value)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -661,7 +661,7 @@
           "refId": "A"
         }
       ],
-      "title": "已开始",
+      "title": "Started",
       "type": "stat"
     },
     {
@@ -669,7 +669,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "执行成功的任务总数（累计值）",
+      "description": "Total number of successfully executed tasks (cumulative value)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -724,7 +724,7 @@
           "refId": "A"
         }
       ],
-      "title": "成功",
+      "title": "Success",
       "type": "stat"
     },
     {
@@ -732,7 +732,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "执行失败的任务总数（累计值）",
+      "description": "Total number of failed tasks (cumulative value)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -787,7 +787,7 @@
           "refId": "A"
         }
       ],
-      "title": "失败",
+      "title": "Failure",
       "type": "stat"
     },
     {
@@ -795,7 +795,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "重试的任务总数（累计值）",
+      "description": "Total number of retried tasks (cumulative value)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -850,7 +850,7 @@
           "refId": "A"
         }
       ],
-      "title": "重试",
+      "title": "Retry",
       "type": "stat"
     },
     {
@@ -858,7 +858,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "被撤销的任务总数（累计值）",
+      "description": "Total number of canceled tasks (cumulative value)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -913,7 +913,7 @@
           "refId": "A"
         }
       ],
-      "title": "撤销",
+      "title": "Cancel",
       "type": "stat"
     },
     {
@@ -921,7 +921,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "被拒绝的任务总数（累计值）",
+      "description": "Total number of rejected tasks (cumulative value)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -976,7 +976,7 @@
           "refId": "A"
         }
       ],
-      "title": "拒绝",
+      "title": "Reject",
       "type": "stat"
     },
     {
@@ -988,7 +988,7 @@
         "y": 9
       },
       "id": 102,
-      "title": "📈 任务趋势",
+      "title": "📈 Task Trend",
       "type": "row"
     },
     {
@@ -996,7 +996,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "任务执行结果的速率趋势，包括成功、失败和重试",
+      "description": "Rate trend of task execution results, including success, failure and retry",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1006,7 +1006,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "任务/秒",
+            "axisLabel": "tasks/second",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "barWidthFactor": 0.6,
@@ -1051,7 +1051,7 @@
           {
             "matcher": {
               "id": "byRegexp",
-              "options": "成功.*"
+              "options": "Success.*"
             },
             "properties": [
               {
@@ -1066,7 +1066,7 @@
           {
             "matcher": {
               "id": "byRegexp",
-              "options": "失败.*"
+              "options": "Failed.*"
             },
             "properties": [
               {
@@ -1081,7 +1081,7 @@
           {
             "matcher": {
               "id": "byRegexp",
-              "options": "重试.*"
+              "options": "Retry.*"
             },
             "properties": [
               {
@@ -1127,7 +1127,7 @@
           },
           "editorMode": "code",
           "expr": "sum by(name) (rate(celery_task_succeeded_total{job=\"fba_celery_exporter\", name!=\"None\"}[5m]))",
-          "legendFormat": "成功 - {{name}}",
+          "legendFormat": "Success - {{name}}",
           "refId": "A"
         },
         {
@@ -1137,7 +1137,7 @@
           },
           "editorMode": "code",
           "expr": "sum by(name) (rate(celery_task_failed_total{job=\"fba_celery_exporter\", name!=\"None\"}[5m]))",
-          "legendFormat": "失败 - {{name}}",
+          "legendFormat": "Failed - {{name}}",
           "refId": "B"
         },
         {
@@ -1147,11 +1147,11 @@
           },
           "editorMode": "code",
           "expr": "sum by(name) (rate(celery_task_retried_total{job=\"fba_celery_exporter\", name!=\"None\"}[5m]))",
-          "legendFormat": "重试 - {{name}}",
+          "legendFormat": "Retry - {{name}}",
           "refId": "C"
         }
       ],
-      "title": "任务执行速率",
+      "title": "Task execution rate",
       "type": "timeseries"
     },
     {
@@ -1159,7 +1159,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "任务发送、接收和开始执行的速率趋势",
+      "description": "Rate trend of task sending, receiving and starting execution",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1169,7 +1169,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "任务/秒",
+            "axisLabel": "tasks/second",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "barWidthFactor": 0.6,
@@ -1214,7 +1214,7 @@
           {
             "matcher": {
               "id": "byRegexp",
-              "options": "发送.*"
+              "options": "Send.*"
             },
             "properties": [
               {
@@ -1229,7 +1229,7 @@
           {
             "matcher": {
               "id": "byRegexp",
-              "options": "接收.*"
+              "options": "Receive.*"
             },
             "properties": [
               {
@@ -1244,7 +1244,7 @@
           {
             "matcher": {
               "id": "byRegexp",
-              "options": "开始.*"
+              "options": "Start.*"
             },
             "properties": [
               {
@@ -1290,7 +1290,7 @@
           },
           "editorMode": "code",
           "expr": "sum by(name) (rate(celery_task_sent_total{job=\"fba_celery_exporter\", name!=\"None\"}[5m]))",
-          "legendFormat": "发送 - {{name}}",
+          "legendFormat": "Send - {{name}}",
           "refId": "A"
         },
         {
@@ -1300,7 +1300,7 @@
           },
           "editorMode": "code",
           "expr": "sum by(name) (rate(celery_task_received_total{job=\"fba_celery_exporter\", name!=\"None\"}[5m]))",
-          "legendFormat": "接收 - {{name}}",
+          "legendFormat": "Receive - {{name}}",
           "refId": "B"
         },
         {
@@ -1310,11 +1310,11 @@
           },
           "editorMode": "code",
           "expr": "sum by(name) (rate(celery_task_started_total{job=\"fba_celery_exporter\", name!=\"None\"}[5m]))",
-          "legendFormat": "开始 - {{name}}",
+          "legendFormat": "Start - {{name}}",
           "refId": "C"
         }
       ],
-      "title": "任务流转速率",
+      "title": "Task turnover rate",
       "type": "timeseries"
     },
     {
@@ -1326,7 +1326,7 @@
         "y": 18
       },
       "id": 104,
-      "title": "📦 队列监控",
+      "title": "📦 Queue Monitoring",
       "type": "row"
     },
     {
@@ -1334,7 +1334,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "各队列中等待处理的任务数量趋势",
+      "description": "Trend of the number of tasks waiting to be processed in each queue",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1344,7 +1344,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "任务数",
+            "axisLabel": "Number of tasks",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "barWidthFactor": 0.6,
@@ -1432,7 +1432,7 @@
           "refId": "A"
         }
       ],
-      "title": "队列长度趋势",
+      "title": "Queue length trend",
       "type": "timeseries"
     },
     {
@@ -1440,7 +1440,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "各 Worker 当前处理的活动任务数量趋势",
+      "description": "Trend of number of active tasks currently processed by each Worker",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1450,7 +1450,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "任务数",
+            "axisLabel": "Number of tasks",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "barWidthFactor": 0.6,
@@ -1530,7 +1530,7 @@
           "refId": "A"
         }
       ],
-      "title": "Worker 活动任务趋势",
+      "title": "Worker Activity Task Trend",
       "type": "timeseries"
     },
     {
@@ -1542,7 +1542,7 @@
         "y": 27
       },
       "id": 103,
-      "title": "⏱️ 任务性能",
+      "title": "⏱️ Task Performance",
       "type": "row"
     },
     {
@@ -1550,7 +1550,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "各任务类型的平均执行时间，颜色从绿到红表示执行时间从短到长",
+      "description": "Average execution time of each task type, color from Green to red indicates execution time from short to long",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1625,7 +1625,7 @@
           "refId": "A"
         }
       ],
-      "title": "任务平均执行时间",
+      "title": "Average task execution time",
       "type": "bargauge"
     },
     {
@@ -1633,7 +1633,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "成功任务按类型的分布情况",
+      "description": "Distribution of successful tasks by type",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1693,7 +1693,7 @@
           "refId": "A"
         }
       ],
-      "title": "成功任务分布",
+      "title": "Distribution of successful tasks",
       "type": "piechart"
     },
     {
@@ -1701,7 +1701,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "失败任务按类型的分布情况",
+      "description": "Distribution of failed tasks by type",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1761,7 +1761,7 @@
           "refId": "A"
         }
       ],
-      "title": "失败任务分布",
+      "title": "Distribution of failed tasks",
       "type": "piechart"
     },
     {
@@ -1773,7 +1773,7 @@
         "y": 36
       },
       "id": 105,
-      "title": "📊 性能分析",
+      "title": "📊Performance Analysis",
       "type": "row"
     },
     {
@@ -1781,7 +1781,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "各任务类型的执行时间分布（P50/P90/P99）",
+      "description": "Execution time distribution of each task type (P50/P90/P99)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1791,7 +1791,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "执行时间 (秒)",
+            "axisLabel": "Execution time (seconds)",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "barWidthFactor": 0.6,
@@ -1888,7 +1888,7 @@
           "refId": "C"
         }
       ],
-      "title": "任务执行时间分布 (P50/P90/P99)",
+      "title": "Task execution time distribution (P50/P90/P99)",
       "type": "timeseries"
     },
     {
@@ -1896,7 +1896,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "每分钟完成的任务数量（吞吐量）",
+      "description": "Number of tasks completed per minute (throughput)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1906,7 +1906,7 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "任务/分钟",
+            "axisLabel": "Tasks/minute",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "barWidthFactor": 0.6,
@@ -1951,7 +1951,7 @@
           {
             "matcher": {
               "id": "byRegexp",
-              "options": "成功.*"
+              "options": "Success.*"
             },
             "properties": [
               {
@@ -1966,7 +1966,7 @@
           {
             "matcher": {
               "id": "byRegexp",
-              "options": "失败.*"
+              "options": "Failed.*"
             },
             "properties": [
               {
@@ -2011,7 +2011,7 @@
           },
           "editorMode": "code",
           "expr": "sum(increase(celery_task_succeeded_total{job=\"fba_celery_exporter\", name!=\"None\"}[1m])) by (name)",
-          "legendFormat": "成功 - {{name}}",
+          "legendFormat": "Success - {{name}}",
           "refId": "A"
         },
         {
@@ -2021,11 +2021,11 @@
           },
           "editorMode": "code",
           "expr": "sum(increase(celery_task_failed_total{job=\"fba_celery_exporter\", name!=\"None\"}[1m])) by (name)",
-          "legendFormat": "失败 - {{name}}",
+          "legendFormat": "Failed - {{name}}",
           "refId": "B"
         }
       ],
-      "title": "任务吞吐量 (每分钟)",
+      "title": "Task throughput (per minute)",
       "type": "timeseries"
     }
   ],

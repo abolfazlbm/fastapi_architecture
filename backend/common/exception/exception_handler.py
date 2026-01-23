@@ -201,10 +201,10 @@ def register_exception(app: FastAPI) -> None:  # noqa: C901
         @app.exception_handler(StandardResponseCode.HTTP_500)
         async def cors_custom_code_500_exception_handler(request: Request, exc: BaseExceptionError | Exception):
             """
-            跨域自定义 500 异常处理
+            Cross-domain custom 500 exception handling
 
-            :param request: FastAPI 请求对象
-            :param exc: 自定义异常
+            :param request: FastAPI request object
+            :param exc: custom exception
             :return:
             """
             if isinstance(exc, BaseExceptionError):

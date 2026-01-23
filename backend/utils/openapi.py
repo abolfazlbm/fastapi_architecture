@@ -16,9 +16,9 @@ def simplify_operation_ids(app: FastAPI) -> None:
 
 def ensure_unique_route_names(app: FastAPI) -> None:
     """
-    检查路由名称是否唯一
+    Check if route name is unique
 
-    :param app: FastAPI 应用实例
+    :param app: FastAPI application example
     :return:
     """
     temp_routes = set()

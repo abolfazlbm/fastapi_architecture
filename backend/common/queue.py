@@ -26,6 +26,6 @@ async def batch_dequeue(queue: Queue, max_items: int, timeout: float) -> list:
     except asyncio.TimeoutError:
         pass
     except Exception as e:
-        log.error(f'队列批量获取失败: {e}')
+        log.error(f'Queue batch acquisition failed: {e}')
 
     return items

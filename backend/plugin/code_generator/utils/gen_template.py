@@ -13,7 +13,7 @@ from backend.utils.timezone import timezone
 
 class GenTemplate:
     def __init__(self) -> None:
-        """初始化模板生成器"""
+        """Initialize template generator"""
         self.env = Environment(
             loader=FileSystemLoader(JINJA2_TEMPLATE_DIR),
             autoescape=select_autoescape(enabled_extensions=['jinja']),
@@ -27,20 +27,20 @@ class GenTemplate:
 
     def get_template(self, jinja_file: str) -> Template:
         """
-        获取 Jinja2 模板对象
+        Get Jinja2 template object
 
-        :param jinja_file: Jinja2 模板文件路径
-        :return: Template 对象
+        :param jinja_file: Jinja2 template file path
+        :return: Template object
         """
         return self.env.get_template(jinja_file)
 
     @staticmethod
     def get_template_path_mapping(business: GenBusiness) -> dict[str, str]:
         """
-        获取模板文件到生成文件的路径映射
+        Get the path mapping from template files to generated files
 
-        :param business: 代码生成业务对象
-        :return: {模板路径: 生成文件路径}
+        :param business: code generation business object
+        :return: {template path: generated file path}
         """
         app_name = business.app_name
         filename = business.filename
@@ -59,10 +59,10 @@ class GenTemplate:
 
     def get_init_files(self, business: GenBusiness) -> dict[str, str]:
         """
-        获取需要生成的 __init__.py 文件及其内容
+        Get the __init__.py file that needs to be generated and its contents
 
-        :param business: 业务对象
-        :return: {相对路径: 文件内容}
+        :param business: business object
+        :return: {relative path: file content}
         """
         app_name = business.app_name
         table_name = business.table_name
@@ -84,10 +84,10 @@ class GenTemplate:
     @staticmethod
     def get_vars(business: GenBusiness, models: Sequence[GenColumn]) -> dict[str, str | Sequence[GenColumn]]:
         """
-        获取模板变量
+        Get template variables
 
-        :param business: 代码生成业务对象
-        :param models: 代码生成模型对象列表
+        :param business: code generation business object
+        :param models: code generation model object list
         :return:
         """
         vars_dict = {
