@@ -19,6 +19,7 @@ class GenBusinessSchemaBase(SchemaBase):
     filename: str | None = Field(None, description='Used for python code base filenames')
     datetime_mixin: bool = Field(True, description='Whether to include the time Mixin column')
     api_version: str = Field('v1', description='Code Generation Api Version')
+    tag: str | None = Field(None, description='API label used for routing packets')
     gen_path: str | None = Field(None, description='Code Generation Path')
     remark: str | None = Field(None, description='Remark')
 

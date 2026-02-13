@@ -1,16 +1,18 @@
 [plugin]
-summary = 'data dictionary'
-version = '0.0.8'
-description = 'Usually used to constrain front-end engineering data display'
-author = 'wu-clan'
+summary = "data dictionary"
+version = "0.0.8"
+description = "Usually used to constrain front-end engineering data display"
+author = "wu-clan"
+tags = ["other"]
+database = ["mysql", "postgresql"]
 
 [app]
-extend = 'admin'
+extend = "admin"
 
 [api.dict_data]
-prefix = '/dict-datas'
-tags = 'system dictionary data'
+prefix = "/dict-datas"
+tags = "System dictionary data"
 
 [api.dict_type]
-prefix = '/dict-types'
-tags = 'system dictionary type'
+prefix = "/dict-types"
+tags = "System dictionary type"

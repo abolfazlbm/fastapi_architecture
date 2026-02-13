@@ -1,12 +1,14 @@
 [plugin]
-summary = 'Parameter configuration'
-version = '0.0.2'
-description = 'Usually used to dynamically configure system parameters/front-end engineering data display'
-author = 'wu-clan'
+summary = "Parameter configuration"
+version = "0.0.2"
+description = "Usually used to dynamically configure system parameters and display front-end engineering data"
+author = "wu-clan"
+tags = ["other"]
+database = ["mysql", "postgresql"]
 
 [app]
-extend = 'admin'
+extend = "admin"
 
 [api.config]
-prefix = '/configs'
-tags = 'System parameter configuration'
+prefix = "/configs"
+tags = "System parameter configuration"

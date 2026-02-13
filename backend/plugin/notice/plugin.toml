@@ -1,12 +1,14 @@
 [plugin]
-summary = 'Notification Announcement'
-version = '0.0.2'
-description = 'Publish internal system notifications and announcements'
-author = 'wu-clan'
+summary = "Notification Announcement"
+version = "0.0.2"
+description = "Used to publish internal system notifications and announcements"
+author = "wu-clan"
+tags = ["other"]
+database = ["mysql", "postgresql"]
 
 [app]
-extend = 'admin'
+extend = "admin"
 
 [api.notice]
-prefix = '/notices'
-tags = 'System notification announcement'
+prefix = "/notices"
+tags = "System notification announcement"

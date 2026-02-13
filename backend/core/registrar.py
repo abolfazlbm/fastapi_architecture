@@ -7,7 +7,6 @@ from contextlib import asynccontextmanager
 import socketio
 
 from fastapi import Depends, FastAPI
-from fastapi_limiter import FastAPILimiter
 from fastapi_pagination import add_pagination
 from prometheus_client import make_asgi_app
 from starlette.middleware.authentication import AuthenticationMiddleware
@@ -17,6 +16,7 @@ from starlette_context.middleware import ContextMiddleware
 from starlette_context.plugins import RequestIdPlugin
 
 from backend import __version__
+from backend.common.cache.pubsub import cache_pubsub_manager
 from backend.common.exception.exception_handler import register_exception
 from backend.common.log import set_custom_logfile, setup_logging
 from backend.common.response.response_code import StandardResponseCode
@@ -31,7 +31,6 @@ from backend.middleware.opera_log_middleware import OperaLogMiddleware
 from backend.middleware.state_middleware import StateMiddleware
 from backend.plugin.core import build_final_router
 from backend.utils.demo_mode import demo_site
-from backend.utils.limiter import http_limit_callback
 from backend.utils.openapi import ensure_unique_route_names, simplify_operation_ids
 from backend.utils.otel import init_otel
 from backend.utils.serializers import MsgSpecJSONResponse
@@ -53,20 +52,19 @@ async def register_init(app: FastAPI) -> AsyncGenerator[None, None]:
     # Initialize redis
     await redis_client.init()
 
-    # Initialize limiter
-    await FastAPILimiter.init(
-        redis=redis_client,
-        prefix=settings.REQUEST_LIMITER_REDIS_PREFIX,
-        http_callback=http_limit_callback,
-    )
-
     # Initialize the snowflake node
     await snowflake.init()
 
     # Create operation log task
     create_task(OperaLogMiddleware.consumer())
 
+    # Start cache Pub/Sub listener
+    cache_pubsub_manager.start_listener()
+
     yield
+
+    # Stop caching Pub/Sub listeners
+    await cache_pubsub_manager.stop_listener()
 
     # Release the snowflake node
     await snowflake.shutdown()
@@ -98,7 +96,7 @@ def register_app() -> FastAPI:
     register_page(app)
     register_exception(app)
 
-    if settings.GRAFANA_METRICS:
+    if settings.GRAFANA_METRICS_ENABLE:
         register_metrics(app)
 
     return app
@@ -154,7 +152,7 @@ def register_middleware(app: FastAPI) -> None:
     app.add_middleware(AccessMiddleware)
 
     # ContextVar
-    plugins = [OtelTraceIdPlugin()] if settings.GRAFANA_METRICS else [RequestIdPlugin(validate=True)]
+    plugins = [OtelTraceIdPlugin()] if settings.GRAFANA_METRICS_ENABLE else [RequestIdPlugin(validate=True)]
     app.add_middleware(
         ContextMiddleware,
         plugins=plugins,

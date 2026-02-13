@@ -29,8 +29,8 @@ async def plugin_changed() -> ResponseSchemaModel[bool]:
 
 @router.post(
     '',
-    summary='Install plug-ins',
-    description='Install using plug-in zip zip package or git repository address',
+    summary='Install plugin',
+    description='Use the plugin zip package or git repository address to install (development environment only)',
     dependencies=[
         Depends(RequestPermission('sys:plugin:install')),
         DependsRBAC,
@@ -53,7 +53,7 @@ async def install_plugin(
 @router.delete(
     '/{plugin}',
     summary='Uninstall plugin',
-    description='This operation will directly delete the plug-in dependencies, but will not directly delete the plug-in, but will move the plug-in to the backup directory',
+    description='This operation will directly delete the plug-in dependencies, but will not directly delete the plug-in. Instead, it will move the plug-in to the backup directory (development environment only)',
     dependencies=[
         Depends(RequestPermission('sys:plugin:uninstall')),
         DependsRBAC,

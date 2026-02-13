@@ -9,14 +9,11 @@ from sqlalchemy.orm import Session
 from backend.app.task.model.result import Task, TaskExtended, TaskSet
 from backend.app.task.session import SessionManager
 
-"""
-Rewrite the internal DatabaseBackend class from celery.backends.database. 
-This implementation does not work well with the model, resulting in difficulty in creating tables and alembic migrations in fba
-"""
-
 
 class DatabaseBackend(BaseBackend):
-    """The database result backend."""
+    """
+   Rewrite celery.backends.database DatabaseBackend. This type of implementation does not work well with the model, making it difficult for fba to create tables and alembic migrations.
+    """
 
     # ResultSet.iterate should sleep this much between each pool,
     # to not bombard the database with queries.

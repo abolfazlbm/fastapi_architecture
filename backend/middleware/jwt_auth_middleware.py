@@ -7,6 +7,7 @@ from starlette.authentication import AuthenticationError as StarletteAuthenticat
 from starlette.requests import HTTPConnection
 
 from backend.app.admin.schema.user import GetUserInfoWithRelationDetail
+from backend.common.context import ctx
 from backend.common.exception.errors import TokenError
 from backend.common.log import log
 from backend.common.security.jwt import jwt_authentication
@@ -95,6 +96,10 @@ class JwtAuthMiddleware(AuthenticationBackend):
             log.exception(f'JWT Authorization exception：{e}')
             raise AuthenticationError(code=getattr(e, 'code', 500), msg=getattr(e, 'msg', 'Internal Server Error'))
 
-        # Please note that this return uses non-standard mode, so some standard features will be lost when the authentication is passed.
-        # For standard return mode, please check: https://www.starlette.io/authentication/
+        # Set user ID to context
+        ctx.user_id = user.id
+
+        # Please note that this return uses non-standard mode, so when authentication is passed, some standard
+        # features will be lost
+        # Please see the standard return mode：https://www.starlette.io/authentication/
         return AuthCredentials(['authenticated']), user

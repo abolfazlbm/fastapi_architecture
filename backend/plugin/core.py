@@ -10,27 +10,21 @@ import rtoml
 
 from fastapi import APIRouter, Depends, Request
 
-from backend.common.enums import DataBaseType, PrimaryKeyType, StatusType
+from backend.common.enums import DataBaseType, PluginLevelType, PrimaryKeyType, StatusType
 from backend.common.exception import errors
 from backend.common.log import log
 from backend.core.conf import settings
 from backend.core.path_conf import PLUGIN_DIR
 from backend.database.redis import RedisCli, redis_client
+from backend.plugin.errors import PluginConfigError, PluginInjectError
+from backend.plugin.validator import validate_plugin_config
 from backend.utils.async_helper import run_await
 from backend.utils.dynamic_import import get_model_objects, import_module_cached
 
 
-class PluginConfigError(Exception):
-    """Plugin information error"""
-
-
-class PluginInjectError(Exception):
-    """Plugin injection error"""
-
-
-@lru_cache
-def get_plugins() -> list[str]:
-    """Get the plugin list"""
+@lru_cache(maxsize=128)
+def get_plugins() -> tuple[str, ...]:
+    """Get plugin list"""
     plugin_packages = []
 
     #Travel the plugin directory
@@ -43,7 +37,7 @@ def get_plugins() -> list[str]:
         if os.path.isdir(item_path) and '__init__.py' in os.listdir(item_path):
             plugin_packages.append(item)
 
-    return plugin_packages
+    return tuple(plugin_packages)
 
 
 def get_plugin_models() -> list[object]:
@@ -105,13 +99,12 @@ def load_plugin_config(plugin: str) -> dict[str, Any]:
 
 def parse_plugin_config() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Resolve plug-in configuration"""
-
     extend_plugins = []
     app_plugins = []
 
     plugins = get_plugins()
 
-    # Use independent singletons to avoid conflicts with the main thread
+    # Use independent connection
     current_redis_client = RedisCli()
     run_await(current_redis_client.init)()
 
@@ -123,32 +116,20 @@ def parse_plugin_config() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
 
     for plugin in plugins:
         data = load_plugin_config(plugin)
+        plugin_type = validate_plugin_config(plugin, data)
 
-        plugin_info = data.get('plugin')
-        if not plugin_info:
-            raise PluginConfigError(f'Plugin {plugin} configuration file is missing plugin configuration')
-
-        required_fields = ['summary', 'version', 'description', 'author']
-        missing_fields = [field for field in required_fields if field not in plugin_info]
-        if missing_fields:
-            raise PluginConfigError(f'Plugin {plugin} The configuration file is missing the required fields: {", ".join(missing_fields)}')
-
-        if data.get('api'):
-            if not data.get('app', {}).get('extend'):
-                raise PluginConfigError(f'Extension-level plug-in {plugin} configuration file is missing app.extend configuration')
+        if plugin_type == PluginLevelType.extend:
             extend_plugins.append(data)
         else:
-            if not data.get('app', {}).get('router'):
-                raise PluginConfigError(f'Application-level plugin {plugin} configuration file is missing app.router configuration')
             app_plugins.append(data)
 
-        # Supplementary plugin information
+        # Supplementary plug-in information
+        data['plugin']['name'] = plugin
         plugin_cache_info = run_await(current_redis_client.get)(f'{settings.PLUGIN_REDIS_PREFIX}:{plugin}')
         if plugin_cache_info:
             data['plugin']['enable'] = json.loads(plugin_cache_info)['plugin']['enable']
         else:
             data['plugin']['enable'] = str(StatusType.enable.value)
-        data['plugin']['name'] = plugin
 
         # Cache the latest plug-in information
         run_await(current_redis_client.set)(

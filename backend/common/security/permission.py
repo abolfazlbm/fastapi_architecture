@@ -40,7 +40,8 @@ class RequestPermission:
         if settings.RBAC_ROLE_MENU_MODE:
             if not isinstance(self.value, str):
                 raise errors.ServerError
-            # Attach permissions to identify the request status
+
+            # Set permission flag to context
             ctx.permission = self.value
 
 

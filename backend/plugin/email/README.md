@@ -1,5 +1,23 @@
-## Parameter configuration
+# Email
 
-Use local email configuration by default
+Email plug-in, provides email sending function, supports verification codes, notifications and other scenarios
 
-Supports dynamic configuration of email parameters through the `config plug-in`. When the dynamic configuration `EMAIL_STATUS` is `1`, the dynamic configuration will be automatically applied
+## Global configuration
+
+Add the following content to `backend/core/conf.py`:
+
+```python
+################################################
+#[Plugin]email
+################################################
+# .env
+EMAIL_USERNAME:str
+EMAIL_PASSWORD: str
+
+#Basic configuration (in plugin.toml)
+EMAIL_HOST: str
+EMAIL_PORT: int
+EMAIL_SSL: bool
+EMAIL_CAPTCHA_REDIS_PREFIX: str
+EMAIL_CAPTCHA_EXPIRE_SECONDS: int
+```

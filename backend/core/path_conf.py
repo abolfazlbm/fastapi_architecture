@@ -32,3 +32,6 @@ MYSQL_SCRIPT_DIR = BASE_PATH / 'sql' / 'mysql'
 
 # PostgreSQL script directory
 POSTGRESQL_SCRIPT_DIR = BASE_PATH / 'sql' / 'postgresql'
+
+# Hot heavy load lock file
+RELOAD_LOCK_FILE = BASE_PATH / '.reload.lock'

@@ -63,7 +63,6 @@ async def get_business_all_columns(
 @router.post(
     '',
     summary='Create a code generation business',
-    deprecated=True,
     dependencies=[
         Depends(RequestPermission('codegen:business:add')),
         DependsRBAC,

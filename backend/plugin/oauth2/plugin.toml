@@ -1,8 +1,18 @@
 [plugin]
-summary = 'OAuth 2.0'
-version = '0.0.10'
-description = 'Log in to the system through OAuth 2.0'
-author = 'wu-clan'
+summary = "OAuth 2.0"
+version = "0.0.11"
+description = "Supports login from social platforms such as GitHub and Google"
+author = "wu-clan"
+tags = ["auth"]
+database = ["mysql", "postgresql"]
 
 [app]
-router = ['v1']
+router = ["v1"]
+
+[settings]
+OAUTH2_FRONTEND_BINDING_REDIRECT_URI = "http://localhost:5173/profile"
+OAUTH2_FRONTEND_LOGIN_REDIRECT_URI = "http://localhost:5173/oauth2/callback"
+OAUTH2_GITHUB_REDIRECT_URI = "http://127.0.0.1:8000/api/v1/oauth2/github/callback"
+OAUTH2_GOOGLE_REDIRECT_URI = "http://127.0.0.1:8000/api/v1/oauth2/google/callback"
+OAUTH2_STATE_EXPIRE_SECONDS = 180  # 3 Minute
+OAUTH2_STATE_REDIS_PREFIX = "fba:oauth2:state"

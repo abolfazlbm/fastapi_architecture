@@ -110,6 +110,13 @@ class FileType(StrEnum):
     video = 'video'
 
 
+class PluginLevelType(StrEnum):
+    """Plug-in level type"""
+
+    app = 'app'
+    extend = 'extend'
+
+
 class PluginType(StrEnum):
     """Plugin Type"""
 

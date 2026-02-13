@@ -19,7 +19,7 @@ from rich.table import Table
 from rich.text import Text
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncSession
-from watchfiles import PythonFilter
+from watchfiles import Change, PythonFilter
 
 from backend import __version__
 from backend.common.enums import DataBaseType, PrimaryKeyType
@@ -27,10 +27,12 @@ from backend.common.exception.errors import BaseExceptionError
 from backend.common.model import MappedBase
 from backend.core.conf import settings
 from backend.core.path_conf import (
+    BASE_PATH,
     ENV_EXAMPLE_FILE_PATH,
     ENV_FILE_PATH,
     MYSQL_SCRIPT_DIR,
     POSTGRESQL_SCRIPT_DIR,
+    RELOAD_LOCK_FILE,
 )
 from backend.database.db import (
     async_db_session,
@@ -53,6 +55,11 @@ class CustomReloadFilter(PythonFilter):
 
     def __init__(self) -> None:
         super().__init__(extra_extensions=['.json', '.yaml', '.yml'])
+
+    def __call__(self, change: Change, path: str) -> bool:
+        if RELOAD_LOCK_FILE.exists():
+            return False
+        return super().__call__(change, path)
 
 
 def setup_env_file() -> bool:
@@ -338,6 +345,9 @@ async def install_plugin(
     db_type: DataBaseType,
     pk_type: PrimaryKeyType,
 ) -> None:
+    if settings.ENVIRONMENT != 'dev':
+        raise cappa.Exit('Plug-in installation is only available in development environment', code=1)
+
     if not path and not repo_url:
         raise cappa.Exit('path or repo_url must specify one of them', code=1)
     if path and repo_url:
@@ -403,6 +413,9 @@ async def import_table(
     table_schema: str,
     table_name: str,
 ) -> None:
+    if settings.ENVIRONMENT != 'dev':
+        raise cappa.Exit('Code generation is only available in development environments', code=1)
+
     from backend.plugin.code_generator.schema.gen import ImportParam
     from backend.plugin.code_generator.service.gen_service import gen_service
 
@@ -416,7 +429,10 @@ async def import_table(
         raise cappa.Exit(e.msg if isinstance(e, BaseExceptionError) else str(e), code=1)
 
 
-async def generate() -> None:
+async def generate(*, preview: bool = False) -> None:
+    if settings.ENVIRONMENT != 'dev':
+        raise cappa.Exit('Code generation is only available in development environments', code=1)
+
     from backend.plugin.code_generator.service.business_service import gen_business_service
     from backend.plugin.code_generator.service.gen_service import gen_service
 
@@ -446,13 +462,47 @@ async def generate() -> None:
         console.print(table)
         business = IntPrompt.ask('Please select a business number from', choices=[str(id_) for id_ in ids])
 
-        async with async_db_session.begin() as db:
-            gen_path = await gen_service.generate(db=db, pk=business)
+        # preview
+        async with async_db_session() as db:
+            preview_data = await gen_service.preview(db=db, pk=business)
+
+        console.print('\n[bold yellow]The following files will be generated：[/]')
+        file_table = Table(show_header=True, header_style='bold cyan')
+        file_table.add_column('file path', style='white')
+        file_table.add_column('size', style='green', justify='right')
+
+        for filepath, content in sorted(preview_data.items()):
+            size = len(content)
+            size_str = f'{size} B' if size < 1024 else f'{size / 1024:.1f} KB'
+            file_table.add_row(filepath, size_str)
+
+        console.print(file_table)
+
+        if preview:
+            console.print('\n[bold cyan]Preview mode: No actual build operation performed[/]')
+            return
+
+        # generate
+        console.print('\n[bold red]Warning: Code generation will write disk files (overwrites), do not use in production environments!!![/]')
+        ok = Prompt.ask('\nAre you sure you want to continue generating code?', choices=['y', 'n'], default='n')
+
+        if ok.lower() == 'y':
+            async with async_db_session.begin() as db:
+                gen_path = await gen_service.generate(db=db, pk=business)
+
+            console.print('\nThe code has been generated', style='bold green')
+            console.print(Text('\nPlease check for details: '), Text(str(gen_path), style='bold white'))
+
     except Exception as e:
         raise cappa.Exit(e.msg if isinstance(e, BaseExceptionError) else str(e), code=1)
 
-    console.print('\nThe code has been generated', style='bold green')
-    console.print(Text('\nPlease check for details：'), Text(str(gen_path), style='bold magenta'))
+
+def run_alembic(*args: str) -> None:
+    """Execute alembic command"""
+    try:
+        subprocess.run(['alembic', *args], cwd=BASE_PATH.parent, check=True)
+    except subprocess.CalledProcessError as e:
+        raise cappa.Exit('Alembic Command execution failed', code=e.returncode)
 
 
 @cappa.command(help='Initialize project', default_long=True)
@@ -602,6 +652,10 @@ class Import:
 @cappa.command(name='codegen', help='Code generation (experience the complete functions, please deploy the fba vben front-end project yourself)', default_long=True)
 @dataclass
 class CodeGenerator:
+    preview: Annotated[
+        bool,
+        cappa.Arg(short='-p', default=False, help='Only previews the files that will be generated, no actual generation operation is performed'),
+    ]
     subcmd: cappa.Subcommands[Import | None] = None
 
     def __post_init__(self) -> None:
@@ -611,7 +665,112 @@ class CodeGenerator:
             raise cappa.Exit('The code generation plug-in does not exist, please install this plug-in first')
 
     async def __call__(self) -> None:
-        await generate()
+        await generate(preview=self.preview)
+
+
+@cappa.command(help='Generate database migration files', default_long=True)
+@dataclass
+class Revision:
+    autogenerate: Annotated[
+        bool,
+        cappa.Arg(default=True, help='Automatically detect model changes and generate migration scripts'),
+    ]
+    message: Annotated[
+        str,
+        cappa.Arg(short='-m', default='', help='Description of the migration file'),
+    ]
+
+    def __call__(self) -> None:
+        args = ['revision']
+        if self.autogenerate:
+            args.append('--autogenerate')
+        if self.message:
+            args.extend(['-m', self.message])
+        run_alembic(*args)
+        console.print('Migration file generated successfully', style='bold green')
+
+
+@cappa.command(help='Upgrade the database to the specified version', default_long=True)
+@dataclass
+class Upgrade:
+    revision: Annotated[
+        str,
+        cappa.Arg(default='head', help='Target version, default is the latest version'),
+    ]
+
+    def __call__(self) -> None:
+        run_alembic('upgrade', self.revision)
+        console.print(f'The database has been upgraded to: {self.revision}', style='bold green')
+
+
+@cappa.command(help='Downgrade the database to a specified version', default_long=True)
+@dataclass
+class Downgrade:
+    revision: Annotated[
+        str,
+        cappa.Arg(default='-1', help='Target version, rollback to one version by default'),
+    ]
+
+    def __call__(self) -> None:
+        run_alembic('downgrade', self.revision)
+        console.print(f'The database has been downgraded to: {self.revision}', style='bold green')
+
+
+@cappa.command(help='Display the current migration version of the database')
+@dataclass
+class Current:
+    verbose: Annotated[
+        bool,
+        cappa.Arg(short='-v', default=False, help='Show details'),
+    ]
+
+    def __call__(self) -> None:
+        args = ['current']
+        if self.verbose:
+            args.append('-v')
+        run_alembic(*args)
+
+
+@cappa.command(help='Show migration history', default_long=True)
+@dataclass
+class History:
+    verbose: Annotated[
+        bool,
+        cappa.Arg(short='-v', default=False, help='Show details'),
+    ]
+    range: Annotated[
+        str,
+        cappa.Arg(short='-r', default='', help='Display the history for a specified range, for example -r base:head'),
+    ]
+
+    def __call__(self) -> None:
+        args = ['history']
+        if self.verbose:
+            args.append('-v')
+        if self.range:
+            args.extend(['-r', self.range])
+        run_alembic(*args)
+
+
+@cappa.command(help='Show all header versions')
+@dataclass
+class Heads:
+    verbose: Annotated[
+        bool,
+        cappa.Arg(short='-v', default=False, help='Show details'),
+    ]
+
+    def __call__(self) -> None:
+        args = ['heads']
+        if self.verbose:
+            args.append('-v')
+        run_alembic(*args)
+
+
+@cappa.command(help='Database migration management')
+@dataclass
+class Alembic:
+    subcmd: cappa.Subcommands[Revision | Upgrade | Downgrade | Current | History | Heads]
 
 
 @cappa.command(help='一An efficient fba command line interface', default_long=True)
@@ -621,7 +780,7 @@ class FbaCli:
         str,
         cappa.Arg(value_name='PATH', default='', show_default=False, help='Execute SQL scripts in transaction'),
     ]
-    subcmd: cappa.Subcommands[Init | Run | Celery | Add | CodeGenerator | None] = None
+    subcmd: cappa.Subcommands[Init | Run | Add | Alembic | Celery | CodeGenerator | None] = None
 
     async def __call__(self) -> None:
         if self.sql:
