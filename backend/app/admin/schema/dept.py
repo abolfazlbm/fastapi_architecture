@@ -32,9 +32,10 @@ class GetDeptDetail(DeptSchemaBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int = Field(description='Department ID')
-    del_flag: bool = Field(description='Whether to delete')
+    deleted: int = Field(description='Whether it has been deleted (0: No; id: Yes)')
     created_time: datetime = Field(description='Creation time')
     updated_time: datetime | None = Field(None, description='Update time')
+    deleted_time: datetime | None = Field(None, description='Deletion time')
 
 
 class GetDeptTree(GetDeptDetail):

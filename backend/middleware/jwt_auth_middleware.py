@@ -26,7 +26,7 @@ class AuthenticationError(StarletteAuthenticationError):
         headers: dict[str, Any] | None = None,
     ) -> None:
         """
-        Initialization authentication error
+        Initialization authentication error class
 
         :param code: Error code
         :param msg: Error message
@@ -50,7 +50,9 @@ class JwtAuthMiddleware(AuthenticationBackend):
         :param exc: Authentication error object
         :return:
         """
-        return MsgSpecJSONResponse(content={'code': exc.code, 'msg': exc.msg, 'data': None}, status_code=exc.code)
+        content = {'code': exc.code, 'msg': exc.msg, 'data': None}
+        ctx.__request_authentication_exception__ = content
+        return MsgSpecJSONResponse(content=content, status_code=exc.code)
 
     @staticmethod
     def extract_token(request: Request) -> str | None:
@@ -96,10 +98,6 @@ class JwtAuthMiddleware(AuthenticationBackend):
             log.exception(f'JWT Authorization exception：{e}')
             raise AuthenticationError(code=getattr(e, 'code', 500), msg=getattr(e, 'msg', 'Internal Server Error'))
 
-        # Set user ID to context
-        ctx.user_id = user.id
-
-        # Please note that this return uses non-standard mode, so when authentication is passed, some standard
-        # features will be lost
-        # Please see the standard return mode：https://www.starlette.io/authentication/
+        # Please note that this return uses non-standard mode, so when authentication is passed, some standard features will be lost
+        # Please check the standard return mode: https://www.starlette.io/authentication/
         return AuthCredentials(['authenticated']), user

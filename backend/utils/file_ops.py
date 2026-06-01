@@ -1,7 +1,6 @@
 from anyio import open_file
 from fastapi import UploadFile
 
-from backend.common.enums import FileType
 from backend.common.exception import errors
 from backend.common.log import log
 from backend.core.conf import settings
@@ -35,16 +34,14 @@ def upload_file_verify(file: UploadFile) -> None:
     if not file_ext:
         raise errors.RequestError(msg='Unknown file type')
 
-    if file_ext == FileType.image:
-        if file_ext not in settings.UPLOAD_IMAGE_EXT_INCLUDE:
-            raise errors.RequestError(msg='This image format is not supported for the time being')
+    if file_ext in settings.UPLOAD_IMAGE_EXT_INCLUDE:
         if file.size > settings.UPLOAD_IMAGE_SIZE_MAX:
-            raise errors.RequestError(msg='The picture exceeds the maximum limit, please reselect')
-    elif file_ext == FileType.video:
-        if file_ext not in settings.UPLOAD_VIDEO_EXT_INCLUDE:
-            raise errors.RequestError(msg='This video format is not supported for the time being')
+            raise errors.RequestError(msg='The picture exceeds the maximum limit, please select again')
+    elif file_ext in settings.UPLOAD_VIDEO_EXT_INCLUDE:
         if file.size > settings.UPLOAD_VIDEO_SIZE_MAX:
             raise errors.RequestError(msg='Video exceeds the maximum limit, please reselect')
+    else:
+        raise errors.RequestError(msg=f'This file format {file_ext} is not supported yet')
 
 
 async def upload_file(file: UploadFile) -> str:

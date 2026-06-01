@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from typing import Any
 
-from sqlalchemy import Select, delete, insert, select
+from sqlalchemy import Select, and_, delete, insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus, JoinConfig
 
@@ -15,6 +15,7 @@ from backend.app.admin.schema.role import (
     UpdateRoleScopeParam,
 )
 from backend.utils.serializers import select_join_serialize
+from backend.utils.timezone import timezone
 
 
 class CRUDRole(CRUDPlus[Role]):
@@ -28,7 +29,7 @@ class CRUDRole(CRUDPlus[Role]):
         :param role_id: Role ID
         :return:
         """
-        return await self.select_model(db, role_id)
+        return await self.select_model(db, role_id, deleted=0)
 
     @staticmethod
     async def get_menus(db: AsyncSession, role_id: int) -> Sequence[Menu] | None:
@@ -39,7 +40,11 @@ class CRUDRole(CRUDPlus[Role]):
         :param role_id: role ID
         :return:
         """
-        menu_stmt = select(Menu).join(role_menu, Menu.id == role_menu.c.menu_id).where(role_menu.c.role_id == role_id)
+        menu_stmt = (
+            select(Menu)
+            .join(role_menu, Menu.id == role_menu.c.menu_id)
+            .where(role_menu.c.role_id == role_id, Menu.deleted == 0)
+        )
         result = await db.execute(menu_stmt)
         return result.scalars().all()
 
@@ -54,11 +59,20 @@ class CRUDRole(CRUDPlus[Role]):
         result = await self.select_models(
             db,
             id=role_id,
+            deleted=0,
             join_conditions=[
                 JoinConfig(model=role_menu, join_on=role_menu.c.role_id == self.model.id),
-                JoinConfig(model=Menu, join_on=Menu.id == role_menu.c.menu_id, fill_result=True),
+                JoinConfig(
+                    model=Menu,
+                    join_on=and_(Menu.id == role_menu.c.menu_id, Menu.deleted == 0),
+                    fill_result=True,
+                ),
                 JoinConfig(model=role_data_scope, join_on=role_data_scope.c.role_id == self.model.id),
-                JoinConfig(model=DataScope, join_on=DataScope.id == role_data_scope.c.data_scope_id, fill_result=True),
+                JoinConfig(
+                    model=DataScope,
+                    join_on=and_(DataScope.id == role_data_scope.c.data_scope_id, DataScope.deleted == 0),
+                    fill_result=True,
+                ),
             ],
         )
 
@@ -71,7 +85,17 @@ class CRUDRole(CRUDPlus[Role]):
         :param db: database session
         :return:
         """
-        return await self.select_models(db)
+        return await self.select_models(db, deleted=0)
+
+    async def get_all_by_ids(self, db: AsyncSession, role_ids: list[int]) -> Sequence[Role]:
+        """
+        Get roles in batches from ID list
+
+        :param db: database session
+        :param role_ids: list of role IDs
+        :return:
+        """
+        return await self.select_models(db, id__in=role_ids, deleted=0)
 
     async def get_select(self, name: str | None, status: int | None) -> Select:
         """
@@ -81,7 +105,7 @@ class CRUDRole(CRUDPlus[Role]):
         :param status: character status
         :return:
         """
-        filters = {}
+        filters = {'deleted': 0}
 
         if name is not None:
             filters['name__like'] = f'%{name}%'
@@ -98,7 +122,7 @@ class CRUDRole(CRUDPlus[Role]):
         :param name: role name
         :return:
         """
-        return await self.select_model_by_column(db, name=name)
+        return await self.select_model_by_column(db, name=name, deleted=0)
 
     async def create(self, db: AsyncSession, obj: CreateRoleParam) -> None:
         """
@@ -119,7 +143,7 @@ class CRUDRole(CRUDPlus[Role]):
         :param obj: Update role parameters
         :return:
         """
-        return await self.update_model(db, role_id, obj)
+        return await self.update_model_by_column(db, obj, id=role_id, deleted=0)
 
     @staticmethod
     async def update_menus(db: AsyncSession, role_id: int, menu_ids: UpdateRoleMenuParam) -> int:
@@ -174,7 +198,17 @@ class CRUDRole(CRUDPlus[Role]):
         :param role_ids: Role ID list
         :return:
         """
-        return await self.delete_model_by_column(db, allow_multiple=True, id__in=role_ids)
+        return await self.delete_model_by_column(
+            db,
+            allow_multiple=True,
+            logical_deletion=True,
+            deleted_flag_column='deleted',
+            deleted_flag_value=self.model.id,
+            deleted_at_column='deleted_time',
+            deleted_at_factory=timezone.now(),
+            id__in=role_ids,
+            deleted=0,
+        )
 
 
 role_dao: CRUDRole = CRUDRole(Role)

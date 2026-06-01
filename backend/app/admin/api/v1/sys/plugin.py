@@ -1,6 +1,6 @@
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, File, Path, UploadFile
+from fastapi import APIRouter, File, Path, UploadFile
 from fastapi.params import Query
 from starlette.responses import StreamingResponse
 
@@ -8,20 +8,18 @@ from backend.app.admin.service.plugin_service import plugin_service
 from backend.common.enums import PluginType
 from backend.common.response.response_code import CustomResponse
 from backend.common.response.response_schema import ResponseModel, ResponseSchemaModel, response_base
-from backend.common.security.jwt import DependsJwtAuth
-from backend.common.security.permission import RequestPermission
-from backend.common.security.rbac import DependsRBAC
+from backend.common.security.jwt import DependsSuperUser
 
 router = APIRouter()
 
 
-@router.get('', summary='Get all plugins', dependencies=[DependsJwtAuth])
+@router.get('', summary='Get all plugins', dependencies=[DependsSuperUser])
 async def get_all_plugins() -> ResponseSchemaModel[list[dict[str, Any]]]:
     plugins = await plugin_service.get_all()
     return response_base.success(data=plugins)
 
 
-@router.get('/changed', summary='Is there any plug-in change?', dependencies=[DependsJwtAuth])
+@router.get('/changed', summary='Is there any plug-in change?', dependencies=[DependsSuperUser])
 async def plugin_changed() -> ResponseSchemaModel[bool]:
     plugins = await plugin_service.changed()
     return response_base.success(data=bool(plugins))
@@ -31,10 +29,7 @@ async def plugin_changed() -> ResponseSchemaModel[bool]:
     '',
     summary='Install plugin',
     description='Use the plugin zip package or git repository address to install (development environment only)',
-    dependencies=[
-        Depends(RequestPermission('sys:plugin:install')),
-        DependsRBAC,
-    ],
+    dependencies=[DependsSuperUser],
 )
 async def install_plugin(
     type: Annotated[PluginType, Query(description='plugin type')],
@@ -54,10 +49,7 @@ async def install_plugin(
     '/{plugin}',
     summary='Uninstall plugin',
     description='This operation will directly delete the plug-in dependencies, but will not directly delete the plug-in. Instead, it will move the plug-in to the backup directory (development environment only)',
-    dependencies=[
-        Depends(RequestPermission('sys:plugin:uninstall')),
-        DependsRBAC,
-    ],
+    dependencies=[DependsSuperUser],
 )
 async def uninstall_plugin(plugin: Annotated[str, Path(description='Plugin Name')]) -> ResponseModel:
     await plugin_service.uninstall(plugin=plugin)
@@ -66,20 +58,13 @@ async def uninstall_plugin(plugin: Annotated[str, Path(description='Plugin Name'
     )
 
 
-@router.put(
-    '/{plugin}/status',
-    summary='Update plugin status',
-    dependencies=[
-        Depends(RequestPermission('sys:plugin:edit')),
-        DependsRBAC,
-    ],
-)
+@router.put('/{plugin}/status', summary='Update plugin status', dependencies=[DependsSuperUser])
 async def update_plugin_status(plugin: Annotated[str, Path(description='Plugin Name')]) -> ResponseModel:
     await plugin_service.update_status(plugin=plugin)
     return response_base.success()
 
 
-@router.get('/{plugin}', summary='Download the plugin', dependencies=[DependsJwtAuth])
+@router.get('/{plugin}', summary='Download the plugin', dependencies=[DependsSuperUser])
 async def download_plugin(plugin: Annotated[str, Path(description='Plugin Name')]) -> StreamingResponse:
     bio = await plugin_service.build(plugin=plugin)
     return StreamingResponse(

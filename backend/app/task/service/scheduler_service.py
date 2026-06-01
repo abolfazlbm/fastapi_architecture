@@ -92,7 +92,7 @@ class TaskSchedulerService:
             raise errors.NotFoundError(msg='Task Scheduling does not exist')
         if task_scheduler.name != obj.name and await task_scheduler_dao.get_by_name(db, obj.name):
             raise errors.ConflictError(msg='Task Scheduling Already Exist')
-        if task_scheduler.type == TaskSchedulerType.CRONTAB:
+        if obj.type == TaskSchedulerType.CRONTAB:
             crontab_verify(obj.crontab)
         count = await task_scheduler_dao.update(db, pk, obj)
         return count

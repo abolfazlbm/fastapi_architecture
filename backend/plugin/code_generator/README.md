@@ -1,53 +1,46 @@
-# Code Generator
+#CodeGenerator
 
 Code generator plug-in to generate general business code
 
-> [!TIP]
-> Current version only includes backend code generation
+- Support maintenance of code generation business configuration and model column information
+- Supports manual mode and automatic table guide mode to generate general business code
+- Supports previewing, writing to disk and downloading generated results
 
-> [!WARNING]
-> Since the text output of jinja2 may have formatting problems when rendering templates, the `preview` interface may not be able to visually preview the code. This is a default for the front end.
+## Plug-in type
 
-## Global configuration
+- Application-level plug-ins
+
+## Configuration instructions
+
+The `[settings]` of `plugin.toml` in the plugin directory contains the following content:
+
+```toml
+[settings]
+CODE_GENERATOR_DOWNLOAD_ZIP_FILENAME = 'fba_generator'
+```
 
 Add the following content to `backend/core/conf.py`:
 
 ```python
-##################################################
-# [ Plugin ] code_generator
-##################################################
-# Basic configuration（in plugin.toml）
+################################################
+# [Plugin] code_generator
+################################################
 CODE_GENERATOR_DOWNLOAD_ZIP_FILENAME: str
 ```
 
-## summary
+## Usage
 
-The code generator is implemented using API calls and contains two modules. The design may have flaws. Please submit related issues directly to issues.
+1. After installing and enabling the plug-in, restart the backend service
+2. Maintain business configuration and model column information
+3. Execute the preview, generation and download process
+4. The generated code will be written directly to disk and must only be used in the development environment.
 
-### code generation business
+## Uninstall instructions
 
-Contains configuration related to code generation, view details: `code_generator/model/gen_business.py`
+- After uninstalling the plug-in, it is recommended to simultaneously remove the relevant plug-in basic configuration and the plug-in configuration in `backend/core/conf.py`
+- If the project has been connected to code generation related pages or automated processes, please clean up the corresponding integration simultaneously.
 
-### Code generation model column
+## Contact information
 
-Contains model column information required for code generation, just like defining model columns normally. Currently, the supported functions are limited.
-
-## usage
-
-1. Start the backend service, open the swagger document and operate directly
-2. Send interface requests through third-party api debugging tools
-3. Start the front and back ends at the same time and operate from the page
-
-The interface parameters are basically explained, please check carefully.
-
-### manual mode
-
-1. Manually add a piece of business data by creating a business interface
-2. Manually add model columns through the model creation interface
-3. Access the `preview` (preview), `generate` (disk writing), `download` (download) interface and perform the corresponding work of back-end code generation
-
-### automatic mode
-
-1. Access the `tables` interface to obtain a list of database table names
-2. Import existing database table data into the database through the `import` interface, and business table data and model table data will be automatically created.
-3. Access the `preview` (preview), `generate` (disk writing), `download` (download) interface and perform the corresponding work of back-end code generation
+- Author: `wu-clan`
+- Feedback method: Submit an Issue or PR

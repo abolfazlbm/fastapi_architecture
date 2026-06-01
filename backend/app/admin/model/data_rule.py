@@ -9,9 +9,13 @@ class DataRule(Base):
     """Data Rule Table"""
 
     __tablename__ = 'sys_data_rule'
+    __table_args__ = (
+        sa.UniqueConstraint('name', 'deleted', name='uk_sys_data_rule_name_deleted'),
+        {'comment': 'Data rule table'},
+    )
 
     id: Mapped[id_key] = mapped_column(init=False)
-    name: Mapped[str] = mapped_column(sa.String(512), unique=True, comment='Name')
+    name: Mapped[str] = mapped_column(sa.String(512), comment='Name')
     model: Mapped[str] = mapped_column(sa.String(64), comment='Model Name')
     column: Mapped[str] = mapped_column(sa.String(32), comment='Model field name')
     operator: Mapped[int] = mapped_column(comment='Operator（0：and、1：or）')

@@ -12,7 +12,7 @@ from backend.app.admin.service.login_log_service import login_log_service
 from backend.app.admin.service.user_password_history_service import password_security_service
 from backend.app.admin.utils.password_security import password_verify
 from backend.common.context import ctx
-from backend.common.enums import LoginLogStatusType
+from backend.common.enums import LoginLogStatusType, StatusType
 from backend.common.exception import errors
 from backend.common.i18n import t
 from backend.common.log import log
@@ -142,7 +142,7 @@ class AuthService:
             raise errors.NotFoundError(msg=e.msg)
         except (errors.RequestError, errors.CustomError) as e:
             if not user:
-                log.error('Login error: user password is incorrect')
+                log.error(f'Login error: {e.msg}')
             task = BackgroundTask(
                 login_log_service.create,
                 user_uuid=user.uuid if user else uuid4_str(),
@@ -186,38 +186,41 @@ class AuthService:
         if request.user.is_superuser:
             menus = await menu_dao.get_all(db, None, None)
             for menu in menus:
-                if menu.perms:
-                    codes.add(*menu.perms.split(','))
+                if menu.status == StatusType.enable and menu.perms:
+                    codes.update(menu.perms.split(','))
         else:
-            roles = request.user.roles
+            roles = [role for role in request.user.roles if role.status == StatusType.enable]
             if roles:
                 for role in roles:
                     for menu in role.menus:
-                        if menu.perms:
-                            codes.add(*menu.perms.split(','))
+                        if menu.status == StatusType.enable and menu.perms:
+                            codes.update(menu.perms.split(','))
 
         return list(codes)
 
     @staticmethod
-    async def refresh_token(*, db: AsyncSession, request: Request) -> GetNewToken:
+    async def refresh_token(*, db: AsyncSession, request: Request, response: Response) -> GetNewToken:
         """
         refresh token
 
         :param db: database session
         :param request: FastAPI request object
+        :param response: FastAPI response object
         :return:
         """
         refresh_token = request.cookies.get(settings.COOKIE_REFRESH_TOKEN_KEY)
         if not refresh_token:
             raise errors.RequestError(msg='Refresh Token has expired, please log in again')
         token_payload = jwt_decode(refresh_token)
-
-        user = await user_dao.get(db, token_payload.id)
+        user = await user_dao.get(db, token_payload.user_id)
         if not user:
             raise errors.NotFoundError(msg='user does not exist')
         if not user.status:
             raise errors.AuthorizationError(msg='The user has been locked, please contact the system administrator')
-        if not user.is_multi_login and await redis_client.get_prefix(f'{settings.TOKEN_REDIS_PREFIX}:{user.id}:*'):
+        token_keys = await redis_client.get_prefix(f'{settings.TOKEN_REDIS_PREFIX}:{user.id}:*')
+        if not user.is_multi_login and [
+            key for key in token_keys if not key.endswith(f':{token_payload.session_uuid}')
+        ]:
             raise errors.ForbiddenError(msg='This user has logged in remote location, please log in again and change the password in time')
         new_token = await create_new_token(
             refresh_token,
@@ -232,6 +235,13 @@ class AuthService:
             os=ctx.os,
             browser=ctx.browser,
             device_type=ctx.device,
+        )
+        response.set_cookie(
+            key=settings.COOKIE_REFRESH_TOKEN_KEY,
+            value=new_token.new_refresh_token,
+            max_age=settings.COOKIE_REFRESH_TOKEN_EXPIRE_SECONDS,
+            expires=timezone.to_utc(new_token.new_refresh_token_expire_time),
+            httponly=True,
         )
         data = GetNewToken(
             access_token=new_token.new_access_token,
@@ -252,7 +262,7 @@ class AuthService:
         try:
             token = get_token(request)
             token_payload = jwt_decode(token)
-            user_id = token_payload.id
+            user_id = token_payload.user_id
             session_uuid = token_payload.session_uuid
             refresh_token = request.cookies.get(settings.COOKIE_REFRESH_TOKEN_KEY)
         except errors.TokenError:

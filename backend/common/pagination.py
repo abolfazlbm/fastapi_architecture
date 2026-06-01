@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Generic, TypeVar
 from fastapi import Depends, Query
 from fastapi_pagination import pagination_ctx
 from fastapi_pagination.bases import AbstractPage, AbstractParams, RawParams
+from fastapi_pagination.cursor import CursorParams
 from fastapi_pagination.ext.sqlalchemy import apaginate
 from fastapi_pagination.links.bases import create_links
 from pydantic import BaseModel, Field
@@ -54,6 +55,14 @@ class _PageDetails(BaseModel):
     links: _Links = Field(description='Pagination Link')
 
 
+class _CursorPageDetails(BaseModel):
+    """Cursor paging details"""
+
+    items: list = Field([], description='Current page data list')
+    next_cursor: str | None = Field(None, description='Next page cursor')
+    has_more: bool = Field(description='Is there more data')
+
+
 class _CustomPage(_PageDetails, AbstractPage[T], Generic[T]):
     """Custom paging class"""
 
@@ -86,6 +95,30 @@ class _CustomPage(_PageDetails, AbstractPage[T], Generic[T]):
         )
 
 
+class _CustomCursorPage(_CursorPageDetails, AbstractPage[T], Generic[T]):
+    """Custom cursor paging class"""
+
+    __params_type__ = CursorParams
+
+    @classmethod
+    def create(
+        cls,
+        items: list,
+        params: CursorParams,
+        *,
+        next_: Any = None,
+        **kwargs: Any,
+    ) -> Self:
+        if not isinstance(params, CursorParams):
+            raise TypeError('CustomCursorPage should be used with CursorParams')
+
+        return cls(
+            items=items,
+            next_cursor=params.encode_cursor(next_),
+            has_more=next_ is not None,
+        )
+
+
 class PageData(_PageDetails, Generic[SchemaT]):
     """
     Unified return model containing return data schema, only for pagination interfaces
@@ -111,6 +144,12 @@ class PageData(_PageDetails, Generic[SchemaT]):
     items: Sequence[SchemaT]
 
 
+class CursorPageData(_CursorPageDetails, Generic[SchemaT]):
+    """Unified return model including return data schema, only applicable to cursor paging interface, usage is the same as PageData"""
+
+    items: Sequence[SchemaT]
+
+
 async def paging_data(db: AsyncSession, select: Select, **kwargs) -> dict[str, Any]:
     """
     Create paging data based on SQLAlchemy
@@ -125,5 +164,20 @@ async def paging_data(db: AsyncSession, select: Select, **kwargs) -> dict[str, A
     return page_data
 
 
+async def cursor_paging_data(db: AsyncSession, select: Select, **kwargs) -> dict[str, Any]:
+    """
+    Create cursor paging data based on SQLAlchemy
+
+    :param db: database session
+    :param select: SQL query statement
+    :param kwargs: More fastapi-pagination apaginate parameters
+    :return:
+    """
+    paginated_data: _CustomCursorPage = await apaginate(db, select, **kwargs)
+    page_data = paginated_data.model_dump()
+    return page_data
+
+
 # Pagination dependency injection
 DependsPagination = Depends(pagination_ctx(_CustomPage))
+DependsCursorPagination = Depends(pagination_ctx(_CustomCursorPage))

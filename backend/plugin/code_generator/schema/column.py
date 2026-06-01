@@ -28,6 +28,12 @@ class CreateGenColumnParam(GenColumnSchemaBase):
     """Create code generation model column parameters"""
 
 
+class CreateGenColumnInternalParam(CreateGenColumnParam):
+    """创建代码生成模型列内部参数"""
+
+    pd_type: str | None = Field(None, description='列类型对应的 pydantic 类型')
+
+
 class UpdateGenColumnParam(GenColumnSchemaBase):
     """Update code generation model column parameters"""
 

@@ -7,9 +7,6 @@ from typing import Any, TypeVar
 
 import sqlalchemy as sa
 
-from backend.common.exception import errors
-from backend.common.log import log
-
 T = TypeVar('T')
 
 
@@ -22,22 +19,6 @@ def import_module_cached(module_path: str) -> Any:
     :return:
     """
     return importlib.import_module(module_path)
-
-
-def dynamic_import_data_model(module_path: str) -> type[T]:
-    """
-    Dynamic import of data models
-
-    :param module_path: module path, format 'module_path.class_name'
-    :return:
-    """
-    try:
-        module_path, class_name = module_path.rsplit('.', 1)
-        module = import_module_cached(module_path)
-        return getattr(module, class_name)
-    except Exception as e:
-        log.error(f'Dynamic import of data model failed：{e}')
-        raise errors.ServerError(msg='Dynamic analysis of data model column failed, please contact the system super administrator')
 
 
 def get_model_objects(module_path: str) -> list[object] | None:

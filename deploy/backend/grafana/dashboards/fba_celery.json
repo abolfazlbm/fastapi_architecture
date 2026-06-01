@@ -259,7 +259,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Task success rate = number of successful tasks / (success + failure)",
+      "description": "Cumulative task success rate = number of successful tasks / (success + failure)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1550,7 +1550,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Average execution time of each task type, color from Green to red indicates execution time from short to long",
+      "description": "The cumulative average execution time of each task type, the color from green to red indicates the execution time from short to long",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1633,7 +1633,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Distribution of successful tasks by type",
+      "description": "Cumulative distribution of successful tasks by type",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1701,7 +1701,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Distribution of failed tasks by type",
+      "description": "Cumulative distribution of failed tasks by type",
       "fieldConfig": {
         "defaults": {
           "color": {

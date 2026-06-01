@@ -45,3 +45,10 @@ class GetDataRuleColumnDetail(SchemaBase):
 
     key: str = Field(description='field name')
     comment: str | None = Field(description='field comment')
+
+
+class GetDataRuleTemplateVariableDetail(SchemaBase):
+    """Details of template variables available for data rules"""
+
+    key: str = Field(description='Variable identification')
+    comment: str = Field(description='Variable description')

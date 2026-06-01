@@ -1,21 +1,20 @@
 import io
 import json
-import os
-import shutil
-import zipfile
 
 from typing import Any
 
 import anyio
 
 from fastapi import UploadFile
+from starlette.concurrency import run_in_threadpool
 
 from backend.common.enums import PluginType, StatusType
 from backend.common.exception import errors
 from backend.core.conf import settings
 from backend.core.path_conf import PLUGIN_DIR
 from backend.database.redis import redis_client
-from backend.plugin.installer import install_git_plugin, install_zip_plugin
+from backend.plugin.core import get_required_plugins
+from backend.plugin.installer import install_git_plugin, install_zip_plugin, remove_plugin, zip_plugin
 from backend.plugin.requirements import uninstall_requirements_async
 from backend.utils.timezone import timezone
 
@@ -27,9 +26,20 @@ class PluginService:
     async def get_all() -> list[dict[str, Any]]:
         """Get all plugins"""
 
-        keys = [key async for key in redis_client.scan_iter(f'{settings.PLUGIN_REDIS_PREFIX}:*')]
+        changed_key = f'{settings.PLUGIN_REDIS_PREFIX}:changed'
+        keys = [key for key in await redis_client.get_prefix(f'{settings.PLUGIN_REDIS_PREFIX}:') if key != changed_key]
+        if not keys:
+            return []
 
-        result = [json.loads(info) for info in await redis_client.mget(*keys)]
+        result = []
+        plugin_infos = await redis_client.mget(*keys)
+        for info in plugin_infos:
+            if info is None:
+                continue
+
+            plugin_info = json.loads(info)
+            if isinstance(plugin_info, dict):
+                result.append(plugin_info)
 
         return result
 
@@ -68,12 +78,15 @@ class PluginService:
         """
         if settings.ENVIRONMENT != 'dev':
             raise errors.RequestError(msg='Disable uninstalling plug-ins in non-development environments')
+        if plugin in get_required_plugins():
+            raise errors.RequestError(msg=f'插件 {plugin} 为必需插件，禁止卸载')
         plugin_dir = anyio.Path(PLUGIN_DIR / plugin)
         if not await plugin_dir.exists():
             raise errors.NotFoundError(msg='Plugin does not exist')
         await uninstall_requirements_async(plugin)
-        bacup_dir = PLUGIN_DIR / f'{plugin}.{timezone.now().strftime("%Y%m%d%H%M%S")}.backup'
-        shutil.move(plugin_dir, bacup_dir)
+        backup_file = PLUGIN_DIR / f'{plugin}.{timezone.now().strftime("%Y%m%d%H%M%S")}.backup.zip'
+        await run_in_threadpool(zip_plugin, plugin_dir, backup_file)
+        await run_in_threadpool(remove_plugin, plugin_dir)
         await redis_client.delete(f'{settings.PLUGIN_REDIS_PREFIX}:{plugin}')
         await redis_client.set(f'{settings.PLUGIN_REDIS_PREFIX}:changed', 'true')
 
@@ -85,7 +98,8 @@ class PluginService:
         :param plugin: plugin name
         :return:
         """
-        plugin_info = await redis_client.get(f'{settings.PLUGIN_REDIS_PREFIX}:{plugin}')
+        plugin_key = f'{settings.PLUGIN_REDIS_PREFIX}:{plugin}'
+        plugin_info = await redis_client.get(plugin_key)
         if not plugin_info:
             raise errors.NotFoundError(msg='Plugin does not exist')
         plugin_info = json.loads(plugin_info)
@@ -97,7 +111,8 @@ class PluginService:
             else str(StatusType.disable.value)
         )
         plugin_info['plugin']['enable'] = new_status
-        await redis_client.set(f'{settings.PLUGIN_REDIS_PREFIX}:{plugin}', json.dumps(plugin_info, ensure_ascii=False))
+        await redis_client.set(plugin_key, json.dumps(plugin_info, ensure_ascii=False))
+        await redis_client.set(f'{settings.PLUGIN_REDIS_PREFIX}:changed', 'true')
 
     @staticmethod
     async def build(*, plugin: str) -> io.BytesIO:
@@ -112,14 +127,7 @@ class PluginService:
             raise errors.NotFoundError(msg='Plugin does not exist')
 
         bio = io.BytesIO()
-        with zipfile.ZipFile(bio, 'w') as zf:
-            for root, dirs, files in os.walk(plugin_dir):
-                dirs[:] = [d for d in dirs if d != '__pycache__']
-                for file in files:
-                    file_path = os.path.join(root, file)
-                    arcname = os.path.relpath(file_path, start=plugin_dir)  # noqa: ASYNC240
-                    zf.write(file_path, os.path.join(plugin, arcname))
-
+        await run_in_threadpool(zip_plugin, plugin_dir, bio)
         bio.seek(0)
         return bio
 

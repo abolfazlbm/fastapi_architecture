@@ -1,7 +1,8 @@
 import httpx
+import ip2region.searcher as ip2region_xdb
+import ip2region.util as ip2region_util
 
 from fastapi import Request
-from ip2loc import XdbSearcher
 from user_agents import parse
 
 from backend.common.dataclasses import IpInfo, UserAgentInfo
@@ -25,6 +26,9 @@ def get_request_ip(request: Request) -> str:
     forwarded = request.headers.get('X-Forwarded-For')
     if forwarded:
         return forwarded.split(',')[0]
+
+    if request.client is None:
+        return '127.0.0.1'
 
     # ignore pytest
     if request.client.host == 'testclient':
@@ -50,8 +54,9 @@ async def get_location_online(ip: str) -> dict | None:
             return None
 
 
-# Offline IP searcher singleton (data will be cached to memory, cache size depends on IP data file size)
-__xdb_searcher = XdbSearcher(contentBuff=XdbSearcher.loadContentFromFile(dbfile=STATIC_DIR / 'ip2region_v4.xdb'))
+# Offline IP searcher (data will be cached in memory, cache size depends on IP data file size)
+__c_buffer: bytes = ip2region_util.load_content_from_file(STATIC_DIR / 'ip2region_v4.xdb')
+__xdb_searcher: ip2region_xdb.Searcher = ip2region_xdb.new_with_buffer(ip2region_util.IPv4, __c_buffer)
 
 
 def get_location_offline(ip: str) -> dict | None:
@@ -63,15 +68,16 @@ def get_location_offline(ip: str) -> dict | None:
     """
     try:
         data = __xdb_searcher.search(ip)
-        data = data.split('|')
-        return {
-            'country': data[0] if data[0] != '0' else None,
-            'regionName': data[1] if data[1] != '0' else None,
-            'city': data[2] if data[2] != '0' else None,
-        }
+        country, region_name, city, *_ = data.split('|')
     except Exception as e:
-        log.error(f'Failed to obtain IP address offline, error message：{e}')
+        log.error(f'Failed to obtain IP address offline: {e}')
         return None
+    else:
+        return {
+            'country': country if country != '0' else None,
+            'regionName': region_name if region_name != '0' else None,
+            'city': city if city != '0' else None,
+        }
 
 
 async def parse_ip_info(request: Request) -> IpInfo:

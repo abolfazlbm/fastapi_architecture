@@ -14,14 +14,8 @@ from backend.app.admin.service.opera_log_service import opera_log_service
 from backend.common.context import ctx
 from backend.common.enums import StatusType
 from backend.common.log import log
-from backend.common.prometheus.instruments import (
-    PROMETHEUS_APP_NAME,
-    PROMETHEUS_EXCEPTION_COUNTER,
-    PROMETHEUS_REQUEST_COST_TIME_HISTOGRAM,
-    PROMETHEUS_REQUEST_IN_PROGRESS_GAUGE,
-    PROMETHEUS_RESPONSE_COUNTER,
-)
-from backend.common.queue import batch_dequeue
+from backend.common.observability.prometheus.queue import observe_queue_size
+from backend.common.queue import batch_consume
 from backend.common.response.response_code import StandardResponseCode
 from backend.core.conf import settings
 from backend.database.db import async_db_session
@@ -31,7 +25,8 @@ from backend.utils.trace_id import get_request_trace_id
 class OperaLogMiddleware(BaseHTTPMiddleware):
     """Operation log middleware"""
 
-    opera_log_queue: Queue = Queue(maxsize=settings.OPERA_LOG_QUEUE_MAXSIZE)
+    opera_log_queue_name = 'opera_log_queue'
+    opera_log_queue: Queue[CreateOperaLogParam] = Queue(maxsize=settings.OPERA_LOG_QUEUE_MAXSIZE)
 
     async def dispatch(self, request: Request, call_next: Any) -> Response:  # noqa: C901
         """
@@ -54,9 +49,7 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
         except AttributeError:
             username = None
 
-        should_log_opera = (
-            path.startswith(f'{settings.FASTAPI_API_V1_PATH}') and path not in settings.OPERA_LOG_PATH_EXCLUDE
-        )
+        should_log_opera = path.startswith(settings.FASTAPI_API_V1_PATH) and path not in settings.OPERA_LOG_PATH_EXCLUDE
 
         try:
             response = await call_next(request)
@@ -69,14 +62,6 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
                 msg = getattr(e, 'msg', str(e))
                 status = StatusType.disable
 
-            if path.startswith(f'{settings.FASTAPI_API_V1_PATH}'):
-                PROMETHEUS_EXCEPTION_COUNTER.labels(
-                    app_name=PROMETHEUS_APP_NAME,
-                    method=method,
-                    path=path,
-                    exception_type=type(e).__name__,
-                ).inc()
-
             raise
         else:
             elapsed = round((time.perf_counter() - ctx.perf_time) * 1000, 3)
@@ -88,6 +73,7 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
                     '__request_validation_exception__',
                     '__request_assertion_error__',
                     '__request_custom_exception__',
+                    '__request_unknown_exception__',
                 ]:
                     exception = ctx.get(exception_key)
                     if exception:
@@ -96,11 +82,6 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
                         status = StatusType.disable
                         log.error(f'Request exception: {msg}')
                         break
-
-            if path.startswith(f'{settings.FASTAPI_API_V1_PATH}'):
-                PROMETHEUS_REQUEST_COST_TIME_HISTOGRAM.labels(
-                    app_name=PROMETHEUS_APP_NAME, method=method, path=path
-                ).observe(amount=elapsed, exemplar={'TraceID': get_request_trace_id()})
         finally:
             # summary Can only be obtained after requesting
             route = request.scope.get('route')
@@ -113,7 +94,7 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
             if request.method != 'OPTIONS':
                 log.debug('<-- Request ends')
 
-            if path.startswith(f'{settings.FASTAPI_API_V1_PATH}'):
+            if path.startswith(settings.FASTAPI_API_V1_PATH):
                 log.info(f'{ctx.ip: <15} | {method: <8} | {code!s: <6} | {path} | {elapsed:.3f}ms')
 
             if should_log_opera and request.method != 'OPTIONS':
@@ -139,14 +120,8 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
                     opera_time=ctx.start_time,
                 )
                 await self.opera_log_queue.put(opera_log_in)
-
-            if path.startswith(f'{settings.FASTAPI_API_V1_PATH}'):
-                PROMETHEUS_RESPONSE_COUNTER.labels(
-                    app_name=PROMETHEUS_APP_NAME, method=method, path=path, status_code=code
-                ).inc()
-                PROMETHEUS_REQUEST_IN_PROGRESS_GAUGE.labels(
-                    app_name=PROMETHEUS_APP_NAME, method=method, path=path
-                ).dec()
+                if settings.GRAFANA_METRICS_ENABLE:
+                    observe_queue_size(self.opera_log_queue, queue_name=self.opera_log_queue_name)
 
         return response
 
@@ -171,13 +146,23 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
 
         # Tip: .body() must be obtained before .form()
         # https://github.com/encode/starlette/discussions/1933
-        content_type = request.headers.get('Content-Type', '').split(';')
+        content_types = [item.strip().lower() for item in request.headers.get('Content-Type', '').split(';')]
+        is_multipart = 'multipart/form-data' in content_types
+        is_form = is_multipart or 'application/x-www-form-urlencoded' in content_types
+        content_length = self.get_content_length(request)
+        if content_length is not None and content_length > settings.OPERA_LOG_BODY_MAX_SIZE:
+            args['body'] = self.build_truncated_body(content_length, settings.OPERA_LOG_BODY_MAX_SIZE)
+            return args or None
+
+        if is_multipart and content_length is None:
+            args['body'] = self.build_truncated_body(None, settings.OPERA_LOG_BODY_MAX_SIZE)
+            return args or None
 
         # Request body
         body_data = await request.body()
-        if body_data:
+        if body_data and not is_form:
             # Note: Non-json data uses data as key by default
-            if 'application/json' not in content_type:
+            if 'application/json' not in content_types:
                 args['data'] = body_data.decode('utf-8', 'ignore') if isinstance(body_data, bytes) else str(body_data)
             else:
                 json_data = await request.json()
@@ -186,56 +171,64 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
                 else:
                     args['data'] = str(json_data)
 
-        # Form Parameters
-        form_data = await request.form()
-        if len(form_data) > 0:
-            serialized_form = {}
-            for k, v in form_data.items():
-                if isinstance(v, UploadFile):
-                    serialized_form[k] = {
-                        'filename': v.filename,
-                        'content_type': v.content_type,
-                        'size': v.size,
-                    }
+        if is_form:
+            # Form Parameters
+            form_data = await request.form()
+            if len(form_data) > 0:
+                serialized_form = {}
+                for k, v in form_data.items():
+                    if isinstance(v, UploadFile):
+                        serialized_form[k] = {
+                            'filename': v.filename,
+                            'content_type': v.content_type,
+                            'size': v.size,
+                        }
+                    else:
+                        serialized_form[k] = v
+                if not is_multipart:
+                    args['x-www-form-urlencoded'] = self.desensitization(serialized_form)
                 else:
-                    serialized_form[k] = v
-            if 'multipart/form-data' not in content_type:
-                args['x-www-form-urlencoded'] = self.desensitization(serialized_form)
-            else:
-                args['form-data'] = self.desensitization(serialized_form)
+                    args['form-data'] = self.desensitization(serialized_form)
 
         if args:
-            args = self.truncate(args)
+            try:
+                args_str = json.dumps(args, ensure_ascii=False)
+                args_size = len(args_str.encode('utf-8'))
+                if args_size > settings.OPERA_LOG_BODY_MAX_SIZE:
+                    args = self.build_truncated_body(args_size, settings.OPERA_LOG_BODY_MAX_SIZE)
+            except Exception as e:
+                log.error(f'Request parameter truncation processing failed：{e}')
 
         return args or None
 
     @staticmethod
-    def truncate(args: dict[str, Any]) -> dict[str, Any]:
+    def get_content_length(request: Request) -> int | None:
         """
-        Truncation
+        Get request body size
 
-        :param args: Dictionary of request parameters that need to be truncated
+        :param request: FastAPI request object
         :return:
         """
-        max_size = 10240 # Maximum data size (bytes)
+        content_length = request.headers.get('Content-Length')
+        if not content_length:
+            return None
+        return int(content_length)
 
-        try:
-            args_str = json.dumps(args, ensure_ascii=False)
-            args_size = len(args_str.encode('utf-8'))
+    @staticmethod
+    def build_truncated_body(original_size: int | None, max_size: int) -> dict[str, Any]:
+        """
+        Construct request body truncation information
 
-            if args_size > max_size:
-                truncated_str = args_str[:max_size]
-                return {
-                    '_truncated': True,
-                    '_original_size': args_size,
-                    '_max_size': max_size,
-                    '_message': f'Data too large truncated: original size {args_size} bytes, limit {max_size} bytes',
-                    'data_preview': truncated_str,
-                }
-        except Exception as e:
-            log.error(f'Request parameter truncation processing failed：{e}')
-
-        return args
+        :param original_size: Original request body size
+        :param max_size: Maximum allowed record size
+        :return:
+        """
+        return {
+            '_truncated': True,
+            '_original_size': original_size,
+            '_max_size': max_size,
+            '_message': 'The request body is too large or the size is unknown, and the operation log request body record has been skipped',
+        }
 
     @staticmethod
     def desensitization(args: dict[str, Any]) -> dict[str, Any]:
@@ -252,21 +245,21 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
 
     @classmethod
     async def consumer(cls) -> None:
-        """Operation log consumer"""
-        while True:
-            logs = await batch_dequeue(
-                cls.opera_log_queue,
-                max_items=settings.OPERA_LOG_QUEUE_BATCH_CONSUME_SIZE,
-                timeout=settings.OPERA_LOG_QUEUE_TIMEOUT,
-            )
-            if logs:
-                try:
-                    if settings.DATABASE_ECHO:
-                        log.info('Automatically execute [Operation log batch creation] task...')
-                    async with async_db_session.begin() as db:
-                        await opera_log_service.bulk_create(db=db, objs=logs)
-                except Exception as e:
-                    log.error(f'Operation log storage failed, {len(logs)} logs were lost: {e}')
-                finally:
-                    for _ in range(len(logs)):
-                        cls.opera_log_queue.task_done()
+        """Operation Log Consumer"""
+
+        async def bulk_create_opera_log(logs: list[CreateOperaLogParam]) -> None:
+            """Create operation logs in batches"""
+            if settings.DATABASE_ECHO:
+                log.info('Automatically execute the [Operation Log Batch Creation] task...')
+            async with async_db_session.begin() as db:
+                await opera_log_service.bulk_create(db=db, objs=logs)
+
+        await batch_consume(
+            cls.opera_log_queue,
+            max_items=settings.OPERA_LOG_QUEUE_BATCH_CONSUME_SIZE,
+            timeout=settings.OPERA_LOG_QUEUE_TIMEOUT,
+            handler=bulk_create_opera_log,
+            queue_name=cls.opera_log_queue_name,
+            error_message='Operation log storage failed',
+            item_name='Log',
+        )

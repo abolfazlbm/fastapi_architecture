@@ -10,9 +10,11 @@ from fastapi.security.utils import get_authorization_scheme_param
 from jose import ExpiredSignatureError, JWTError, jwt
 from pydantic_core import from_json
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.authentication import UnauthenticatedUser
 
 from backend.app.admin.model import User
 from backend.app.admin.schema.user import GetUserInfoWithRelationDetail
+from backend.common.context import ctx
 from backend.common.dataclasses import AccessToken, NewToken, RefreshToken, TokenPayload
 from backend.common.exception import errors
 from backend.core.conf import settings
@@ -58,7 +60,7 @@ def jwt_decode(token: str) -> TokenPayload:
     except (JWTError, Exception):
         raise errors.TokenError(msg='Token is invalid')
     return TokenPayload(
-        id=int(user_id),
+        user_id=int(user_id),
         session_uuid=session_uuid,
         expire_time=timezone.from_datetime(timezone.to_utc(expire)),
     )
@@ -84,18 +86,18 @@ async def create_access_token(user_id: int, *, multi_login: bool, **kwargs) -> A
     if not multi_login:
         await redis_client.delete_prefix(f'{settings.TOKEN_REDIS_PREFIX}:{user_id}')
 
-    await redis_client.setex(
+    await redis_client.set(
         f'{settings.TOKEN_REDIS_PREFIX}:{user_id}:{session_uuid}',
-        settings.TOKEN_EXPIRE_SECONDS,
         access_token,
+        ex=settings.TOKEN_EXPIRE_SECONDS,
     )
 
     # Token Additional information is stored separately
     if kwargs:
-        await redis_client.setex(
+        await redis_client.set(
             f'{settings.TOKEN_EXTRA_INFO_REDIS_PREFIX}:{user_id}:{session_uuid}',
-            settings.TOKEN_EXPIRE_SECONDS,
             json.dumps(kwargs, ensure_ascii=False),
+            ex=settings.TOKEN_EXPIRE_SECONDS,
         )
 
     return AccessToken(access_token=access_token, access_token_expire_time=expire, session_uuid=session_uuid)
@@ -120,10 +122,10 @@ async def create_refresh_token(session_uuid: str, user_id: int, *, multi_login: 
     if not multi_login:
         await redis_client.delete_prefix(f'{settings.TOKEN_REFRESH_REDIS_PREFIX}:{user_id}')
 
-    await redis_client.setex(
+    await redis_client.set(
         f'{settings.TOKEN_REFRESH_REDIS_PREFIX}:{user_id}:{session_uuid}',
-        settings.TOKEN_REFRESH_EXPIRE_SECONDS,
         refresh_token,
+        ex=settings.TOKEN_REFRESH_EXPIRE_SECONDS,
     )
     return RefreshToken(refresh_token=refresh_token, refresh_token_expire_time=expire)
 
@@ -205,11 +207,10 @@ async def get_current_user(db: AsyncSession, pk: int) -> User:
         raise errors.TokenError(msg='Token invalid')
     if not user.status:
         raise errors.AuthorizationError(msg='The user has been locked, please contact the system administrator')
-    if user.dept_id:
-        if not user.dept.status:
-            raise errors.AuthorizationError(msg="The user's department has been locked, please contact the system administrator")
-        if user.dept.del_flag:
-            raise errors.AuthorizationError(msg="The user's department has been deleted, please contact the system administrator")
+    if user.dept_id and not user.dept:
+        raise errors.AuthorizationError(msg='The department to which the user belongs does not exist or has been deleted, please contact the system administrator')
+    if user.dept and not user.dept.status:
+        raise errors.AuthorizationError(msg='The department to which the user belongs has been locked, please contact the system administrator')
     if user.roles:
         role_status = [role.status for role in user.roles]
         if all(status == 0 for status in role_status):
@@ -229,30 +230,16 @@ async def get_jwt_user(user_id: int) -> GetUserInfoWithRelationDetail:
         async with async_db_session() as db:
             current_user = await get_current_user(db, user_id)
             user = GetUserInfoWithRelationDetail.model_validate(current_user)
-            await redis_client.setex(
+            await redis_client.set(
                 f'{settings.JWT_USER_REDIS_PREFIX}:{user_id}',
-                settings.TOKEN_EXPIRE_SECONDS,
                 user.model_dump_json(),
+                ex=settings.TOKEN_EXPIRE_SECONDS,
             )
     else:
         # TODO: When appropriate, use model_validate_json instead
         # https://docs.pydantic.dev/latest/concepts/json/#partial-json-parsing
         user = GetUserInfoWithRelationDetail.model_validate(from_json(cache_user, allow_partial=True))
     return user
-
-
-def superuser_verify(request: Request, _token: str = DependsJwtAuth) -> bool:
-    """
-    Verify the current user's super administrator rights
-
-    :param request: FastAPI request object
-    :param _token: JWT token
-    :return:
-    """
-    superuser = request.user.is_superuser
-    if not superuser or not request.user.is_staff:
-        raise errors.AuthorizationError
-    return superuser
 
 
 async def jwt_authentication(token: str) -> GetUserInfoWithRelationDetail:
@@ -263,15 +250,32 @@ async def jwt_authentication(token: str) -> GetUserInfoWithRelationDetail:
     :return:
     """
     token_payload = jwt_decode(token)
-    user_id = token_payload.id
-    redis_token = await redis_client.get(f'{settings.TOKEN_REDIS_PREFIX}:{user_id}:{token_payload.session_uuid}')
+    ctx.user_id = token_payload.user_id
+    redis_token = await redis_client.get(f'{settings.TOKEN_REDIS_PREFIX}:{ctx.user_id}:{token_payload.session_uuid}')
     if not redis_token:
         raise errors.TokenError(msg='Token expired')
 
     if token != redis_token:
         raise errors.TokenError(msg='Token have expired')
 
-    return await get_jwt_user(user_id)
+    return await get_jwt_user(ctx.user_id)
+
+
+def superuser_verify(request: Request, _token: str = DependsJwtAuth) -> bool:
+    """
+    Verify the current user's super administrator rights
+
+    :param request: FastAPI request object
+    :param _token: JWT token
+    :return:
+    """
+    if isinstance(request.user, UnauthenticatedUser):
+        raise errors.TokenError
+
+    superuser = request.user.is_superuser
+    if not superuser or not request.user.is_staff:
+        raise errors.AuthorizationError
+    return superuser
 
 
 # Super administrator authentication dependency injection

@@ -2,14 +2,30 @@ import zoneinfo
 
 from datetime import datetime
 from datetime import timezone as datetime_timezone
+from typing import Final
 
 from backend.core.conf import settings
+
+# based on wikipedia：https://en.wikipedia.org/wiki/List_of_tz_database_time_zones#List
+_UTC_IDENTIFIERS: Final = frozenset({
+    'Etc/UCT',
+    'Etc/Universal',
+    'Etc/UTC',
+    'Etc/Zulu',
+    'UCT',
+    'Universal',
+    'UTC',
+    'Zulu',
+})
 
 
 class TimeZone:
     def __init__(self) -> None:
         """Initialize time zone converter"""
-        self.tz_info = zoneinfo.ZoneInfo(settings.DATETIME_TIMEZONE)
+        if settings.DATETIME_TIMEZONE in _UTC_IDENTIFIERS:
+            self.tz_info = datetime_timezone.utc
+        else:
+            self.tz_info = zoneinfo.ZoneInfo(settings.DATETIME_TIMEZONE)
 
     def now(self) -> datetime:
         """Get the current time zone time"""

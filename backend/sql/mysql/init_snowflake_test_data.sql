@@ -1,5 +1,5 @@
-insert into sys_dept (id, name, sort, leader, phone, email, status, del_flag, parent_id, created_time, updated_time)
-values (2048601258595581952, 'Test', 0, null, null, null, 1, false, null, now(), null);
+insert into sys_dept (id, name, sort, leader, phone, email, status, deleted, parent_id, created_time, updated_time)
+values (2048601258595581952, 'Test', 0, null, null, null, 1, 0, null, now(), null);
 
 insert into sys_menu (id, title, name, path, sort, icon, type, component, perms, status, display, cache, link, remark, parent_id, created_time, updated_time)
 values
@@ -34,52 +34,25 @@ values
 (2049629108249427977, 'Edit', 'EditSysDataRule', null, 0, null, 2, null, 'data:rule:edit', 1, 0, 1, '', null, 2049629108249427975, '2025-06-26 20:29:06', null),
 (2049629108249427978, 'Delete', 'DeleteSysDataRule', null, 0, null, 2, null, 'data:rule:del', 1, 0, 1, '', null, 2049629108249427975, '2025-06-26 20:29:06', null),
 (2049629108249427979, 'page.menu.sysPlugin', 'SysPlugin', '/system/plugin', 8, 'clarity:plugin-line', 1, '/system/plugin/index', null, 1, 1, 1, '', null, 2049629108245233667, '2025-06-26 20:29:06', null),
-(2049629108249427980, 'Install', 'InstallSysPlugin', null, 0, null, 2, null, 'sys:plugin:install', 1, 0, 1, '', null, 2049629108249427979, '2025-06-26 20:29:06', null),
-(2049629108249427981, 'Uninstall', 'UninstallSysPlugin', null, 0, null, 2, null, 'sys:plugin:uninstall', 1, 0, 1, '', null, 2049629108249427979, '2025-06-26 20:29:06', null),
-(2049629108249427982, 'Edit', 'EditSysPlugin', null, 0, null, 2, null, 'sys:plugin:edit', 1, 0, 1, '', null, 2049629108249427979, '2025-06-26 20:29:06', null),
-(2049629108249427983, 'page.menu.scheduler', 'Scheduler', '/scheduler', 2, 'material-symbols:automation', 0, null, null, 1, 1, 1, '', null, null, '2025-06-26 20:29:06', null),
-(2049629108249427984, 'page.menu.schedulerManage', 'SchedulerManage', '/scheduler/manage', 1, 'ix:scheduler', 1, '/scheduler/manage/index', null, 1, 1, 1, '', null, 2049629108249427983, '2025-06-26 20:29:06', null),
-(2049629108249427985, 'page.menu.schedulerRecord', 'SchedulerRecord', '/scheduler/record', 2, 'ix:scheduler', 1, '/scheduler/record/index', null, 1, 1, 1, '', null, 2049629108249427983, '2025-06-26 20:29:06', null),
-(2049629108249427986, 'page.menu.log', 'Log', '/log', 3, 'carbon:cloud-logging', 0, null, null, 1, 1, 1, '', null, null, '2025-06-26 20:29:06', null),
-(2049629108249427987, 'page.menu.login', 'LoginLog', '/log/login', 1, 'mdi:login', 1, '/log/login/index', null, 1, 1, 1, '', null, 2049629108249427986, '2025-06-26 20:29:06', null),
-(2049629108249427988, 'Delete', 'DeleteLoginLog', null, 0, null, 2, null, 'log:login:del', 1, 0, 1, '', null, 2049629108249427987, '2025-06-26 20:29:06', null),
-(2049629108249427989, 'Clear', 'EmptyLoginLog', null, 0, null, 2, null, 'log:login:clear', 1, 0, 1, '', null, 2049629108249427987, '2025-06-26 20:29:06', null),
-(2049629108249427990, 'page.menu.opera', 'OperaLog', '/log/opera', 2, 'carbon:operations-record', 1, '/log/opera/index', null, 1, 1, 1, '', null, 2049629108249427986, '2025-06-26 20:29:06', null),
-(2049629108249427991, 'Delete', 'DeleteOperaLog', null, 0, null, 2, null, 'log:opera:del', 1, 0, 1, '', null, 2049629108249427990, '2025-06-26 20:29:06', null),
-(2049629108253622272, 'Clear', 'EmptyOperaLog', null, 0, null, 2, null, 'log:opera:clear', 1, 0, 1, '', null, 2049629108249427990, '2025-06-26 20:29:06', null),
+(2049629108249427980, 'page.menu.scheduler', 'Scheduler', '/scheduler', 2, 'material-symbols:automation', 0, null, null, 1, 1, 1, '', null, null, '2025-06-26 20:29:06', null),
+(2049629108249427981, 'page.menu.schedulerManage', 'SchedulerManage', '/scheduler/manage', 1, 'ix:scheduler', 1, '/scheduler/manage/index', null, 1, 1, 1, '', null, 2049629108249427980, '2025-06-26 20:29:06', null),
+(2049629108249427982, 'page.menu.schedulerRecord', 'SchedulerRecord', '/scheduler/record', 2, 'ix:scheduler', 1, '/scheduler/record/index', null, 1, 1, 1, '', null, 2049629108249427980, '2025-06-26 20:29:06', null),
+(2049629108249427983, 'page.menu.log', 'Log', '/log', 3, 'carbon:cloud-logging', 0, null, null, 1, 1, 1, '', null, null, '2025-06-26 20:29:06', null),
+(2049629108249427984, 'page.menu.login', 'LoginLog', '/log/login', 1, 'mdi:login', 1, '/log/login/index', null, 1, 1, 1, '', null, 2049629108249427983, '2025-06-26 20:29:06', null),
+(2049629108249427985, 'Delete', 'DeleteLoginLog', null, 0, null, 2, null, 'log:login:del', 1, 0, 1, '', null, 2049629108249427984, '2025-06-26 20:29:06', null),
+(2049629108249427986, 'Clear', 'EmptyLoginLog', null, 0, null, 2, null, 'log:login:clear', 1, 0, 1, '', null, 2049629108249427984, '2025-06-26 20:29:06', null),
+(2049629108249427987, 'page.menu.opera', 'OperaLog', '/log/opera', 2, 'carbon:operations-record', 1, '/log/opera/index', null, 1, 1, 1, '', null, 2049629108249427983, '2025-06-26 20:29:06', null),
+(2049629108249427988, 'delete', 'DeleteOperaLog', null, 0, null, 2, null, 'log:opera:del', 1, 0, 1, '', null, 2049629108249427987, '2025-06-26 20:29:06', null),
+(2049629108253622272, 'clear', 'EmptyOperaLog', null, 0, null, 2, null, 'log:opera:clear', 1, 0, 1, '', null, 2049629108249427987, '2025-06-26 20:29:06', null),
 (2049629108253622273, 'page.menu.monitor', 'Monitor', '/monitor', 4, 'mdi:monitor-eye', 0, null, null, 1, 1, 1, '', null, null, '2025-06-26 20:29:06', null),
 (2049629108253622274, 'page.menu.online', 'Online', '/log/online', 1, 'wpf:online', 1, '/monitor/online/index', null, 1, 1, 1, '', null, 2049629108253622273, '2025-06-26 20:29:06', null),
 (2049629108253622276, 'page.menu.redis', 'Redis', '/monitor/redis', 2, 'devicon:redis', 1, '/monitor/redis/index', null, 1, 1, 1, '', null, 2049629108253622273, '2025-06-26 20:29:06', null),
 (2049629108253622277, 'page.menu.server', 'Server', '/monitor/server', 3, 'mdi:server-outline', 1, '/monitor/server/index', null, 1, 1, 1, '', null, 2049629108253622273, '2025-06-26 20:29:06', null),
 (2049629108253622278, 'Project', 'Project', '/fba', 5, 'https://wu-clan.github.io/picx-images-hosting/logo/fba.png', 0, null, null, 1, 1, 1, '', null, null, '2025-06-26 20:29:06', null),
 (2049629108253622279, 'Document', 'Document', '/fba/document', 1, 'lucide:book-open-text', 4, '/_core/fallback/iframe.vue', null, 1, 1, 1, 'https://fastapi-practices.github.io/fastapi_best_architecture_docs', null, 2049629108253622278, '2025-06-26 20:29:06', null),
-(2049629108253622280, 'Github', 'Github', '/fba/github', 2, 'ant-design:github-filled', 4, '/_core/fallback/iframe.vue', null, 1, 1, 1, 'https://github.com/fastapi-practices/fastapi_best_architecture', null, 2049629108253622278, '2025-06-26 20:29:06', null),
+(2049629108253622280, 'Github', 'Github', '/fba/github', 2, 'ant-design:github-filled', 4, '/_core/fallback/iframe.vue', null, 1, 1, 1, 'https://github.com/fastapi-practices/fastapi-best-architecture', null, 2049629108253622278, '2025-06-26 20:29:06', null),
 (2049629108253622281, 'Apifox', 'Apifox', '/fba/apifox', 3, 'simple-icons:apifox', 3, '/_core/fallback/iframe.vue', null, 1, 1, 1, 'https://apifox.com/apidoc/shared-28a93f02-730b-4f33-bb5e-4dad92058cc0', null, 2049629108253622278, '2025-06-26 20:29:06', null),
-(2049629108253622282, 'page.menu.profile', 'Profile', '/profile', 6, 'ant-design:profile-outlined', 1, '/_core/profile/index', null, 1, 0, 1, '', null, null, '2025-06-26 20:29:06', null),
-(2049629108253622283, 'config.menu', 'PluginConfig', '/plugins/config', 7, 'codicon:symbol-parameter', 1, '/plugins/config/views/index', null, 1, 1, 1, '', null, 2049629108245233667, '2025-06-26 20:29:06', '2025-06-26 20:34:51'),
-(2049629108253622284, 'Add', 'AddConfig', null, 0, null, 2, null, 'sys:config:add', 1, 0, 1, '', null, 2049629108253622283, '2025-06-26 20:29:06', null),
-(2049629108253622285, 'Edit', 'EditConfig', null, 0, null, 2, null, 'sys:config:edit', 1, 0, 1, '', null, 2049629108253622283, '2025-06-26 20:29:06', null),
-(2049629108253622286, 'Delete', 'DeleteConfig', null, 0, null, 2, null, 'sys:config:del', 1, 0, 1, '', null, 2049629108253622283, '2025-06-26 20:29:06', null),
-(2049629108253622287, 'dict.menu', 'PluginDict', '/plugins/dict', 8, 'fluent-mdl2:dictionary', 1, '/plugins/dict/views/index', null, 1, 1, 1, '', null, 2049629108245233667, '2025-06-26 20:29:06', '2025-06-26 20:35:07'),
-(2049629108253622288, 'Add Dict Type', 'AddDictType', null, 0, null, 2, null, 'dict:type:add', 1, 0, 1, '', null, 2049629108253622287, '2025-06-26 20:29:06', null),
-(2049629108253622289, 'Edit Dict Type', 'EditDictType', null, 0, null, 2, null, 'dict:type:edit', 1, 0, 1, '', null, 2049629108253622287, '2025-06-26 20:29:06', null),
-(2049629108253622290, 'Delete Dict Type', 'DeleteDictType', null, 0, null, 2, null, 'dict:type:del', 1, 0, 1, '', null, 2049629108253622287, '2025-06-26 20:29:06', null),
-(2049629108253622291, 'Add Dict Data', 'AddDictData', null, 0, null, 2, null, 'dict:data:add', 1, 0, 1, '', null, 2049629108253622287, '2025-06-26 20:29:06', null),
-(2049629108253622292, 'Edit Dict Data', 'EditDictData', null, 0, null, 2, null, 'dict:data:edit', 1, 0, 1, '', null, 2049629108253622287, '2025-06-26 20:29:06', null),
-(2049629108253622293, 'Delete Dict Data', 'DeleteDictData', null, 0, null, 2, null, 'dict:data:del', 1, 0, 1, '', null, 2049629108253622287, '2025-06-26 20:29:06', null),
-(2049629108257816576, 'notice.menu', 'PluginNotice', '/plugins/notice', 9, 'fe:notice-push', 1, '/plugins/notice/views/index', null, 1, 1, 1, '', null, 2049629108245233667, '2025-06-26 20:29:06', '2025-06-26 20:35:14'),
-(2049629108257816577, 'Add', 'AddNotice', null, 0, null, 2, null, 'sys:notice:add', 1, 0, 1, '', null, 2049629108257816576, '2025-06-26 20:29:06', null),
-(2049629108257816578, 'Edit', 'EditNotice', null, 0, null, 2, null, 'sys:notice:edit', 1, 0, 1, '', null, 2049629108257816576, '2025-06-26 20:29:06', null),
-(2049629108257816579, 'Delete', 'DeleteNotice', null, 0, null, 2, null, 'sys:notice:del', 1, 0, 1, '', null, 2049629108257816576, '2025-06-26 20:29:06', null),
-(2049629108257816580, 'code_generator.menu', 'PluginCodeGenerator', '/plugins/code-generator', 10, 'tabler:code', 1, '/plugins/code_generator/views/index', null, 1, 1, 1, '', null, null, '2025-06-26 20:29:06', '2025-06-26 20:35:25'),
-(2049629108257816581, 'Add Business', 'AddGenCodeBusiness', '', 0, null, 2, null, 'codegen:business:add', 1, 0, 1, '', null, 2049629108257816580, '2025-06-26 20:29:06', '2025-06-26 20:45:16'),
-(2049629108257816582, 'Edit Business', 'EditGenCodeBusiness', null, 0, null, 2, null, 'codegen:business:edit', 1, 0, 1, '', null, 2049629108257816580, '2025-06-26 20:29:06', null),
-(2049629108257816583, 'Delete Business', 'DeleteGenCodeBusiness', null, 0, null, 2, null, 'codegen:business:del', 1, 0, 1, '', null, 2049629108257816580, '2025-06-26 20:29:06', null),
-(2049629108257816584, 'Add Model', 'AddGenCodeModel', null, 0, null, 2, null, 'codegen:model:add', 1, 0, 1, '', null, 2049629108257816580, '2025-06-26 20:29:06', null),
-(2049629108257816585, 'Edit Model', 'EditGenCodeModel', null, 0, null, 2, null, 'codegen:model:edit', 1, 0, 1, '', null, 2049629108257816580, '2025-06-26 20:29:06', null),
-(2049629108257816586, 'Delete Model', 'DeleteGenCodeModel', null, 0, null, 2, null, 'codegen:model:del', 1, 0, 1, '', null, 2049629108257816580, '2025-06-26 20:29:06', null),
-(2049629108257816587, 'Import', 'ImportGenCode', null, 0, null, 2, null, 'codegen:table:import', 1, 0, 1, '', null, 2049629108257816580, '2025-06-26 20:29:06', null),
-(2049629108257816588, 'Write', 'WriteGenCode', null, 0, null, 2, null, 'codegen:local:write', 1, 0, 1, '', null, 2049629108257816580, '2025-06-26 20:29:06', null);
+(2049629108253622282, 'page.menu.profile', 'Profile', '/profile', 6, 'ant-design:profile-outlined', 1, '/_core/profile/index', null, 1, 0, 1, '', null, null, '2025-06-26 20:29:06', null);
 
 insert into sys_role (id, name, status, is_filter_scopes, remark, created_time, updated_time)
 values (2048601263515500544, 'Test', 1, true, null, now(), null);
@@ -103,16 +76,26 @@ values
 
 insert into sys_data_scope (id, name, status, created_time, updated_time)
 values
-(2048601263901376512, 'Test Department Data Permission', 1, now(), null),
-(2048601263968485376, 'Test Department and Subordinate Data Permission', 1, now(), null);
+(2048601263901376512, 'Data permissions of this department', 1, now(), null),
+(2048601263968485376, 'Data permissions for departments and below', 1, now(), null),
+(2048601263968485377, 'Only my data permission', 1, now(), null),
+(2048601263968485378, 'Full model data permissions for this department', 1, now(), null),
+(2048601263968485379, 'Exclude super administrator data permissions', 1, now(), null);
 
 insert into sys_data_rule (id, name, model, `column`, operator, expression, `value`, created_time, updated_time)
 values
-(2048601264035594240, 'Department name equals test', 'Dept', 'name', 1, 0, 'Test', now(), null),
-(2048601264102703104, 'Parent department ID equals 1', 'Dept', 'parent_id', 0, 0, '1', now(), null);
+(2048601264035594240, 'Department ID equals the current user department', 'Dept', '__dept_id__', 0, 0, '${dept_id}', now(), null),
+(2048601264102703104, 'Department name equals test', 'Dept', 'name', 1, 0, 'test', now(), null),
+(2048601264102703105, 'Parent department ID is equal to test department ID', 'Dept', 'parent_id', 0, 0, '1', now(), null),
+(2048601264102703106, 'The creator is equal to the current user', '__ALL__', '__created_by__', 0, 0, '${user_id}', now(), null),
+(2048601264102703107, 'The full model department ID is equal to the current user department', '__ALL__', '__dept_id__', 0, 0, '${dept_id}', now(), null),
+(2048601264102703109, 'User is not a super administrator', 'User', 'is_superuser', 0, 1, '1', now(), null);
 
 insert into sys_data_scope_rule (id, data_scope_id, data_rule_id)
 values
 (2048601264169811968, 2048601263901376512, 2048601264035594240),
-(2048601264236920832, 2048601263968485376, 2048601264035594240),
-(2048601264299835392, 2048601263968485376, 2048601264102703104);
+(2048601264236920832, 2048601263968485376, 2048601264102703104),
+(2048601264299835392, 2048601263968485376, 2048601264102703105),
+(2048601264299835393, 2048601263968485377, 2048601264102703106),
+(2048601264299835394, 2048601263968485378, 2048601264102703107),
+(2048601264299835395, 2048601263968485379, 2048601264102703109);

@@ -1,6 +1,6 @@
+import asyncio
 import os
 
-from asyncio import create_task
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -18,7 +18,9 @@ from starlette_context.plugins import RequestIdPlugin
 from backend import __version__
 from backend.common.cache.pubsub import cache_pubsub_manager
 from backend.common.exception.exception_handler import register_exception
+from backend.common.lifespan import lifespan_manager
 from backend.common.log import set_custom_logfile, setup_logging
+from backend.common.observability.otel import init_otel
 from backend.common.response.response_code import StandardResponseCode
 from backend.core.conf import settings
 from backend.core.path_conf import STATIC_DIR, UPLOAD_DIR
@@ -29,15 +31,16 @@ from backend.middleware.i18n_middleware import I18nMiddleware
 from backend.middleware.jwt_auth_middleware import JwtAuthMiddleware
 from backend.middleware.opera_log_middleware import OperaLogMiddleware
 from backend.middleware.state_middleware import StateMiddleware
-from backend.plugin.core import build_final_router
+from backend.plugin.hooks import init_plugin_otel_hooks, register_plugin_hooks
+from backend.plugin.router import build_final_router
 from backend.utils.demo_mode import demo_site
 from backend.utils.openapi import ensure_unique_route_names, simplify_operation_ids
-from backend.utils.otel import init_otel
 from backend.utils.serializers import MsgSpecJSONResponse
 from backend.utils.snowflake import snowflake
 from backend.utils.trace_id import OtelTraceIdPlugin
 
 
+@lifespan_manager.register
 @asynccontextmanager
 async def register_init(app: FastAPI) -> AsyncGenerator[None, None]:
     """
@@ -53,24 +56,35 @@ async def register_init(app: FastAPI) -> AsyncGenerator[None, None]:
     await redis_client.init()
 
     # Initialize the snowflake node
-    await snowflake.init()
+    if settings.SNOWFLAKE_ENABLED or settings.DATABASE_PK_MODE == 'snowflake':
+        await snowflake.init()
 
     # Create operation log task
-    create_task(OperaLogMiddleware.consumer())
+    opera_log_task = asyncio.create_task(OperaLogMiddleware.consumer())
 
     # Start cache Pub/Sub listener
     cache_pubsub_manager.start_listener()
 
-    yield
+    try:
+        yield
+    finally:
+        # Stop caching Pub/Sub listeners
+        await cache_pubsub_manager.stop_listener()
 
-    # Stop caching Pub/Sub listeners
-    await cache_pubsub_manager.stop_listener()
+        # Cancel operation log task
+        if not opera_log_task.done():
+            opera_log_task.cancel()
+            try:
+                await opera_log_task
+            except asyncio.CancelledError:
+                pass
 
-    # Release the snowflake node
-    await snowflake.shutdown()
+        # Release the snowflake node
+        if settings.SNOWFLAKE_ENABLED or settings.DATABASE_PK_MODE == 'snowflake':
+            await snowflake.shutdown()
 
-    # Close redis connection
-    await redis_client.aclose()
+        # Close redis connection
+        await redis_client.aclose()
 
 
 def register_app() -> FastAPI:
@@ -84,7 +98,7 @@ def register_app() -> FastAPI:
         redoc_url=settings.FASTAPI_REDOC_URL,
         openapi_url=settings.FASTAPI_OPENAPI_URL,
         default_response_class=MsgSpecJSONResponse,
-        lifespan=register_init,
+        lifespan=lifespan_manager.build(),
     )
 
     # Register components
@@ -95,6 +109,9 @@ def register_app() -> FastAPI:
     register_router(app)
     register_page(app)
     register_exception(app)
+
+    # Register plugin hook
+    register_plugin_hooks(app)
 
     if settings.GRAFANA_METRICS_ENABLE:
         register_metrics(app)
@@ -163,7 +180,7 @@ def register_middleware(app: FastAPI) -> None:
     )
 
     # CORS
-    # https://github.com/fastapi-practices/fastapi_best_architecture/pull/789/changes
+    # https://github.com/fastapi-practices/fastapi-best-architecture/pull/789/changes
     # https://github.com/open-telemetry/opentelemetry-python-contrib/issues/4031
     if settings.MIDDLEWARE_CORS:
         app.add_middleware(
@@ -230,6 +247,7 @@ def register_metrics(app: FastAPI) -> None:
     :return:
     """
     metrics_app = make_asgi_app()
-    app.mount('/metrics', metrics_app)
+    app.mount(settings.GRAFANA_METRICS_PATH, metrics_app)
 
     init_otel(app)
+    init_plugin_otel_hooks(app)

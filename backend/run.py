@@ -1,6 +1,6 @@
-import os
+import granian
 
-import uvicorn
+from backend.cli import CustomReloadFilter
 
 if __name__ == '__main__':
     # Why standalone this startup file: https://stackoverflow.com/questions/64003384
@@ -13,10 +13,11 @@ if __name__ == '__main__':
     # If you are starting this file through the python command, please follow the following:
     # 1. Install dependencies through uv according to the official documentation
     # 2. The command line space is located in the backend directory
-    uvicorn.run(
-        app='backend.main:app',
-        host='127.0.0.1',
+    granian.Granian(
+        target='main:app',
+        interface='asgi',
+        address='127.0.0.1',
         port=8000,
         reload=True,
-        reload_excludes=[os.path.abspath('../.venv')],
-    )
+        reload_filter=CustomReloadFilter,
+    ).serve()

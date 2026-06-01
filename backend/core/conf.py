@@ -80,6 +80,7 @@ class Settings(BaseSettings):
     CACHE_PUBSUB_MAX_RECONNECT_ATTEMPTS: int = 10  # Maximum number of reconnections
 
     # .env Snowflake
+    SNOWFLAKE_ENABLED: bool = False
     SNOWFLAKE_DATACENTER_ID: int | None = None
     SNOWFLAKE_WORKER_ID: int | None = None
 
@@ -102,9 +103,7 @@ class Settings(BaseSettings):
     TOKEN_REQUEST_PATH_EXCLUDE: list[str] = [  # JWT / RBAC Routing whitelist
         f'{FASTAPI_API_V1_PATH}/auth/login',
     ]
-    TOKEN_REQUEST_PATH_EXCLUDE_PATTERN: list[Pattern[str]] = [  # JWT / RBAC Routing whitelist (regular)
-        rf'^{FASTAPI_API_V1_PATH}/monitors/(redis|server)$',
-    ]
+    TOKEN_REQUEST_PATH_EXCLUDE_PATTERN: list[Pattern[str]] = []  # JWT / RBAC Routing whitelist (regular)
 
     # User security
     USER_LOCK_REDIS_PREFIX: str = 'fba:user:lock'
@@ -128,22 +127,38 @@ class Settings(BaseSettings):
 
     # RBAC
     RBAC_ROLE_MENU_MODE: bool = True
-    RBAC_ROLE_MENU_EXCLUDE: list[str] = [
-        'sys:monitor:redis',
-        'sys:monitor:server',
-    ]
+    RBAC_ROLE_MENU_EXCLUDE: list[str] = []
 
     # Cookie
     COOKIE_REFRESH_TOKEN_KEY: str = 'fba_refresh_token'
     COOKIE_REFRESH_TOKEN_EXPIRE_SECONDS: int = 60 * 60 * 24 * 7  # 7 Day
 
     # Data permissions
+    DATA_PERMISSION_MODEL_EXCLUDE: list[str] = [  # Exclude SQLA models that allow data filtering
+        'DataScope',
+        'DataRule',
+        'sys_role_data_scope',
+        'sys_data_scope_rule',
+    ]
     DATA_PERMISSION_COLUMN_EXCLUDE: list[str] = [  # Exclude SQLA model columns that allow data filtering
         'id',
         'sort',
-        'del_flag',
+        'deleted',
+        'deleted_time',
         'created_time',
         'updated_time',
+    ]
+    DATA_PERMISSION_MODEL_TEMPLATE_VARIABLES: list[dict[str, str]] = [ # Template variables available for data rule models
+        {'key': '__ALL__', 'comment': 'All models'},
+    ]
+    DATA_PERMISSION_COLUMN_TEMPLATE_VARIABLES: list[dict[str, str]] = [ # Template variables available for data rule fields
+        {'key': '__dept_id__', 'comment': 'Department ID'},
+        {'key': '__created_by__', 'comment': 'Creator'},
+    ]
+    DATA_PERMISSION_TEMPLATE_VARIABLES: list[dict[str, str]] = [ # Template variables available for data rule values
+        {'key': '${user_id}', 'comment': 'Current logged in user ID'},
+        {'key': '${dept_id}', 'comment': 'Current logged in user department ID'},
+        {'key': '${now}', 'comment': 'Current time'},
     ]
 
     # Socket.IO
@@ -165,7 +180,7 @@ class Settings(BaseSettings):
     REQUEST_LIMITER_REDIS_PREFIX: str = 'fba:limiter'
 
     # Time configuration
-    DATETIME_TIMEZONE: str = 'Asia/Shanghai'
+    DATETIME_TIMEZONE: str = 'Asia/Tehran'
     DATETIME_FORMAT: str = '%Y-%m-%d %H:%M:%S'
 
     # File Upload
@@ -227,8 +242,10 @@ class Settings(BaseSettings):
     OPERA_LOG_QUEUE_MAXSIZE: int = 100000
     OPERA_LOG_QUEUE_BATCH_CONSUME_SIZE: int = 100
     OPERA_LOG_QUEUE_TIMEOUT: int = 60  # 1 Minute
+    OPERA_LOG_BODY_MAX_SIZE: int = 10240  # 10 KB
 
     # Plugin deploy
+    PLUGIN_REQUIRED: list[str] = ['dict']
     PLUGIN_PIP_CHINA: bool = True
     PLUGIN_PIP_INDEX_URL: str = 'https://mirrors.aliyun.com/pypi/simple/'
     PLUGIN_PIP_MAX_RETRY: int = 3
@@ -240,6 +257,17 @@ class Settings(BaseSettings):
     # Grafana
     GRAFANA_METRICS_ENABLE: bool = False
     GRAFANA_OTLP_GRPC_ENDPOINT: str = 'fba_alloy:4317'
+    # The following configurations are static definitions. After modification, you need to manually synchronize the relevant Grafana configurations.：
+    # - GRAFANA_PROMETHEUS_APP_NAME：deploy/backend/grafana/fba_datasource.yml
+    #   deploy/backend/grafana/dashboards/fba_server.json
+    # - GRAFANA_CELERY_OTEL_SERVICE_NAME：deploy/backend/grafana/dashboards/fba_celery.json
+    # - GRAFANA_METRICS_PATH：deploy/backend/grafana/fba_config.alloy
+    #   deploy/backend/grafana/dashboards/fba_server.json
+    # - GRAFANA_PROMETHEUS_EXEMPLAR_TRACE_ID_KEY：deploy/backend/grafana/fba_datasource.yml
+    GRAFANA_PROMETHEUS_APP_NAME: str = 'fba_server'
+    GRAFANA_CELERY_OTEL_SERVICE_NAME: str = 'fba_celery_worker'
+    GRAFANA_METRICS_PATH: str = '/metrics'
+    GRAFANA_PROMETHEUS_EXEMPLAR_TRACE_ID_KEY: str = 'TraceID'
 
     ##################################################
     # [ App ] task

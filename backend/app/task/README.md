@@ -1,7 +1,7 @@
 ## Task Introduction
 
 Current task uses Celery
-Implementation, please check [#225](https://github.com/fastapi-practices/fastapi_best_architecture/discussions/225)
+Implementation, please check [#225](https://github.com/fastapi-practices/fastapi-best-architecture/discussions/225)
 
 ## Timing Tasks
 

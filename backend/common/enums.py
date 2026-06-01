@@ -93,7 +93,7 @@ class OperaLogCipherType(IntEnum):
     aes = 0
     md5 = 1
     itsdangerous = 2
-    plan = 3
+    plain = 3
 
 
 class StatusType(IntEnum):
@@ -145,3 +145,11 @@ class PrimaryKeyType(StrEnum):
 
     autoincrement = 'autoincrement'
     snowflake = 'snowflake'
+
+
+class LifespanStage(IntEnum):
+    """lifespan 执行阶段"""
+
+    core = 0
+    plugin = 1
+    tail = 2

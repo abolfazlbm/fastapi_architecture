@@ -145,14 +145,16 @@ def cached(  # noqa: C901
 
             if result is not None:
                 try:
+                    serialized_result = _serialize_result(result)
+                    deserialized_result = _deserialize_result(serialized_result)
+
                     # Backfill L1
                     if settings.CACHE_LOCAL_ENABLED:
-                        local_cache_manager.set(cache_key, result)
+                        local_cache_manager.set(cache_key, deserialized_result)
 
                     # Backfill L2
-                    serialized_result = _serialize_result(result)
                     if settings.CACHE_REDIS_TTL:
-                        await redis_client.setex(cache_key, settings.CACHE_REDIS_TTL, serialized_result)
+                        await redis_client.set(cache_key, serialized_result, ex=settings.CACHE_REDIS_TTL)
                     else:
                         await redis_client.set(cache_key, serialized_result)
                 except Exception as e:
@@ -208,7 +210,7 @@ def cache_invalidate(  # noqa: C901
                     if invalidate_key == name:
                         await cache_pubsub_manager.publish_invalidation(invalidate_key, is_delete_prefix=True)
                     else:
-                        await cache_pubsub_manager.publish_invalidation(invalidate_key)
+                        await cache_pubsub_manager.publish_invalidation(invalidate_key, is_delete_prefix=False)
 
                 # L2 cache invalidation
                 if invalidate_key == name:

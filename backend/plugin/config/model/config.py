@@ -9,11 +9,15 @@ class Config(Base):
     """Parameter configuration table"""
 
     __tablename__ = 'sys_config'
+    __table_args__ = (
+        sa.UniqueConstraint('key', 'deleted', name='uk_sys_config_key_deleted'),
+        {'comment': 'Parameter configuration table'},
+    )
 
     id: Mapped[id_key] = mapped_column(init=False)
     name: Mapped[str] = mapped_column(sa.String(32), comment='Name')
     type: Mapped[str | None] = mapped_column(sa.String(32), server_default=None, comment='Type')
-    key: Mapped[str] = mapped_column(sa.String(64), unique=True, comment='Key name')
+    key: Mapped[str] = mapped_column(sa.String(64), comment='Key name')
     value: Mapped[str] = mapped_column(UniversalText, comment='KeyValue')
     is_frontend: Mapped[bool] = mapped_column(default=False, comment='Whether front-end')
     remark: Mapped[str | None] = mapped_column(UniversalText, default=None, comment='Remark')

@@ -10,22 +10,22 @@ from backend.common.schema import SchemaBase
 class TaskSchedulerSchemeBase(SchemaBase):
     """Task scheduling parameters"""
 
-    name: str = Field(description='Task name')
-    task: str = Field(description='The Celery task to run')
-    args: JsonValue | None = Field(default=None, description='Position parameters that can be received by the task')
+    name: str = Field(description='task name')
+    task: str = Field(description='Celery task to run')
+    args: JsonValue | None = Field(default=None, description='Positional parameters that the task can receive')
     kwargs: JsonValue | None = Field(default=None, description='Keyword parameters that the task can receive')
-    queue: str | None = Field(default=None, description='CELERY_TASK_QUEUES queue defined in ')
-    exchange: str | None = Field(default=None, description='Switches with low-level AMQP routes')
-    routing_key: str | None = Field(default=None, description='The routing key for low-level AMQP routes')
-    start_time: datetime | None = Field(default=None, description='The time when the task starts to trigger')
-    expire_time: datetime | None = Field(default=None, description='The deadline at which the task is no longer triggered')
-    expire_seconds: int | None = Field(default=None, description='The time difference between the seconds when the task is no longer triggered')
-    type: TaskSchedulerType = Field(description='Task scheduling type (0 interval, 1 timing)')
-    interval_every: int | None = Field(default=None, description='The number of intervals before the task runs again')
-    interval_period: PeriodType | None = Field(default=None, description='The type of cycle between task runs')
-    crontab: str = Field(default='* * * * *', description='Run the Crontab expression')
-    one_off: bool = Field(default=False, description='Whether it is run only once')
-    remark: str | None = Field(default=None, description='Remark')
+    queue: str | None = Field(default=None, description='Queue defined in CELERY_TASK_QUEUES')
+    exchange: str | None = Field(default=None, description='Switch for low-level AMQP routing')
+    routing_key: str | None = Field(default=None, description='Routing key for low-level AMQP routing')
+    start_time: datetime | None = Field(default=None, description='The time when the task starts to be triggered')
+    expire_time: datetime | None = Field(default=None, description='Deadline time when the task is no longer triggered')
+    expire_seconds: int | None = Field(default=None, description='The number of seconds the task will no longer trigger')
+    type: TaskSchedulerType = Field(description='Task scheduling type (0 interval 1 timing)')
+    interval_every: int | None = Field(default=None, description='Number of intervals before the task runs again')
+    interval_period: PeriodType | None = Field(default=None, description='Period type between task runs')
+    crontab: str = Field(default='* * * * *', description='Crontab expression')
+    one_off: bool = Field(default=False, description='Whether to run only once')
+    remark: str | None = Field(default=None, description='Remarks')
 
 
 class CreateTaskSchedulerParam(TaskSchedulerSchemeBase):

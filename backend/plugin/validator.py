@@ -1,18 +1,18 @@
-import warnings
-
-from typing import Any
+from pathlib import Path
+from typing import Any, Final
 
 from pydantic import BaseModel, Field, field_validator
 
 from backend.common.enums import PluginLevelType
+from backend.core.path_conf import PLUGIN_DIR
 from backend.plugin.errors import PluginConfigError
 from backend.utils.pattern_validate import match_string
 
 # Supported tag types
-_VALID_TAGS = frozenset({'ai', 'mcp', 'agent', 'auth', 'storage', 'notification', 'task', 'payment', 'other'})
+_VALID_TAGS: Final = frozenset({'ai', 'mcp', 'agent', 'auth', 'storage', 'notification', 'task', 'payment', 'other'})
 
 # Supported database types
-_VALID_DATABASES = frozenset({'mysql', 'postgresql'})
+_VALID_DATABASES: Final = frozenset({'mysql', 'postgresql'})
 
 
 class PluginInfoSchema(BaseModel):
@@ -23,8 +23,9 @@ class PluginInfoSchema(BaseModel):
     version: str = Field(..., description='Version number')
     description: str = Field(..., min_length=1, max_length=500, description='description')
     author: str = Field(..., min_length=1, max_length=50, description='author')
-    tags: list[str] = Field(default_factory=list, description='tag')
-    database: list[str] = Field(default_factory=list, description='Database support')
+    tags: list[str] = Field(..., min_length=1, description='tag')
+    database: list[str] = Field(..., min_length=1, description='Database support')
+    depends_on: list[str] = Field(default_factory=list, description='依赖的插件列表')
 
     @field_validator('version')
     @classmethod
@@ -57,6 +58,15 @@ class PluginInfoSchema(BaseModel):
                 raise PluginConfigError(
                     f'The database type is invalid: {", ".join(invalid_dbs)}，Supported databases: {", ".join(sorted(_VALID_DATABASES))}'
                 )
+        return v
+
+    @field_validator('depends_on')
+    @classmethod
+    def validate_depends_on(cls, v: list[str]) -> list[str]:
+        """校验插件依赖配置"""
+        for dep in v:
+            if not dep or not isinstance(dep, str):
+                raise PluginConfigError(f'依赖的插件列表必须为非空字符串，当前值: {dep}')
         return v
 
 
@@ -184,19 +194,39 @@ def validate_plugin_config(plugin_name: str, config: dict[str, Any]) -> PluginLe
             error_msg = '; '.join(error_details)
         raise PluginConfigError(f'Plugin {plugin_name} configuration validation failed: {error_msg}') from e
 
-    # TODO The next major version changes are mandatory
-    plugin_info = config.get('plugin', {})
-    if not plugin_info.get('tags'):
-        warnings.warn(
-            f"plugIns '{plugin_name}' The 'tags' field is not configured, this field will be required in the next major release, please contact the plugin author in time to synchronize the update",
-            FutureWarning,
-            stacklevel=2,
-        )
-    if not plugin_info.get('database'):
-        warnings.warn(
-            f"plugIns '{plugin_name}' The 'database' field is not configured, this field will be required in the next major release, please contact the plugin author in time to synchronize the update",
-            FutureWarning,
-            stacklevel=2,
-        )
+    depends_on = config['plugin'].get('depends_on', [])
+    if plugin_name in depends_on:
+        raise PluginConfigError(f'PlugIn {plugin_name} cannot rely on oneself')
+
+    plugin_dir = Path(PLUGIN_DIR) / plugin_name
+    model_dir = plugin_dir / 'model'
+    if model_dir.is_dir():
+        sql_dir = plugin_dir / 'sql'
+        supported_db_types = []
+        missing_details = []
+
+        for db_type in ('mysql', 'postgresql'):
+            db_sql_dir = sql_dir / db_type
+            required_sql_files = (
+                db_sql_dir / 'init.sql',
+                db_sql_dir / 'destroy.sql',
+                db_sql_dir / 'init_snowflake.sql',
+                db_sql_dir / 'destroy_snowflake.sql',
+            )
+            missing_files = [
+                str(sql_file.relative_to(plugin_dir)) for sql_file in required_sql_files if not sql_file.is_file()
+            ]
+
+            if not missing_files:
+                supported_db_types.append(db_type)
+                continue
+
+            missing_details.append(f'{db_type}: {", ".join(missing_files)}')
+
+        if not supported_db_types:
+            raise PluginConfigError(
+                f'PlugIn {plugin_name} At least one database initialization and destruction SQL script must be provided,'
+                f'Currently missing: {"; ".join(missing_details)}'
+            )
 
     return plugin_level

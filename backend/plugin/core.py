@@ -1,25 +1,48 @@
 import json
 import os
-import warnings
 
 from functools import lru_cache
 from typing import Any
 
-import anyio
 import rtoml
 
-from fastapi import APIRouter, Depends, Request
-
-from backend.common.enums import DataBaseType, PluginLevelType, PrimaryKeyType, StatusType
-from backend.common.exception import errors
+from backend.common.dataclasses import PluginEntry
+from backend.common.enums import PluginLevelType, StatusType
 from backend.common.log import log
 from backend.core.conf import settings
 from backend.core.path_conf import PLUGIN_DIR
-from backend.database.redis import RedisCli, redis_client
+from backend.database.redis import RedisCli
 from backend.plugin.errors import PluginConfigError, PluginInjectError
+from backend.plugin.status import get_plugin_enable
 from backend.plugin.validator import validate_plugin_config
 from backend.utils.async_helper import run_await
-from backend.utils.dynamic_import import get_model_objects, import_module_cached
+from backend.utils.dynamic_import import get_model_objects
+
+
+def check_plugin_installed(plugin_name: str) -> bool:
+    """
+    检查插件是否已安装
+
+    :param plugin_name: 插件名称
+    :return:
+    """
+    return (PLUGIN_DIR / plugin_name / '__init__.py').exists()
+
+
+def get_required_plugins() -> tuple[str, ...]:
+    """获取必需插件列表"""
+    required_plugins = list(settings.PLUGIN_REQUIRED)
+    if not settings.RBAC_ROLE_MENU_MODE and 'casbin_rbac' not in required_plugins:
+        required_plugins.append('casbin_rbac')
+    return tuple(required_plugins)
+
+
+def check_required_plugins() -> None:
+    """检查必需插件"""
+    required_plugins = get_required_plugins()
+    missing_plugins = [name for name in required_plugins if not check_plugin_installed(name)]
+    if missing_plugins:
+        raise PluginInjectError(f'当前系统缺少以下插件: {", ".join(missing_plugins)}，请先安装对应插件')
 
 
 @lru_cache(maxsize=128)
@@ -40,46 +63,28 @@ def get_plugins() -> tuple[str, ...]:
     return tuple(plugin_packages)
 
 
-def get_plugin_models() -> list[object]:
-    """Get all model classes in the plugin"""
-    objs = []
-
-    for plugin in get_plugins():
-        module_path = f'backend.plugin.{plugin}.model'
-        model_objs = get_model_objects(module_path)
-        if model_objs:
-            objs.extend(model_objs)
-
-    return objs
-
-
-async def get_plugin_sql(plugin: str, db_type: DataBaseType, pk_type: PrimaryKeyType) -> str | None:
+def get_enabled_plugins(plugins: tuple[str, ...] | None = None) -> set[str]:
     """
-    Get plugin SQL scripts
+    Get the list of enabled plugins
 
-    :param plugin: plugin name
-    :param db_type: database type
-    :param pk_type: primary key type
+    :param plugins: list of plugin names
     :return:
     """
-    if db_type == DataBaseType.mysql:
-        mysql_dir = PLUGIN_DIR / plugin / 'sql' / 'mysql'
-        sql_file = (
-            mysql_dir / 'init.sql' if pk_type == PrimaryKeyType.autoincrement else mysql_dir / 'init_snowflake.sql'
-        )
-    else:
-        postgresql_dir = PLUGIN_DIR / plugin / 'sql' / 'postgresql'
-        sql_file = (
-            postgresql_dir / 'init.sql'
-            if pk_type == PrimaryKeyType.autoincrement
-            else postgresql_dir / 'init_snowflake.sql'
-        )
+    plugin_names = plugins or get_plugins()
+    enabled_plugins = set(plugin_names)
 
-    path = anyio.Path(sql_file)
-    if not await path.exists():
-        return None
+    current_redis_client = RedisCli()
+    run_await(current_redis_client.init)()
 
-    return sql_file
+    try:
+        for plugin in plugin_names:
+            plugin_info = run_await(current_redis_client.get)(f'{settings.PLUGIN_REDIS_PREFIX}:{plugin}')
+            if get_plugin_enable(plugin_info, StatusType.enable.value) != str(StatusType.enable.value):
+                enabled_plugins.discard(plugin)
+    finally:
+        run_await(current_redis_client.aclose)()
+
+    return enabled_plugins
 
 
 def load_plugin_config(plugin: str) -> dict[str, Any]:
@@ -97,183 +102,117 @@ def load_plugin_config(plugin: str) -> dict[str, Any]:
         return rtoml.load(f)
 
 
-def parse_plugin_config() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+def parse_plugin_config() -> tuple[list[PluginEntry], list[PluginEntry]]:
     """Resolve plug-in configuration"""
-    extend_plugins = []
-    app_plugins = []
-
     plugins = get_plugins()
+    extend_plugins: list[PluginEntry] = []
+    app_plugins: list[PluginEntry] = []
 
     # Use independent connection
     current_redis_client = RedisCli()
     run_await(current_redis_client.init)()
 
-    # Clean up unknown plug-in information
-    run_await(current_redis_client.delete_prefix)(
-        settings.PLUGIN_REDIS_PREFIX,
-        exclude=[f'{settings.PLUGIN_REDIS_PREFIX}:{key}' for key in plugins],
-    )
-
-    for plugin in plugins:
-        data = load_plugin_config(plugin)
-        plugin_type = validate_plugin_config(plugin, data)
-
-        if plugin_type == PluginLevelType.extend:
-            extend_plugins.append(data)
-        else:
-            app_plugins.append(data)
-
-        # Supplementary plug-in information
-        data['plugin']['name'] = plugin
-        plugin_cache_info = run_await(current_redis_client.get)(f'{settings.PLUGIN_REDIS_PREFIX}:{plugin}')
-        if plugin_cache_info:
-            data['plugin']['enable'] = json.loads(plugin_cache_info)['plugin']['enable']
-        else:
-            data['plugin']['enable'] = str(StatusType.enable.value)
-
-        # Cache the latest plug-in information
-        run_await(current_redis_client.set)(
-            f'{settings.PLUGIN_REDIS_PREFIX}:{plugin}',
-            json.dumps(data, ensure_ascii=False),
+    try:
+        # Clean up unknown plug-in information
+        exclude_keys = [f'{settings.PLUGIN_REDIS_PREFIX}:{key}' for key in plugins]
+        run_await(current_redis_client.delete_prefix)(
+            settings.PLUGIN_REDIS_PREFIX,
+            exclude=exclude_keys,
         )
 
-    # Reset plugin change status
-    run_await(current_redis_client.delete)(f'{settings.PLUGIN_REDIS_PREFIX}:changed')
+        for plugin in plugins:
+            plugin_config = load_plugin_config(plugin)
+            plugin_type = validate_plugin_config(plugin, plugin_config)
 
-    # Close the connection
-    run_await(current_redis_client.aclose)()
+            # 补充插件信息
+            plugin_config['plugin']['name'] = plugin
+            plugin_cache_key = f'{settings.PLUGIN_REDIS_PREFIX}:{plugin}'
+            plugin_cache_info = run_await(current_redis_client.get)(plugin_cache_key)
+            plugin_config['plugin']['enable'] = get_plugin_enable(plugin_cache_info, StatusType.enable.value)
+
+            plugin_entry = PluginEntry(
+                name=plugin,
+                depends_on=plugin_config['plugin'].get('depends_on'),
+                extend=plugin_config['app']['extend'] if plugin_type == PluginLevelType.extend else None,
+                routers=plugin_config['app']['router'] if plugin_type == PluginLevelType.app else None,
+                api=plugin_config['api'] if plugin_type == PluginLevelType.extend else None,
+            )
+
+            if plugin_type == PluginLevelType.extend:
+                extend_plugins.append(plugin_entry)
+            else:
+                app_plugins.append(plugin_entry)
+
+            # Cache the latest plug-in information
+            run_await(current_redis_client.set)(plugin_cache_key, json.dumps(plugin_config, ensure_ascii=False))
+
+        # Reset plugin change status
+        run_await(current_redis_client.delete)(f'{settings.PLUGIN_REDIS_PREFIX}:changed')
+    finally:
+        run_await(current_redis_client.aclose)()
 
     return extend_plugins, app_plugins
 
 
-def inject_extend_router(plugin: dict[str, Any]) -> None:
+def resolve_plugin_order(plugins: list[PluginEntry]) -> list[PluginEntry]:
     """
-    Extended plugin routing injection
+    Sort plugins based on depends_on
 
-    :param plugin: plugin name
+    :param plugins: plugin configuration list
     :return:
     """
-    plugin_name: str = plugin['plugin']['name']
-    plugin_api_path = PLUGIN_DIR / plugin_name / 'api'
-    if not os.path.exists(plugin_api_path):
-        raise PluginConfigError(f'Plugin {plugin} Missing api directory, please check if the plugin file is complete')
+    plugin_map = {plugin.name: plugin for plugin in plugins}
+    ordered_plugins: list[PluginEntry] = []
+    visited: set[str] = set()
+    visiting: list[str] = []
 
-    for root, _, api_files in os.walk(plugin_api_path):
-        for file in api_files:
-            if not (file.endswith('.py') and file != '__init__.py'):
-                continue
+    def visit(plugin: PluginEntry) -> None:
+        if plugin.name in visited:
+            return
+        if plugin.name in visiting:
+            cycle_start = visiting.index(plugin.name)
+            cycle_path = [*visiting[cycle_start:], plugin.name]
+            raise PluginConfigError(f'Plug-in has circular dependency: {" -> ".join(cycle_path)}')
 
-            # Parse plugin routing configuration
-            file_config = plugin['api'][file[:-3]]
-            prefix = file_config['prefix']
-            tags = file_config['tags']
+        if plugin.depends_on is not None:
+            visiting.append(plugin.name)
+            for dep_name in plugin.depends_on:
+                dep_plugin = plugin_map.get(dep_name)
+                if dep_plugin is None:
+                    raise PluginConfigError(f'Plugin {plugin.name} depends on plugin {dep_name}, but plugin {dep_name} does not exist')
+                visit(dep_plugin)
+            visiting.pop()
 
-            # Get the plug-in routing module
-            file_path = os.path.join(root, file)
-            path_to_module_str = os.path.relpath(file_path, PLUGIN_DIR).replace(os.sep, '.')[:-3]
-            module_path = f'backend.plugin.{path_to_module_str}'
+        visited.add(plugin.name)
+        ordered_plugins.append(plugin)
 
-            try:
-                module = import_module_cached(module_path)
-                plugin_router = getattr(module, 'router', None)
-                if not plugin_router:
-                    warnings.warn(
-                        f'Extended plugin {plugin_name} module {module_path} does not have a valid router, please check if the plugin file is complete',
-                        FutureWarning,
-                    )
-                    continue
+    for plugin in plugins:
+        visit(plugin)
 
-                # Get target app route
-                relative_path = os.path.relpath(root, plugin_api_path)
-                app_name = plugin.get('app', {}).get('extend')
-                target_module_path = f'backend.app.{app_name}.api.{relative_path.replace(os.sep, ".")}'
-                target_module = import_module_cached(target_module_path)
-                target_router = getattr(target_module, 'router', None)
-
-                if not target_router or not isinstance(target_router, APIRouter):
-                    raise PluginInjectError(
-                        f'The extension plugin {plugin_name} module {module_path} does not have a valid router, please check if the plugin file is complete',
-                    )
-
-                # Inject plugin route into target route
-                target_router.include_router(
-                    router=plugin_router,
-                    prefix=prefix,
-                    tags=[tags] if tags else [],
-                    dependencies=[Depends(PluginStatusChecker(plugin_name))],
-                )
-            except Exception as e:
-                raise PluginInjectError(f'Extension Plugin {plugin_name} Route Injection Failed: {e!s}') from e
+    return ordered_plugins
 
 
-def inject_app_router(plugin: dict[str, Any], target_router: APIRouter) -> None:
-    """
-    Application-level plug-in routing injection
-
-    :param plugin: plugin name
-    :param target_router: FastAPI router
-    :return:
-    """
-    plugin_name: str = plugin['plugin']['name']
-    module_path = f'backend.plugin.{plugin_name}.api.router'
-    try:
-        module = import_module_cached(module_path)
-        routers = plugin['app']['router']
-        if not routers or not isinstance(routers, list):
-            raise PluginConfigError(f'Application-level plugin {plugin_name} configuration file has an error, please check')
-
-        for router in routers:
-            plugin_router = getattr(module, router, None)
-            if not plugin_router or not isinstance(plugin_router, APIRouter):
-                raise PluginInjectError(
-                    f'There is no valid router in the application-level plugin {plugin_name} module {module_path}, please check if the plugin file is complete',
-                )
-
-            # Inject plugin route into target route
-            target_router.include_router(plugin_router, dependencies=[Depends(PluginStatusChecker(plugin_name))])
-    except Exception as e:
-        raise PluginInjectError(f'Application-level plugin {plugin_name} Route injection failed: {e!s}') from e
-
-
-def build_final_router() -> APIRouter:
-    """Build the final route"""
+def get_ordered_enabled_plugins() -> list[PluginEntry]:
+    """Get enabled plugins sorted by dependencies"""
+    enabled_plugins = get_enabled_plugins()
     extend_plugins, app_plugins = parse_plugin_config()
+    plugins: list[PluginEntry] = [plugin for plugin in extend_plugins + app_plugins if plugin.name in enabled_plugins]
 
-    for plugin in extend_plugins:
-        inject_extend_router(plugin)
-
-    # The main route must be imported before the application-level plug-in route injection after the extension-level plug-in route injection.
-    from backend.app.router import router as main_router
-
-    for plugin in app_plugins:
-        inject_app_router(plugin, main_router)
-
-    return main_router
+    try:
+        return resolve_plugin_order(plugins)
+    except PluginConfigError as e:
+        log.error(f'Plugin dependency resolution failed: {e}')
+        raise
 
 
-class PluginStatusChecker:
-    """Plugin Status Checker"""
+def get_plugin_models() -> list[object]:
+    """Get all model classes of the plug-in"""
+    objs = []
 
-    def __init__(self, plugin: str) -> None:
-        """
-        Initialize the plug-in status checker
+    for plugin in get_plugins():
+        module_path = f'backend.plugin.{plugin}.model'
+        model_objs = get_model_objects(module_path)
+        if model_objs:
+            objs.extend(model_objs)
 
-        :param plugin: plugin name
-        :return:
-        """
-        self.plugin = plugin
-
-    async def __call__(self, request: Request) -> None:
-        """
-        Verify plugin status
-
-        :param request: FastAPI request object
-        :return:
-        """
-        plugin_info = await redis_client.get(f'{settings.PLUGIN_REDIS_PREFIX}:{self.plugin}')
-        if not plugin_info:
-            log.error('Plugin status is not initialized or lost, and the service needs to be restarted and repaired automatically')
-            raise PluginInjectError('Plugin status is not initialized or lost, please contact the system administrator')
-
-        if not int(json.loads(plugin_info)['plugin']['enable']):
-            raise errors.ServerError(msg=f'Plugin {self.plugin} is not enabled, please contact the system administrator')
+    return objs

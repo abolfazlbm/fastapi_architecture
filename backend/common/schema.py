@@ -14,7 +14,7 @@ class CustomEmailStr(EmailStr):
     """Custom mailbox type"""
 
     @classmethod
-    def _validate(cls, input_value: str, /) -> str:
+    def _validate(cls, input_value: str, /) -> str | None:
         return None if not input_value else validate_email(input_value)[1]
 
 

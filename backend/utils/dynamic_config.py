@@ -1,24 +1,10 @@
 from collections.abc import Callable
 
-from sqlalchemy import inspect
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.conf import settings
-from backend.database.db import async_engine
-from backend.plugin.config.enums import ConfigType
-from backend.plugin.config.service.config_service import config_service
+from backend.plugin.core import check_plugin_installed
 from backend.utils.serializers import select_list_serialize
-
-_sys_config_table_exists: bool | None = None
-
-
-async def check_sys_config_table_exists() -> bool:
-    """Check if the sys_config table exists"""
-    global _sys_config_table_exists
-    if _sys_config_table_exists is None:
-        async with async_engine.connect() as conn:
-            _sys_config_table_exists = await conn.run_sync(lambda c: inspect(c).has_table('sys_config', schema=None))
-    return _sys_config_table_exists
 
 
 def _to_bool(value: str) -> bool:
@@ -28,22 +14,29 @@ def _to_bool(value: str) -> bool:
 
 async def _load_config(
     db: AsyncSession,
-    config_type: ConfigType,
-    mapping: dict[str, Callable],
+    config_type_attr: str,
+    mapping: dict[str, Callable[[str], object]],
     status_key: str,
 ) -> None:
     """
     Load configuration based on configuration type
 
     :param db: database session
-    :param config_type: Configuration type enumeration
+    :param config_type_attr: Configuration type attribute name
     :param mapping: configuration mapping {config_key: converter}
     :param status_key: status key
     :return:
     """
-    if not await check_sys_config_table_exists():
+    if not check_plugin_installed('config'):
         return
 
+    try:
+        from backend.plugin.config.enums import ConfigType
+        from backend.plugin.config.service.config_service import config_service
+    except ImportError as e:
+        raise ImportError('Parameter configuration plug-in usage failed to import, please contact the system administrator') from e
+
+    config_type = getattr(ConfigType, config_type_attr)
     dynamic_config = await config_service.get_all(db=db, type=config_type)
     if not dynamic_config:
         return
@@ -75,7 +68,7 @@ async def load_user_security_config(db: AsyncSession) -> None:
         'USER_PASSWORD_MAX_LENGTH': int,
         'USER_PASSWORD_REQUIRE_SPECIAL_CHAR': _to_bool,
     }
-    await _load_config(db, ConfigType.user_security, mapping, 'USER_SECURITY_CONFIG_STATUS')
+    await _load_config(db, 'user_security', mapping, 'USER_SECURITY_CONFIG_STATUS')
 
 
 async def load_login_config(db: AsyncSession) -> None:
@@ -88,7 +81,7 @@ async def load_login_config(db: AsyncSession) -> None:
     mapping = {
         'LOGIN_CAPTCHA_ENABLED': _to_bool,
     }
-    await _load_config(db, ConfigType.login, mapping, 'LOGIN_CONFIG_STATUS')
+    await _load_config(db, 'login', mapping, 'LOGIN_CONFIG_STATUS')
 
 
 async def load_email_config(db: AsyncSession) -> None:
@@ -105,4 +98,4 @@ async def load_email_config(db: AsyncSession) -> None:
         'EMAIL_USERNAME': str,
         'EMAIL_PASSWORD': str,
     }
-    await _load_config(db, ConfigType.email, mapping, 'EMAIL_CONFIG_STATUS')
+    await _load_config(db, 'email', mapping, 'EMAIL_CONFIG_STATUS')

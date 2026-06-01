@@ -9,10 +9,14 @@ class GenBusiness(Base):
     """Code generation business table"""
 
     __tablename__ = 'gen_business'
+    __table_args__ = (
+        sa.UniqueConstraint('table_name', 'deleted', name='uk_gen_business_table_name_deleted'),
+        {'comment': 'Code generation business table'},
+    )
 
     id: Mapped[id_key] = mapped_column(init=False)
     app_name: Mapped[str] = mapped_column(sa.String(64), comment='Application name')
-    table_name: Mapped[str] = mapped_column(sa.String(256), unique=True, comment='TableName')
+    table_name: Mapped[str] = mapped_column(sa.String(256), comment='TableName')
     doc_comment: Mapped[str] = mapped_column(sa.String(256), comment='Documentation comments')
     table_comment: Mapped[str | None] = mapped_column(sa.String(256), default=None, comment='Table description')
     class_name: Mapped[str | None] = mapped_column(sa.String(64), default=None, comment='BaseClassName')

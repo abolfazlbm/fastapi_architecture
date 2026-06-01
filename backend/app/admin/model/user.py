@@ -13,14 +13,19 @@ class User(Base):
     """User table"""
 
     __tablename__ = 'sys_user'
+    __table_args__ = (
+        sa.UniqueConstraint('username', 'deleted', name='uk_sys_user_username_deleted'),
+        sa.UniqueConstraint('email', 'deleted', name='uk_sys_user_email_deleted'),
+        {'comment': 'User table'},
+    )
 
     id: Mapped[id_key] = mapped_column(init=False)
     uuid: Mapped[str] = mapped_column(sa.String(64), init=False, default_factory=uuid4_str, unique=True)
-    username: Mapped[str] = mapped_column(sa.String(64), unique=True, index=True, comment='Username')
+    username: Mapped[str] = mapped_column(sa.String(64), index=True, comment='Username')
     nickname: Mapped[str] = mapped_column(sa.String(64), comment='Nickname')
     password: Mapped[str | None] = mapped_column(sa.String(256), comment='Password')
     salt: Mapped[bytes | None] = mapped_column(sa.LargeBinary(255), comment='Encrypted salt')
-    email: Mapped[str | None] = mapped_column(sa.String(256), default=None, unique=True, index=True, comment='Email')
+    email: Mapped[str | None] = mapped_column(sa.String(256), default=None, index=True, comment='Email')
     phone: Mapped[str | None] = mapped_column(sa.String(11), default=None, comment='Phone Number')
     avatar: Mapped[str | None] = mapped_column(sa.String(256), default=None, comment='Avatar')
     status: Mapped[int] = mapped_column(default=1, index=True, comment='User account status (0 is disabled, 1 is normal)')

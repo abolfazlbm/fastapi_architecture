@@ -6,7 +6,7 @@ import math
 
 from datetime import datetime, timedelta
 from multiprocessing.util import Finalize
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
 from celery import current_app, schedules
 from celery.beat import ScheduleEntry, Scheduler
@@ -31,10 +31,10 @@ if TYPE_CHECKING:
     from redis.asyncio.lock import Lock
 
 # This scheduler must wake up more frequently than the regular 5 minutes, as it requires consideration of external changes to the schedule
-DEFAULT_MAX_INTERVAL = 5 # seconds
+_DEFAULT_MAX_INTERVAL: Final = 5 # seconds
 
 # Plan the lock duration to avoid repeated creation
-DEFAULT_MAX_LOCK_TIMEOUT = DEFAULT_MAX_INTERVAL * 5  # seconds
+_DEFAULT_MAX_LOCK_TIMEOUT: Final = _DEFAULT_MAX_INTERVAL * 5  # seconds
 
 logger = get_logger('fba.schedulers')
 
@@ -56,14 +56,7 @@ class ModelEntry(ScheduleEntry):
             ):
                 self.schedule = schedules.schedule(timedelta(**{model.interval_period: model.interval_every}))
             elif model.type == TaskSchedulerType.CRONTAB and model.crontab is not None:
-                crontab_split = model.crontab.split(' ')
-                self.schedule = TzAwareCrontab(
-                    minute=crontab_split[0],
-                    hour=crontab_split[1],
-                    day_of_week=crontab_split[2],
-                    day_of_month=crontab_split[3],
-                    month_of_year=crontab_split[4],
-                )
+                self.schedule = TzAwareCrontab.from_string(model.crontab)
             else:
                 raise errors.NotFoundError(msg=f'{self.name} plan is empty！')
             # logger.debug('Schedule: {}'.format(self.schedule))
@@ -85,12 +78,10 @@ class ModelEntry(ScheduleEntry):
                 continue
             self.options[option] = value
 
-        expires = getattr(model, 'expires_', None)
-        if expires:
-            if isinstance(expires, int):
-                self.options['expires'] = expires
-            elif isinstance(expires, datetime):
-                self.options['expires'] = timezone.from_datetime(expires)
+        if model.expire_seconds is not None:
+            self.options['expires'] = model.expire_seconds
+        elif model.expire_time is not None:
+            self.options['expires'] = timezone.from_datetime(model.expire_time)
 
         if not model.last_run_time:
             model.last_run_time = timezone.now()
@@ -105,10 +96,15 @@ class ModelEntry(ScheduleEntry):
         """Disable Tasks"""
         model.no_changes = True
         self.model.enabled = self.enabled = model.enabled = False
-        async with async_db_session.begin():
-            model.enabled = False
+        async with async_db_session.begin() as db:
+            stmt = select(TaskScheduler).where(TaskScheduler.id == model.id, TaskScheduler.deleted == 0)
+            query = await db.execute(stmt)
+            task = query.scalars().first()
+            if task:
+                task.no_changes = True
+                task.enabled = False
 
-    def is_due(self) -> tuple[bool, int | float]:
+    def is_due(self) -> tuple[bool, int | float | datetime]:
         """Task Expiration Status"""
         if not self.model.enabled:
             # 5 seconds delay when re-enabled
@@ -149,7 +145,11 @@ class ModelEntry(ScheduleEntry):
         :return:
         """
         async with async_db_session.begin() as db:
-            stmt = select(TaskScheduler).where(TaskScheduler.id == self.model.id).with_for_update()
+            stmt = (
+                select(TaskScheduler)
+                .where(TaskScheduler.id == self.model.id, TaskScheduler.deleted == 0)
+                .with_for_update()
+            )
             query = await db.execute(stmt)
             task = query.scalars().first()
             if task:
@@ -164,7 +164,7 @@ class ModelEntry(ScheduleEntry):
     async def from_entry(cls, name, app=None, **entry) -> ModelEntry:  # noqa: ANN001
         """Save or update local task schedule"""
         async with async_db_session.begin() as db:
-            stmt = select(TaskScheduler).where(TaskScheduler.name == name)
+            stmt = select(TaskScheduler).where(TaskScheduler.name == name, TaskScheduler.deleted == 0)
             query = await db.execute(stmt)
             task = query.scalars().first()
             temp = await cls._unpack_fields(name, **entry)
@@ -190,20 +190,20 @@ class ModelEntry(ScheduleEntry):
                     'interval_every': every,
                     'interval_period': PeriodType.SECONDS.value,
                 }
-                stmt = select(TaskScheduler).filter_by(**spec)
+                stmt = select(TaskScheduler).filter_by(**spec, deleted=0)
                 query = await db.execute(stmt)
                 obj = query.scalars().first()
                 if not obj:
                     obj = TaskScheduler(**CreateTaskSchedulerParam(task=task, **spec).model_dump())
             elif isinstance(schedule, schedules.crontab):
-                crontab = f'{schedule._orig_minute} {schedule._orig_hour} {schedule._orig_day_of_week} {schedule._orig_day_of_month} {schedule._orig_month_of_year}'  # noqa: E501
+                crontab = f'{schedule._orig_minute} {schedule._orig_hour} {schedule._orig_day_of_month} {schedule._orig_month_of_year} {schedule._orig_day_of_week}'  # noqa: E501
                 crontab_verify(crontab)
                 spec = {
                     'name': name,
                     'type': TaskSchedulerType.CRONTAB.value,
                     'crontab': crontab,
                 }
-                stmt = select(TaskScheduler).filter_by(**spec)
+                stmt = select(TaskScheduler).filter_by(**spec, deleted=0)
                 query = await db.execute(stmt)
                 obj = query.scalars().first()
                 if not obj:
@@ -226,7 +226,7 @@ class ModelEntry(ScheduleEntry):
     ) -> dict:
         model_schedule = await cls.to_model_schedule(name, task, schedule)
         model_dict = select_as_dict(model_schedule)
-        for k in ['id', 'created_time', 'updated_time']:
+        for k in ['id', 'created_time', 'updated_time', 'deleted', 'deleted_time']:
             try:
                 del model_dict[k]
             except KeyError:  # noqa:PERF203
@@ -256,7 +256,7 @@ class ModelEntry(ScheduleEntry):
             'exchange': exchange,
             'routing_key': routing_key,
             'start_time': start_time,
-            'expire_time': expires,
+            'expire_time': None,
             'expire_seconds': expire_seconds,
             'one_off': one_off,
         }
@@ -265,6 +265,8 @@ class ModelEntry(ScheduleEntry):
                 data['expire_seconds'] = expires
             elif isinstance(expires, timedelta):
                 data['expire_time'] = timezone.now() + expires
+            elif isinstance(expires, datetime):
+                data['expire_time'] = expires
         return data
 
 
@@ -286,21 +288,7 @@ class DatabaseScheduler(Scheduler):
         self._dirty = set()
         super().__init__(*args, **kwargs)
         self._finalize = Finalize(self, self.sync, exitpriority=5)
-        self.max_interval = kwargs.get('max_interval') or self.app.conf.beat_max_loop_interval or DEFAULT_MAX_INTERVAL
-
-    def install_default_entries(self, data) -> None:  # noqa: ANN001
-        """Rewrite the parent function"""
-        entries = {}
-        if self.app.conf.result_expires:
-            entries.setdefault(
-                'celery.backend_cleanup',
-                {
-                    'task': 'celery.backend_cleanup',
-                    'schedule': schedules.crontab('0', '4', '*'),
-                    'options': {'expire_seconds': 12 * 3600},
-                },
-            )
-        self.update_from_dict(entries)
+        self.max_interval = kwargs.get('max_interval') or self.app.conf.beat_max_loop_interval or _DEFAULT_MAX_INTERVAL
 
     def schedules_equal(self, *args, **kwargs) -> bool:
         """Rewrite the parent function"""
@@ -350,7 +338,7 @@ class DatabaseScheduler(Scheduler):
         """Rewrite the parent function"""
         if self.lock:
             logger.debug('beat: Extending lock...')
-            run_await(self.lock.extend)(DEFAULT_MAX_LOCK_TIMEOUT, replace_ttl=True)
+            run_await(self.lock.extend)(_DEFAULT_MAX_LOCK_TIMEOUT, replace_ttl=True)
 
         return super().tick(**kwargs)
 
@@ -367,7 +355,7 @@ class DatabaseScheduler(Scheduler):
     def update_from_dict(self, beat_dict: dict) -> None:
         """Rewrite the parent function"""
         s = {}
-
+        name = None
         try:
             for name, entry_fields in beat_dict.items():
                 entry = run_await(self.Entry.from_entry)(name, app=self.app, **entry_fields)
@@ -399,7 +387,10 @@ class DatabaseScheduler(Scheduler):
         """Get all task schedules"""
         async with async_db_session() as db:
             logger.debug('DatabaseScheduler: Fetching database schedule')
-            stmt = select(TaskScheduler).where(TaskScheduler.enabled == True)  # noqa: E712
+            stmt = select(TaskScheduler).where(
+                TaskScheduler.enabled.is_(True),
+                TaskScheduler.deleted == 0,
+            )
             query = await db.execute(stmt)
             schedulers = query.scalars().all()
             s = {}
@@ -451,7 +442,7 @@ def acquire_distributed_beat_lock(sender=None, **kwargs) -> None:  # noqa: ANN00
     logger.debug('beat: Acquiring lock...')
     lock = redis_client.lock(
         scheduler.lock_key,
-        timeout=DEFAULT_MAX_LOCK_TIMEOUT,
+        timeout=_DEFAULT_MAX_LOCK_TIMEOUT,
         sleep=scheduler.max_interval,
     )
 

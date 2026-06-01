@@ -102,6 +102,26 @@ class DateTimeMixin(MappedAsDataclass):
     )
 
 
+class LogicalDeleteMixin(MappedAsDataclass):
+    """逻辑删除 Mixin 数据类"""
+
+    deleted: Mapped[int] = mapped_column(
+        BigInteger,
+        init=False,
+        default=0,
+        server_default='0',
+        sort_order=999,
+        comment='是否已删除（0：否；id：是）',
+    )
+    deleted_time: Mapped[datetime | None] = mapped_column(
+        TimeZone,
+        init=False,
+        default=None,
+        sort_order=999,
+        comment='删除时间',
+    )
+
+
 class MappedBase(AsyncAttrs, DeclarativeBase):
     """
     Declarative base class, exists as the parent class of all base classes or data model classes
@@ -134,7 +154,7 @@ class DataClassBase(MappedAsDataclass, MappedBase):
     __abstract__ = True
 
 
-class Base(DataClassBase, DateTimeMixin):
+class Base(DataClassBase, DateTimeMixin, LogicalDeleteMixin):
     """
     Declarative data class base class, with data class integration, and includes the MiXin data class basic table structure
     """
