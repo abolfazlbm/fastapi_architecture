@@ -57,7 +57,7 @@ class Settings(BaseSettings):
     DATABASE_POOL_ECHO: bool | Literal['debug'] = False
     DATABASE_SCHEMA: str = 'fba'
     DATABASE_CHARSET: str = 'utf8mb4'
-    DATABASE_PK_MODE: Literal['autoincrement', 'snowflake'] = 'autoincrement'
+    DATABASE_PK_MODE: Literal['autoincrement', 'snowflake'] = 'snowflake'
 
     # .env Redis
     REDIS_HOST: str

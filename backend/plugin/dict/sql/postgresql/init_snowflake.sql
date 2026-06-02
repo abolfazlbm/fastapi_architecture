@@ -3,13 +3,12 @@ values (2049629108253622287, 'dict.menu', 'PluginDict', '/plugins/dict', 8, 'flu
 
 insert into sys_menu (id, title, name, path, sort, icon, type, component, perms, status, display, cache, link, remark, parent_id, created_time, updated_time)
 values
-(2049629108253622288, '新增类型', 'AddDictType', null, 0, null, 2, null, 'dict:type:add', 1, 0, 1, '', null, 2049629108253622287, now(), null),
-(2049629108253622289, '修改类型', 'EditDictType', null, 0, null, 2, null, 'dict:type:edit', 1, 0, 1, '', null, 2049629108253622287, now(), null),
-(2049629108253622290, '删除类型', 'DeleteDictType', null, 0, null, 2, null, 'dict:type:del', 1, 0, 1, '', null, 2049629108253622287, now(), null),
-(2049629108253622291, '新增数据', 'AddDictData', null, 0, null, 2, null, 'dict:data:add', 1, 0, 1, '', null, 2049629108253622287, now(), null),
-(2049629108253622292, '修改数据', 'EditDictData', null, 0, null, 2, null, 'dict:data:edit', 1, 0, 1, '', null, 2049629108253622287, now(), null),
-(2049629108253622293, '删除数据', 'DeleteDictData', null, 0, null, 2, null, 'dict:data:del', 1, 0, 1, '', null, 2049629108253622287, now(), null);
-
+(2049629108253622288, 'AddDictType', 'AddDictType', null, 0, null, 2, null, 'dict:type:add', 1, 0, 1, '', null, 2049629108253622287, now(), null),
+(2049629108253622289, 'Modify type', 'EditDictType', null, 0, null, 2, null, 'dict:type:edit', 1, 0, 1, '', null, 2049629108253622287, now(), null),
+(2049629108253622290, 'DeleteDictType', 'DeleteDictType',null, 0, null, 2, null, 'dict:type:del', 1, 0, 1, '', null, 2049629108253622287, now(), null),
+(2049629108253622291, 'New data', 'AddDictData', null, 0, null, 2, null, 'dict:data:add', 1, 0, 1, '', null, 2049629108253622287, now(), null),
+(2049629108253622292, 'Modify data', 'EditDictData', null, 0, null, 2, null, 'dict:data:edit', 1, 0, 1, '', null, 2049629108253622287, now(), null),
+(2049629108253622293, 'Delete data', 'DeleteDictData', null, 0, null, 2, null, 'dict:data:del', 1, 0, 1, '', null, 2049629108253622287, now(), null);
 insert into sys_dict_type (id, name, code, remark, created_time, updated_time)
 values
 (2048602512340156416, 'General status', 'sys_status', 'System general status: 1/0', now(), null),
@@ -18,7 +17,7 @@ values
 (2048602512495345664, 'Login status', 'sys_login_status', 'User login status', now(), null),
 (2048602512549871616, 'Data rule operator', 'sys_data_rule_operator', 'Data permission rule operator', now(), null),
 (2048602512616980480, 'Data rule expression', 'sys_data_rule_expression', 'Data permission rule expression', now(), null),
-(2048602512692477952, 'Front-end parameter configuration', 'sys_frontend_config', 'Front-end parameter configuration type', now(), null),
+(2048602512692477952, 'Front-end param configuration', 'sys_frontend_config', 'Front-end parameter configuration type', now(), null),
 (2048602512755392512, 'Task strategy type', 'task_strategy_type', 'Timed task strategy type', now(), null),
 (2048602512818307072, 'Task period type', 'task_period_type', 'Scheduled task period type', now(), null),
 (2048602512881221632, 'Notice announcement', 'notice', 'Notification type', now(), null),
@@ -56,7 +55,7 @@ values
 (2048602514701549568, 'task_period_type', 'hours', 'hours', 'magenta', 2, 1, 'Scheduled task cycle type-hours', 2048602512818307072, now(), null),
 (2048602514768658432, 'task_period_type', 'minutes', 'minutes', 'volcano', 3, 1, 'Scheduled task cycle type-minutes', 2048602512818307072, now(), null),
 (2048602514835767296, 'task_period_type', 'seconds', 'seconds', 'gold', 4, 1, 'Scheduled task cycle type-seconds', 2048602512818307072, now(), null),
-(2048602514902876160, 'task_period_type', 'microseconds', 'warning', 5, 1, 'Scheduled task cycle type-micro', 2048602512818307072, now(), null),
+(2048602514902876160, 'task_period_type', 'microseconds','microseconds', 'warning', 5, 1, 'Scheduled task cycle type-micro', 2048602512818307072, now(), null),
 (2048602514969985024, 'notice', 'notification', '0', 'magenta', 1, 1, 'notification type', 2048602512881221632, now(), null),
 (2048602515037093888, 'notice', 'announcement', '1', 'purple', 2, 1, 'announcement type', 2048602512881221632, now(), null),
 (2048602515104202752, 'user_online_status', 'Offline', '0', 'warning', 1, 1, 'User offline status', 2048602512948330496, now(), null),

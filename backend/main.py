@@ -17,7 +17,7 @@ def _prepare_plugins() -> None:
     """Check required plugins and install missing dependencies"""
     log_prefix = _get_log_prefix()
 
-console.print(Text(f'{log_prefix} Check required plugins...', style='bold cyan'))
+    console.print(Text(f'{log_prefix} Check required plugins...', style='bold cyan'))
 
     check_required_plugins()
 
