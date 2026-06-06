@@ -24,7 +24,7 @@ class User(Base):
     username: Mapped[str] = mapped_column(sa.String(64), index=True, comment='Username')
     nickname: Mapped[str] = mapped_column(sa.String(64), comment='Nickname')
     password: Mapped[str | None] = mapped_column(sa.String(256), comment='Password')
-    salt: Mapped[bytes | None] = mapped_column(sa.LargeBinary(255), comment='Encrypted salt')
+    salt: Mapped[bytes | None] = mapped_column(sa.LargeBinary(256), comment='Encrypted salt')
     email: Mapped[str | None] = mapped_column(sa.String(256), default=None, index=True, comment='Email')
     phone: Mapped[str | None] = mapped_column(sa.String(11), default=None, comment='Phone Number')
     avatar: Mapped[str | None] = mapped_column(sa.String(256), default=None, comment='Avatar')
