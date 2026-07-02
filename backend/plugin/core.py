@@ -115,9 +115,9 @@ def parse_plugin_config() -> tuple[list[PluginEntry], list[PluginEntry]]:
     try:
         # Clean up unknown plug-in information
         exclude_keys = [f'{settings.PLUGIN_REDIS_PREFIX}:{key}' for key in plugins]
-        run_await(current_redis_client.delete_prefix)(
+        run_await(current_redis_client.delete_by_prefix)(
             settings.PLUGIN_REDIS_PREFIX,
-            exclude=exclude_keys,
+            exclude_keys=exclude_keys,
         )
 
         for plugin in plugins:

@@ -20,7 +20,7 @@ class ConfigService:
     """Parameter configuration service class"""
 
     @staticmethod
-    @cached(settings.CACHE_CONFIG_REDIS_PREFIX, key='pk')
+    @cached(namespace=settings.CACHE_CONFIG_REDIS_PREFIX, key='pk')
     async def get(*, db: AsyncSession, pk: int) -> Config:
         """
         Get parameter configuration details
@@ -35,7 +35,7 @@ class ConfigService:
         return config
 
     @staticmethod
-    @cached(settings.CACHE_CONFIG_REDIS_PREFIX, key='type')
+    @cached(namespace=settings.CACHE_CONFIG_REDIS_PREFIX, key='type')
     async def get_all(*, db: AsyncSession, type: str | None) -> Sequence[Config | None]:
         """
         Get all parameter configurations
@@ -60,7 +60,7 @@ class ConfigService:
         return await paging_data(db, config_select)
 
     @staticmethod
-    @cache_invalidate(settings.CACHE_CONFIG_REDIS_PREFIX)
+    @cache_invalidate(namespace=settings.CACHE_CONFIG_REDIS_PREFIX)
     async def create(*, db: AsyncSession, obj: CreateConfigParam) -> None:
         """
         Create parameter configuration
@@ -75,7 +75,7 @@ class ConfigService:
         await config_dao.create(db, obj)
 
     @staticmethod
-    @cache_invalidate(settings.CACHE_CONFIG_REDIS_PREFIX)
+    @cache_invalidate(namespace=settings.CACHE_CONFIG_REDIS_PREFIX)
     async def update(*, db: AsyncSession, pk: int, obj: UpdateConfigParam) -> int:
         """
         Update parameter configuration
@@ -96,7 +96,7 @@ class ConfigService:
         return count
 
     @staticmethod
-    @cache_invalidate(settings.CACHE_CONFIG_REDIS_PREFIX)
+    @cache_invalidate(namespace=settings.CACHE_CONFIG_REDIS_PREFIX)
     async def bulk_update(*, db: AsyncSession, objs: list[UpdateConfigsParam]) -> int:
         """
         Batch update parameter configuration
@@ -124,7 +124,7 @@ class ConfigService:
         return count
 
     @staticmethod
-    @cache_invalidate(settings.CACHE_CONFIG_REDIS_PREFIX)
+    @cache_invalidate(namespace=settings.CACHE_CONFIG_REDIS_PREFIX)
     async def delete(*, db: AsyncSession, pks: list[int]) -> int:
         """
         Delete parameter configurations in batches

@@ -16,7 +16,7 @@ class RedisCli(Redis):
         port: int = settings.REDIS_PORT,
         password: str = settings.REDIS_PASSWORD,
         db: int = settings.REDIS_DATABASE,
-        socket_timeout: int = settings.REDIS_TIMEOUT,
+        socket_timeout: int | None = settings.REDIS_TIMEOUT,
         socket_connect_timeout: int = settings.REDIS_TIMEOUT,
         *,
         socket_keepalive: bool = True,
@@ -62,19 +62,33 @@ class RedisCli(Redis):
             log.error('Redis server connection exception {}', e)
             sys.exit()
 
-    async def delete_prefix(self, prefix: str, exclude: str | list[str] | None = None, batch_size: int = 1000) -> None:
+    async def delete_by_prefix(
+        self,
+        key_prefix: str,
+        exclude_keys: str | list[str] | None = None,
+        batch_size: int = 1000,
+    ) -> None:
         """
         Delete all keys of the specified prefix
 
-        :param prefix: the key prefix to be deleted
-        :param exclude: Key or list of keys to exclude
+        :param key_prefix: the key prefix to be deleted
+        :param exclude_keys: Key or list of keys to exclude
         :param batch_size: The size of batch deletion to avoid Redis blocking caused by deleting too many keys at one time
         :return:
         """
-        exclude_set = set(exclude) if isinstance(exclude, list) else {exclude} if isinstance(exclude, str) else set()
+        exclude_set = (
+            set(exclude_keys)
+            if isinstance(exclude_keys, list)
+            else {exclude_keys}
+            if isinstance(exclude_keys, str)
+            else set()
+        )
         batch_keys = []
 
-        async for key in self.scan_iter(match=f'{prefix}*'):
+        if key_prefix not in exclude_set and await self.exists(key_prefix):
+            batch_keys.append(key_prefix)
+
+        async for key in self.scan_iter(match=f'{key_prefix}:*'):
             if key not in exclude_set:
                 batch_keys.append(key)
 
@@ -85,15 +99,15 @@ class RedisCli(Redis):
         if batch_keys:
             await self.delete(*batch_keys)
 
-    async def get_prefix(self, prefix: str, count: int = 100) -> list[str]:
+    async def get_by_prefix(self, key_prefix: str, count: int = 100) -> list[str]:
         """
         Get all keys with the specified prefix
 
-        :param prefix: key prefix to search for
+        :param key_prefix: key prefix to search for
         :param count: The number of batches scanned each time. The larger the value, the faster the scanning speed, but it will occupy more server resources.
         :return:
         """
-        return [key async for key in self.scan_iter(match=f'{prefix}*', count=count)]
+        return [key async for key in self.scan_iter(match=f'{key_prefix}:*', count=count)]
 
 
 # Create a redis client singleton

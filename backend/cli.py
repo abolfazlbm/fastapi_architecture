@@ -23,6 +23,7 @@ from starlette.concurrency import run_in_threadpool
 from watchfiles import Change, PythonFilter
 
 from backend import __version__
+from backend.common.dataclasses import PluginEntry
 from backend.common.enums import DataBaseType, PrimaryKeyType
 from backend.common.exception.errors import BaseExceptionError
 from backend.common.model import MappedBase
@@ -47,11 +48,14 @@ from backend.database.redis import RedisCli, redis_client
 from backend.plugin.core import (
     get_plugins,
     get_required_plugins,
+    load_plugin_config,
+    resolve_plugin_order,
 )
 from backend.plugin.installer import install_git_frontend_plugin, install_git_plugin, install_zip_plugin, zip_plugin
 from backend.plugin.installer import remove_plugin as _remove_plugin
-from backend.plugin.requirements import uninstall_requirements_async
+from backend.plugin.requirements import install_requirements_async, uninstall_requirements_async
 from backend.plugin.sql import build_sql_filename, get_plugin_destroy_sql, get_plugin_sql
+from backend.plugin.validator import validate_plugin_config
 from backend.utils.console import console
 from backend.utils.dynamic_import import import_module_cached
 from backend.utils.sql_parser import parse_sql_script
@@ -260,7 +264,7 @@ async def init(db: AsyncSession, redis: RedisCli) -> None:
                 settings.TOKEN_REDIS_PREFIX,
                 settings.TOKEN_REFRESH_REDIS_PREFIX,
             ]:
-                await redis.delete_prefix(prefix)
+                await redis.delete_by_prefix(prefix)
 
             console.note('Rebuild database table')
             conn = await db.connection()
@@ -417,6 +421,55 @@ async def install_plugin(  # noqa: C901
         raise cappa.Exit(e.msg if isinstance(e, BaseExceptionError) else str(e), code=1)
 
 
+def should_sync_plugin_deps(plugin: str | None, *, allow_empty: bool) -> bool:
+    """Check whether synchronization of plugin dependencies is required"""
+    plugins = get_plugins()
+    if plugin is not None and plugin not in plugins:
+        raise cappa.Exit(f'Plugin {plugin} does not exist', code=1)
+    if not plugins:
+        if allow_empty:
+            console.warning('There are currently no installed plugins, skip plugin dependency synchronization')
+            return False
+        raise cappa.Exit('There are currently no installed plugins', code=1)
+    return True
+
+
+async def sync_project_deps() -> None:
+    """Synchronize project dependencies"""
+    console.note('Synchronizing project dependencies...')
+    try:
+        await run_in_threadpool(subprocess.run, ['uv', 'sync'], cwd=BASE_PATH.parent, check=True)
+    except FileNotFoundError:
+        raise cappa.Exit('uv is not installed, please install uv first', code=1)
+    except subprocess.CalledProcessError as e:
+        raise cappa.Exit('Project dependency synchronization failed', code=e.returncode)
+    console.tip('Project dependency synchronization completed')
+
+
+async def sync_plugin_deps(plugin: str | None = None) -> None:
+    """Synchronization plug-in dependencies"""
+    console.note(f'Installing plugin {plugin} dependencies...' if plugin else 'Installing all plugin dependencies...')
+    try:
+        await install_requirements_async(plugin)
+    except Exception as e:
+        raise cappa.Exit(e.msg if isinstance(e, BaseExceptionError) else str(e), code=1)
+    console.tip(f'plugin {plugin} dependency installation is completed' if plugin else 'all plug-in dependency installation is completed')
+
+
+async def sync_deps(plugin: str | None, *, no_project: bool = False, no_plugin: bool = False) -> None:
+    """Synchronize project and plug-in dependencies"""
+    if no_project and no_plugin:
+        raise cappa.Exit('--no-project and --no-plugin cannot be used at the same time', code=1)
+    if plugin is not None and no_plugin:
+        raise cappa.Exit('--plugin and --no-plugin cannot be used at the same time', code=1)
+
+    should_sync_plugins = False if no_plugin else should_sync_plugin_deps(plugin, allow_empty=not no_project)
+    if not no_project:
+        await sync_project_deps()
+    if should_sync_plugins:
+        await sync_plugin_deps(plugin)
+
+
 async def remove_plugin(plugin: str | None, *, no_sql: bool = False) -> None:  # noqa: C901
     """Uninstall plugin"""
     if settings.ENVIRONMENT != 'dev':
@@ -490,8 +543,14 @@ async def get_sql_scripts() -> list[str]:
     if await anyio.Path(main_sql_file).exists():
         sql_scripts.append(str(main_sql_file))
 
+    plugins = []
     for plugin in get_plugins():
-        plugin_sql = await get_plugin_sql(plugin, settings.DATABASE_TYPE, settings.DATABASE_PK_MODE)
+        plugin_config = load_plugin_config(plugin)
+        validate_plugin_config(plugin, plugin_config)
+        plugins.append(PluginEntry(name=plugin, depends_on=plugin_config['plugin'].get('depends_on')))
+
+    for plugin in resolve_plugin_order(plugins):
+        plugin_sql = await get_plugin_sql(plugin.name, settings.DATABASE_TYPE, settings.DATABASE_PK_MODE)
         if plugin_sql:
             sql_scripts.append(plugin_sql)
 
@@ -723,6 +782,26 @@ class Remove:
         await remove_plugin(self.plugin, no_sql=self.no_sql)
 
 
+@cappa.command(help='Synchronize project and plug-in dependencies', default_long=True)
+@dataclass
+class Deps:
+    plugin: Annotated[
+        str | None,
+        cappa.Arg(default=None, help='Specify the plug-in name, if not specified, all plug-in dependencies will be synchronized'),
+    ]
+    no_project: Annotated[
+        bool,
+        cappa.Arg(default=False, help='Skip project dependency synchronization'),
+    ]
+    no_plugin: Annotated[
+        bool,
+        cappa.Arg(default=False, help='Skip plugin dependency synchronization'),
+    ]
+
+    async def __call__(self) -> None:
+        await sync_deps(self.plugin, no_project=self.no_project, no_plugin=self.no_plugin)
+
+
 @cappa.command(help='Format code')
 @dataclass
 class Format:
@@ -926,7 +1005,9 @@ class FbaCli:
         str,
         cappa.Arg(value_name='PATH', default='', show_default=False, help='Execute SQL scripts in transaction'),
     ]
-    subcmd: cappa.Subcommands[Init | Run | Add | Remove | Format | Celery | CodeGenerator | Alembic | None] = None
+    subcmd: cappa.Subcommands[Init | Run | Add | Remove | Deps | Format | Celery | CodeGenerator | Alembic | None] = (
+        None
+    )
 
     async def __call__(self) -> None:
         if self.sql:

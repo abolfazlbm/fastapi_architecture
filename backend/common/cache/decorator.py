@@ -1,6 +1,7 @@
 import functools
 
-from collections.abc import Callable, Sequence
+from collections.abc import Awaitable, Callable, Sequence
+from inspect import isawaitable
 from typing import Any, ParamSpec, TypeVar
 
 from msgspec import json
@@ -16,12 +17,13 @@ from backend.utils.serializers import select_columns_serialize, select_list_seri
 
 P = ParamSpec('P')
 T = TypeVar('T')
+_MISSING = object()
 
 
-def _build_cache_key(
-    name: str,
+async def _build_cache_key(
+    namespace: str,
     key: str | None,
-    key_builder: Callable[..., str] | None,
+    key_builder: Callable[..., str | Awaitable[str]] | None,
     *args: Any,
     **kwargs: Any,
 ) -> str:
@@ -29,9 +31,9 @@ def _build_cache_key(
     if key:
         if '.' in key:
             param, field = key.split('.', 1)
-            value = kwargs.get(param)
-            if value is None:
-                raise errors.ServerError(msg=f'Cache key build failed, parameter "{param}" does not exist or has an empty value')
+            value = kwargs.get(param, _MISSING)
+            if value is _MISSING:
+                raise errors.ServerError(msg=f'Cache key build failed with parameters "{param}" does not exist')
 
             if isinstance(value, list):
                 raise errors.ServerError(msg='Cache key build failed: Extracting fields from lists is not supported, please use key_builder to handle list parameters')
@@ -43,16 +45,19 @@ def _build_cache_key(
             else:
                 raise errors.ServerError(msg=f'Cache key build failed, field does not exist in object "{field}"')
         else:
-            value = kwargs.get(key)
-            if value is None:
-                raise errors.ServerError(msg=f'Cache key construction failed, parameter "{key}" does not exist or has an empty value')
+            value = kwargs.get(key, _MISSING)
+            if value is _MISSING:
+                raise errors.ServerError(msg=f'Cache key construction failed, parameter "{key}" does not exist')
 
-        return f'{name}:{value}'
+        return f'{namespace}:{value if value is not None else "none"}'
 
     if key_builder:
-        return f'{name}:{key_builder(*args, **kwargs)}'
+        value = key_builder(*args, **kwargs)
+        if isawaitable(value):
+            value = await value
+        return f'{namespace}:{value}'
 
-    return name
+    return namespace
 
 
 def _serialize_result(result: Any) -> bytes:
@@ -101,15 +106,15 @@ def user_key_builder() -> str:
 
 
 def cached(  # noqa: C901
-    name: str,
+    namespace: str,
     *,
     key: str | None = None,
-    key_builder: Callable[..., str] | None = None,
+    key_builder: Callable[..., str | Awaitable[str]] | None = None,
 ) -> Callable[[Callable[P, T]], Callable[P, T]]:
     """
     cache decorator
 
-    :param name: cache name (usually cache Key prefix)
+    :param namespace: Cache namespace (usually cache Key prefix)
     :param key: Get the value of the specified parameter name from the method parameter as the cache Key, mutually exclusive with key_builder
     :param key_builder: Custom Key generation function, mutually exclusive with key
     :return:
@@ -120,7 +125,7 @@ def cached(  # noqa: C901
     def decorator(func: Callable[P, T]) -> Callable[P, T]:  # noqa: C901
         @functools.wraps(func)
         async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
-            cache_key = _build_cache_key(name, key, key_builder, *args, **kwargs)
+            cache_key = await _build_cache_key(namespace, key, key_builder, *args, **kwargs)
 
             # L1: local cache
             if settings.CACHE_LOCAL_ENABLED:
@@ -168,16 +173,16 @@ def cached(  # noqa: C901
 
 
 def cache_invalidate(  # noqa: C901
-    name: str,
+    namespace: str,
     *,
     key: str | None = None,
-    key_builder: Callable[..., str] | None = None,
+    key_builder: Callable[..., str | Awaitable[str]] | None = None,
     atomic: bool = True,
 ) -> Callable[[Callable[P, T]], Callable[P, T]]:
     """
     Cache invalidation decorator
 
-    :param name: cache name (usually cache Key prefix)
+:param namespace: Cache namespace (usually cache Key prefix)
     :param key: Get the value of the specified parameter name from the method parameter as the cache Key, mutually exclusive with key_builder
     :param key_builder: Custom Key generation function, mutually exclusive with key
     :param atomic: Whether to ensure cache atomicity
@@ -196,25 +201,25 @@ def cache_invalidate(  # noqa: C901
             invalidate_error = None
 
             try:
-                invalidate_key = _build_cache_key(name, key, key_builder, *args, **kwargs)
+                invalidate_key = await _build_cache_key(namespace, key, key_builder, *args, **kwargs)
 
                 # L1 cache invalidation
                 if settings.CACHE_LOCAL_ENABLED:
-                    if invalidate_key == name:
-                        local_cache_manager.delete_prefix(invalidate_key)
+                    if invalidate_key == namespace:
+                        local_cache_manager.delete_by_prefix(invalidate_key)
                     else:
                         local_cache_manager.delete(invalidate_key)
 
                 # Broadcast invalidation message (notify other nodes to clear local cache)
                 if settings.CACHE_LOCAL_ENABLED:
-                    if invalidate_key == name:
-                        await cache_pubsub_manager.publish_invalidation(invalidate_key, is_delete_prefix=True)
+                    if invalidate_key == namespace:
+                        await cache_pubsub_manager.publish_invalidation(invalidate_key, delete_by_prefix=True)
                     else:
-                        await cache_pubsub_manager.publish_invalidation(invalidate_key, is_delete_prefix=False)
+                        await cache_pubsub_manager.publish_invalidation(invalidate_key, delete_by_prefix=False)
 
                 # L2 cache invalidation
-                if invalidate_key == name:
-                    await redis_client.delete_prefix(invalidate_key)
+                if invalidate_key == namespace:
+                    await redis_client.delete_by_prefix(invalidate_key)
                 else:
                     await redis_client.delete(invalidate_key)
 

@@ -217,7 +217,7 @@ class AuthService:
             raise errors.NotFoundError(msg='user does not exist')
         if not user.status:
             raise errors.AuthorizationError(msg='The user has been locked, please contact the system administrator')
-        token_keys = await redis_client.get_prefix(f'{settings.TOKEN_REDIS_PREFIX}:{user.id}:*')
+        token_keys = await redis_client.get_by_prefix(f'{settings.TOKEN_REDIS_PREFIX}:{user.id}')
         if not user.is_multi_login and [
             key for key in token_keys if not key.endswith(f':{token_payload.session_uuid}')
         ]:

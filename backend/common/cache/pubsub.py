@@ -13,16 +13,16 @@ class CachePubSubManager:
     _pubsub_task: asyncio.Task | None = None
 
     @staticmethod
-    async def publish_invalidation(key: str, *, is_delete_prefix: bool) -> None:
+    async def publish_invalidation(cache_key: str, *, delete_by_prefix: bool) -> None:
         """
         Publish cache failure notifications
 
-        :p aram key: Cache key
-        :p aram is_delete_prefix: Whether to delete all caches that match the prefix
+        :param cache_key: Cache key
+        :param delete_by_prefix: Whether to delete all caches that match the prefix
         :return:
         """
         try:
-            message = json.dumps({'key': key, 'is_delete_prefix': is_delete_prefix})
+            message = json.dumps({'cache_key': cache_key, 'delete_by_prefix': delete_by_prefix})
             await redis_client.publish(settings.CACHE_PUBSUB_CHANNEL, message)
         except Exception as e:
             log.warning(f'[CachePubSub] Publishing notifications failed: {e}')
@@ -38,7 +38,7 @@ class CachePubSubManager:
 
             try:
                 # Use a standalone connection
-                pubsub_client = RedisCli()
+                pubsub_client = RedisCli(socket_timeout=None)
                 pubsub = pubsub_client.pubsub()
                 await pubsub.subscribe(settings.CACHE_PUBSUB_CHANNEL)
 
@@ -49,11 +49,11 @@ class CachePubSubManager:
                     if message['type'] == 'message':
                         try:
                             data = json.loads(message['data'])
-                            key = data['key']
-                            if not data['is_delete_prefix']:
-                                local_cache_manager.delete(key)
+                            cache_key = data['cache_key']
+                            if not data['delete_by_prefix']:
+                                local_cache_manager.delete(cache_key)
                             else:
-                                local_cache_manager.delete_prefix(key)
+                                local_cache_manager.delete_by_prefix(cache_key)
                         except json.JSONDecodeError as e:
                             log.warning(f'[CachePubSub] The message is in the wrong format {e}')
                         except Exception as e:

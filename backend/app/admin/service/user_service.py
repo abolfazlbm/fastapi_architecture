@@ -178,15 +178,15 @@ class UserService:
                     # When the system administrator modifys itself, other tokens except the current token are invalid
                     if not new_multi_login:
                         key_prefix = f'{settings.TOKEN_REDIS_PREFIX}:{user.id}'
-                        await redis_client.delete_prefix(
+                        await redis_client.delete_by_prefix(
                             key_prefix,
-                            exclude=f'{key_prefix}:{token_payload.session_uuid}',
+                            exclude_keys=f'{key_prefix}:{token_payload.session_uuid}',
                         )
                 else:
                     # When the system administrator modifies others, all other tokens are invalid
                     if not new_multi_login:
                         key_prefix = f'{settings.TOKEN_REDIS_PREFIX}:{user.id}'
-                        await redis_client.delete_prefix(key_prefix)
+                        await redis_client.delete_by_prefix(key_prefix)
             case _:
                 raise errors.RequestError(msg='Permission type does not exist')
 
@@ -213,9 +213,9 @@ class UserService:
         history_obj = CreateUserPasswordHistoryParam(user_id=user.id, password=user.password)
         await password_security_service.save_password_history(db, history_obj)
         await user_dao.update_password_changed_time(db, user.id)
-        await redis_client.delete_prefix(f'{settings.TOKEN_REDIS_PREFIX}:{user.id}')
-        await redis_client.delete_prefix(f'{settings.TOKEN_REFRESH_REDIS_PREFIX}:{user.id}')
-        await redis_client.delete_prefix(f'{settings.JWT_USER_REDIS_PREFIX}:{user.id}')
+        await redis_client.delete_by_prefix(f'{settings.TOKEN_REDIS_PREFIX}:{user.id}')
+        await redis_client.delete_by_prefix(f'{settings.TOKEN_REFRESH_REDIS_PREFIX}:{user.id}')
+        await redis_client.delete_by_prefix(f'{settings.JWT_USER_REDIS_PREFIX}:{user.id}')
         return count
 
     @staticmethod
@@ -294,9 +294,9 @@ class UserService:
         history_obj = CreateUserPasswordHistoryParam(user_id=user.id, password=user.password)
         await password_security_service.save_password_history(db, history_obj)
         await user_dao.update_password_changed_time(db, user.id)
-        await redis_client.delete_prefix(f'{settings.TOKEN_REDIS_PREFIX}:{user_id}')
-        await redis_client.delete_prefix(f'{settings.TOKEN_REFRESH_REDIS_PREFIX}:{user_id}')
-        await redis_client.delete_prefix(f'{settings.JWT_USER_REDIS_PREFIX}:{user_id}')
+        await redis_client.delete_by_prefix(f'{settings.TOKEN_REDIS_PREFIX}:{user_id}')
+        await redis_client.delete_by_prefix(f'{settings.TOKEN_REFRESH_REDIS_PREFIX}:{user_id}')
+        await redis_client.delete_by_prefix(f'{settings.JWT_USER_REDIS_PREFIX}:{user_id}')
         return count
 
     @staticmethod
@@ -312,9 +312,9 @@ class UserService:
         if not user:
             raise errors.NotFoundError(msg='User does not exist')
         count = await user_dao.delete(db, user.id)
-        await redis_client.delete_prefix(f'{settings.TOKEN_REDIS_PREFIX}:{user.id}')
-        await redis_client.delete_prefix(f'{settings.TOKEN_REFRESH_REDIS_PREFIX}:{user.id}')
-        await redis_client.delete_prefix(f'{settings.JWT_USER_REDIS_PREFIX}:{user.id}')
+        await redis_client.delete_by_prefix(f'{settings.TOKEN_REDIS_PREFIX}:{user.id}')
+        await redis_client.delete_by_prefix(f'{settings.TOKEN_REFRESH_REDIS_PREFIX}:{user.id}')
+        await redis_client.delete_by_prefix(f'{settings.JWT_USER_REDIS_PREFIX}:{user.id}')
         return count
 
 
