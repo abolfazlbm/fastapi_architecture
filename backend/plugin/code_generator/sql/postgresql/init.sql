@@ -3,27 +3,27 @@ declare
     codegen_menu_id bigint;
 begin
     insert into sys_menu (title, name, path, sort, icon, type, component, perms, status, display, cache, link, remark, parent_id, created_time, updated_time)
-    values ('code_generator.menu', 'PluginCodeGenerator', '/plugins/code-generator', 10, 'tabler:code', 1, '/plugins/code_generator/views/index', null, 1, 1, 1, '', null, null, now(), null)
+    values ('code-generator.menu', 'PluginCodeGenerator', '/plugins/code-generator', 10, 'tabler:code', 1, '/plugins/code-generator/views/index', null, 1, 1, 1, '', null, null, now(), null)
     returning id into codegen_menu_id;
 
     insert into sys_menu (title, name, path, sort, icon, type, component, perms, status, display, cache, link, remark, parent_id, created_time, updated_time)
     values
-    ('新增业务', 'AddGenCodeBusiness', null, 0, null, 2, null, 'codegen:business:add', 1, 0, 1, '', null, codegen_menu_id, now(), null),
-    ('修改业务', 'EditGenCodeBusiness', null, 0, null, 2, null, 'codegen:business:edit', 1, 0, 1, '', null, codegen_menu_id, now(), null),
-    ('删除业务', 'DeleteGenCodeBusiness', null, 0, null, 2, null, 'codegen:business:del', 1, 0, 1, '', null, codegen_menu_id, now(), null),
-    ('新增模型', 'AddGenCodeModel', null, 0, null, 2, null, 'codegen:model:add', 1, 0, 1, '', null, codegen_menu_id, now(), null),
-    ('修改模型', 'EditGenCodeModel', null, 0, null, 2, null, 'codegen:model:edit', 1, 0, 1, '', null, codegen_menu_id, now(), null),
-    ('删除模型', 'DeleteGenCodeModel', null, 0, null, 2, null, 'codegen:model:del', 1, 0, 1, '', null, codegen_menu_id, now(), null),
-    ('导入', 'ImportGenCode', null, 0, null, 2, null, 'codegen:table:import', 1, 0, 1, '', null, codegen_menu_id, now(), null),
-    ('写入', 'WriteGenCode', null, 0, null, 2, null, 'codegen:local:write', 1, 0, 1, '', null, codegen_menu_id, now(), null);
+    ('Add Business', 'AddGenCodeBusiness', null, 0, null, 2, null, 'codegen:business:add', 1, 0, 1, '', null, codegen_menu_id, now(), null),
+    ('Edit Business', 'EditGenCodeBusiness', null, 0, null, 2, null, 'codegen:business:edit', 1, 0, 1, '', null, codegen_menu_id, now(), null),
+    ('Delete Business', 'DeleteGenCodeBusiness', null, 0, null, 2, null, 'codegen:business:del', 1, 0, 1, '', null, codegen_menu_id, now(), null),
+    ('Add Model', 'AddGenCodeModel', null, 0, null, 2, null, 'codegen:model:add', 1, 0, 1, '', null, codegen_menu_id, now(), null),
+    ('Edit Model', 'EditGenCodeModel', null, 0, null, 2, null, 'codegen:model:edit', 1, 0, 1, '', null, codegen_menu_id, now(), null),
+    ('Delete Model', 'DeleteGenCodeModel', null, 0, null, 2, null, 'codegen:model:del', 1, 0, 1, '', null, codegen_menu_id, now(), null),
+    ('Import', 'ImportGenCode', null, 0, null, 2, null, 'codegen:table:import', 1, 0, 1, '', null, codegen_menu_id, now(), null),
+    ('Write', 'WriteGenCode', null, 0, null, 2, null, 'codegen:local:write', 1, 0, 1, '', null, codegen_menu_id, now(), null);
 end $$;
 
 select setval(pg_get_serial_sequence('sys_menu', 'id'), coalesce(max(id), 0) + 1, true) from sys_menu;
 
-insert into gen_business (id, app_name, table_name, doc_comment, table_comment, class_name, schema_name, filename, datetime_mixin, api_version, gen_path, remark, created_time, updated_time)
+insert into code_gen_business (id, app_name, table_name, doc_comment, table_comment, class_name, schema_name, filename, datetime_mixin, api_version, gen_path, remark, created_time, updated_time)
 values (1, 'test', 'sys_opera_log', 'Operation log table', 'Operation log table', 'SysOperaLog', 'SysOperaLog', 'sys_opera_log', true, 'v1', null, null, '2025-12-15 15:30:33', null);
 
-insert into gen_column (id, name, comment, type, pd_type, "default", sort, "length", is_pk, is_nullable, gen_business_id)
+insert into code_gen_column (id, name, comment, type, pd_type, "default", sort, "length", is_pk, is_nullable, code_gen_business_id)
 values
 (1, 'trace_id', 'Request Trace ID', 'String', 'str', null, 2, 32, false, false, 1),
 (2, 'username', 'username', 'String', 'str', null, 3, 64, false, true, 1),
@@ -45,5 +45,5 @@ values
 (18, 'cost_time', 'Request time (ms)', 'String', 'str', null, 19, 0, false, false, 1),
 (19, 'opera_time', 'opera_time', 'String', 'str', null, 20, 0, false, false, 1);
 
-select setval(pg_get_serial_sequence('gen_business', 'id'),coalesce(max(id), 0) + 1, true) from gen_business;
-select setval(pg_get_serial_sequence('gen_column', 'id'),coalesce(max(id), 0) + 1, true) from gen_column;
+select setval(pg_get_serial_sequence('code_gen_business', 'id'),coalesce(max(id), 0) + 1, true) from code_gen_business;
+select setval(pg_get_serial_sequence('code_gen_column', 'id'),coalesce(max(id), 0) + 1, true) from code_gen_column;

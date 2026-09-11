@@ -139,4 +139,5 @@ class CRUDDept(CRUDPlus[Dept]):
         """
         return await self.select_models(db, parent_id=dept_id, deleted=0)
 
+
 dept_dao: CRUDDept = CRUDDept(Dept)

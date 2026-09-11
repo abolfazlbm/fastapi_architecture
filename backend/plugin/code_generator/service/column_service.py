@@ -5,32 +5,32 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.common.enums import DataBaseType
 from backend.common.exception import errors
 from backend.core.conf import settings
-from backend.plugin.code_generator.crud.crud_business import gen_business_dao
-from backend.plugin.code_generator.crud.crud_column import gen_column_dao
+from backend.plugin.code_generator.crud.crud_business import code_gen_business_dao
+from backend.plugin.code_generator.crud.crud_column import code_gen_column_dao
 from backend.plugin.code_generator.enums import GenMySQLColumnType, GenPostgreSQLColumnType
-from backend.plugin.code_generator.model import GenColumn
-from backend.plugin.code_generator.schema.column import CreateGenColumnParam, UpdateGenColumnParam
+from backend.plugin.code_generator.model import CodeGenColumn
+from backend.plugin.code_generator.schema.column import CreateCodeGenColumnParam, UpdateCodeGenColumnParam
 from backend.plugin.code_generator.utils.type_conversion import sql_type_to_pydantic
 
 
-class GenColumnService:
+class CodeGenColumnService:
     """Code generation model column service class"""
 
     @staticmethod
-    async def get(*, db: AsyncSession, pk: int) -> GenColumn:
+    async def get(*, db: AsyncSession, pk: int) -> CodeGenColumn:
         """
         Get the model column with the specified ID
 
-        :param db: database session
-        :param pk: model column ID
+        :param db: Database session
+        :param pk: Model Column ID
         :return:
         """
 
-        column = await gen_column_dao.get(db, pk)
+        column = await code_gen_column_dao.get(db, pk)
         if not column:
             raise errors.NotFoundError(msg='Code generation model column does not exist')
-        if not await gen_business_dao.get(db, column.gen_business_id):
-            raise errors.NotFoundError(msg='代码生成业务不存在')
+        if not await code_gen_business_dao.get(db, column.code_gen_business_id):
+            raise errors.NotFoundError(msg='Code generation model column does not exist')
         return column
 
     @staticmethod
@@ -44,81 +44,81 @@ class GenColumnService:
         return types
 
     @staticmethod
-    async def get_columns(*, db: AsyncSession, business_id: int) -> Sequence[GenColumn]:
+    async def get_columns(*, db: AsyncSession, business_id: int) -> Sequence[CodeGenColumn]:
         """
-        Get all model columns of the specified business
+        Get all model columns for the specified business
 
-        :param db: database session
-        :param business_id: Business ID
+        :param db: Database session
+        :param business_id: business ID
         :return:
         """
 
-        if not await gen_business_dao.get(db, business_id):
-            raise errors.NotFoundError(msg='代码生成业务不存在')
-        return await gen_column_dao.get_all_by_business(db, business_id)
+        if not await code_gen_business_dao.get(db, business_id):
+            raise errors.NotFoundError(msg='Code generation model column does not exist')
+        return await code_gen_column_dao.get_all_by_business(db, business_id)
 
     @staticmethod
-    async def create(*, db: AsyncSession, obj: CreateGenColumnParam) -> None:
+    async def create(*, db: AsyncSession, obj: CreateCodeGenColumnParam) -> None:
         """
-        Create model columns
+        Create a model column
 
-        :param db: database session
-        :param obj: Create model column parameters
+        :param db: Database session
+        :param obj: Model-column creation parameters
         :return:
         """
 
-        if not await gen_business_dao.get(db, obj.gen_business_id):
-            raise errors.NotFoundError(msg='代码生成业务不存在')
+        if not await code_gen_business_dao.get(db, obj.code_gen_business_id):
+            raise errors.NotFoundError(msg='Code generation model column does not exist')
 
-        gen_columns = await gen_column_dao.get_all_by_business(db, obj.gen_business_id)
-        if obj.name in [gen_column.name for gen_column in gen_columns]:
+        code_gen_columns = await code_gen_column_dao.get_all_by_business(db, obj.code_gen_business_id)
+        if obj.name in [code_gen_column.name for code_gen_column in code_gen_columns]:
             raise errors.ForbiddenError(msg='Model column already exists')
 
         pd_type = sql_type_to_pydantic(obj.type)
-        await gen_column_dao.create(db, obj, pd_type=pd_type)
+        await code_gen_column_dao.create(db, obj, pd_type=pd_type)
 
     @staticmethod
-    async def update(*, db: AsyncSession, pk: int, obj: UpdateGenColumnParam) -> int:
+    async def update(*, db: AsyncSession, pk: int, obj: UpdateCodeGenColumnParam) -> int:
         """
-        Update model columns
+        Update a model column
 
-        :param db: database session
-        :param pk: model column ID
-        :param obj: Update model column parameters
+        :param db: Database session
+        :param pk: Model Column ID
+        :param obj: Model-column update parameters
         :return:
         """
 
-        column = await gen_column_dao.get(db, pk)
+        column = await code_gen_column_dao.get(db, pk)
         if not column:
-            raise errors.NotFoundError(msg='代码生成模型列不存在')
-        if not await gen_business_dao.get(db, column.gen_business_id):
-            raise errors.NotFoundError(msg='代码生成业务不存在')
-        if not await gen_business_dao.get(db, obj.gen_business_id):
-            raise errors.NotFoundError(msg='代码生成业务不存在')
+            raise errors.NotFoundError(msg='Code generation model column does not exist')
+        if not await code_gen_business_dao.get(db, column.code_gen_business_id):
+            raise errors.NotFoundError(msg='Code generation model column does not exist')
+        if not await code_gen_business_dao.get(db, obj.code_gen_business_id):
+            raise errors.NotFoundError(msg='Code generation model column does not exist')
         if obj.name != column.name:
-            gen_columns = await gen_column_dao.get_all_by_business(db, obj.gen_business_id)
-            if obj.name in [gen_column.name for gen_column in gen_columns]:
+            code_gen_columns = await code_gen_column_dao.get_all_by_business(db, obj.code_gen_business_id)
+            if obj.name in [code_gen_column.name for code_gen_column in code_gen_columns]:
                 raise errors.ConflictError(msg='Model column name already exists')
 
         pd_type = sql_type_to_pydantic(obj.type)
-        return await gen_column_dao.update(db, pk, obj, pd_type=pd_type)
+        return await code_gen_column_dao.update(db, pk, obj, pd_type=pd_type)
 
     @staticmethod
     async def delete(*, db: AsyncSession, pk: int) -> int:
         """
-        Delete model column
+        Delete a model column
 
-        :param db: database session
-        :param pk: model column ID
+        :param db: Database session
+        :param pk: Model Column ID
         :return:
         """
 
-        column = await gen_column_dao.get(db, pk)
+        column = await code_gen_column_dao.get(db, pk)
         if not column:
-            raise errors.NotFoundError(msg='代码生成模型列不存在')
-        if not await gen_business_dao.get(db, column.gen_business_id):
-            raise errors.NotFoundError(msg='代码生成业务不存在')
-        return await gen_column_dao.delete(db, pk)
+            raise errors.NotFoundError(msg='Code generation model column does not exist')
+        if not await code_gen_business_dao.get(db, column.code_gen_business_id):
+            raise errors.NotFoundError(msg='Code generation model column does not exist')
+        return await code_gen_column_dao.delete(db, pk)
 
 
-gen_column_service: GenColumnService = GenColumnService()
+code_gen_column_service: CodeGenColumnService = CodeGenColumnService()

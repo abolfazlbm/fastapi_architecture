@@ -98,7 +98,7 @@ class JwtAuthMiddleware(AuthenticationBackend):
             ctx.__request_jwt_authentication_exception__ = exc
             return None
         except Exception as e:
-            log.exception(f'JWT Authorization exception：{e}')
+            log.exception(f'JWT Authorization exception:{e}')
             raise AuthenticationError(code=getattr(e, 'code', 500), msg=getattr(e, 'msg', 'Internal Server Error'))
 
         # Please note that this return uses non-standard mode, so when authentication is passed, some standard features will be lost

@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.common.log import log
 from backend.core.conf import settings
 from backend.core.path_conf import PLUGIN_DIR
-from backend.utils.dynamic_config import load_email_config
+from backend.plugin.email.utils.dynamic_config import load_email_config
 from backend.utils.timezone import timezone
 
 
@@ -70,4 +70,4 @@ async def send_email(
             await smtp_client.login(settings.EMAIL_USERNAME, settings.EMAIL_PASSWORD)
             await smtp_client.sendmail(settings.EMAIL_USERNAME, recipients, message)
     except Exception as e:
-        log.error(f'Email Delivery Failed：{e}')
+        log.error(f'Email Delivery Failed:{e}')

@@ -16,10 +16,10 @@ _DESTROY_SQL_PREFIXES: Final = _INIT_SQL_PREFIXES | {'drop', 'delete', 'alter'}
 
 async def parse_sql_script(filepath: str, *, is_destroy: bool = False) -> list[str]:
     """
-    Parse SQL script
+    Parse an SQL script
 
-    :param filepath: script file path
-    :param is_destroy: Whether it is a destruction script, which will allow destructive operations
+    :param filepath: Script file path
+    :param is_destroy: Whether this is a destroy script, allowing destructive operations
     :return:
     """
     path = anyio.Path(filepath)
@@ -36,7 +36,7 @@ async def parse_sql_script(filepath: str, *, is_destroy: bool = False) -> list[s
     for statement in statements:
         if not any(statement.strip().lower().startswith(prefix) for prefix in allowed_prefixes):
             raise errors.RequestError(
-                msg=f'SQL script {filepath} has an illegal operation, only allowed: {", ".join(item.upper() for item in sorted(allowed_prefixes))}' # noqa: E501
+                msg=f'SQL script {filepath} has an illegal operation, only allowed: {", ".join(item.upper() for item in sorted(allowed_prefixes))}'
             )
 
     return statements

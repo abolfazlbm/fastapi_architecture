@@ -54,7 +54,7 @@ def get_data_permission_models() -> dict[str, object]:
     return {getattr(model, '__name__', str(model)): model for model in get_all_models()}
 
 
-def filter_data_permission(  # noqa: C901
+def filter_data_permission(  # ruff:ignore[complex-structure]
     request: Request, *models: type[Model] | AliasedClass | Alias | Table
 ) -> ColumnElement[bool]:
     """
@@ -67,7 +67,7 @@ def filter_data_permission(  # noqa: C901
     :param models: model classes that require application data permissions
     :return:
     """
-    #Super administrator does not filter
+    # Super administrator does not filter
     if request.user.is_superuser:
         return or_(1 == 1)
 
@@ -141,6 +141,7 @@ def filter_data_permission(  # noqa: C901
                     return _column_type(value) if _column_type is not str else value
                 except (ValueError, TypeError):
                     return value
+
             condition = None
             match data_rule.expression:
                 case RoleDataRuleExpressionType.eq:

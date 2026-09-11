@@ -7,7 +7,7 @@ from backend.app.task.utils.tzcrontab import TzAwareCrontab
 
 def get_local_beat_schedule() -> dict[str, dict[str, Any]]:
     """Get local Celery beat task configuration"""
-    # Reference：https://docs.celeryq.dev/en/stable/userguide/periodic-tasks.html
+    # Reference:https://docs.celeryq.dev/en/stable/userguide/periodic-tasks.html
     return {
         'Test Synchronization Task': {
             'task': 'task_demo',

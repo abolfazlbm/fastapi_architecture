@@ -18,6 +18,7 @@ from backend.plugin.notice.service.notice_service import notice_service
 
 router = APIRouter()
 
+
 @router.get('/{pk}', summary='Get notification announcement details', dependencies=[DependsJwtAuth])
 async def get_notice(
     db: CurrentSession, pk: Annotated[int, Path(description='Notification Announcement ID')]
@@ -66,7 +67,9 @@ async def create_notice(db: CurrentSessionTransaction, obj: CreateNoticeParam) -
     ],
 )
 async def update_notice(
-    db: CurrentSessionTransaction, pk: Annotated[int, Path(description='Notices and Announcements ID')], obj: UpdateNoticeParam
+    db: CurrentSessionTransaction,
+    pk: Annotated[int, Path(description='Notices and Announcements ID')],
+    obj: UpdateNoticeParam,
 ) -> ResponseModel:
     count = await notice_service.update(db=db, pk=pk, obj=obj)
     if count > 0:

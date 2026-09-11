@@ -28,7 +28,7 @@ async def get_sessions(
         data.append(
             token_detail.model_copy(
                 update={
-                   'username': extra_info.get('username', 'unknown'),
+                    'username': extra_info.get('username', 'unknown'),
                     'nickname': extra_info.get('nickname', 'unknown'),
                     'ip': extra_info.get('ip', 'unknown'),
                     'os': extra_info.get('os', 'unknown'),

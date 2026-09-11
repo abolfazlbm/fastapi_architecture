@@ -150,7 +150,9 @@ class ResponseBase:
         data: Any | None = None,
     ) -> Response:
         """
-        This method was created to improve interface response speed, with significant performance improvements when parsing larger jsons, but will lose pydantic parsing and verification
+        Improve interface response speed when parsing large JSON payloads.
+
+        This bypasses Pydantic parsing and validation.
 
         .. warning::
 

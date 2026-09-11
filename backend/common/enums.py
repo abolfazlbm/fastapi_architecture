@@ -6,7 +6,7 @@ T = TypeVar('T', bound=Enum)
 
 
 class _EnumBase:
-    """Enumer base class, providing general method """
+    """Enumer base class, providing general method"""
 
     @classmethod
     def get_member_keys(cls) -> list[str]:
@@ -114,6 +114,7 @@ class PluginLevelType(StrEnum):
     """Plug-in level type"""
 
     app = 'app'
+    capability = 'capability'
     extend = 'extend'
 
 
@@ -148,7 +149,7 @@ class PrimaryKeyType(StrEnum):
 
 
 class LifespanStage(IntEnum):
-    """lifespan 执行阶段"""
+    """lifespan execution phase"""
 
     core = 0
     plugin = 1

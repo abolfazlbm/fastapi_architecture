@@ -6,13 +6,13 @@ from backend.common.model import Base, id_key
 
 
 class UserSocial(Base):
-    """User social table（OAuth2）"""
+    """User social table(OAuth2)"""
 
     __tablename__ = 'sys_user_social'
     __table_args__ = (
         sa.UniqueConstraint('user_id', 'source', 'deleted', name='uk_sys_user_social_user_id_source_deleted'),
         sa.UniqueConstraint('sid', 'source', 'deleted', name='uk_sys_user_social_sid_source_deleted'),
-        {'comment': '用户社交表（OAuth2）'},
+        {'comment': 'User social table(OAuth2)'},
     )
 
     id: Mapped[id_key] = mapped_column(init=False)

@@ -221,7 +221,9 @@ class AuthService:
         if not user.is_multi_login and [
             key for key in token_keys if not key.endswith(f':{token_payload.session_uuid}')
         ]:
-            raise errors.ForbiddenError(msg='This user has logged in remote location, please log in again and change the password in time')
+            raise errors.ForbiddenError(
+                msg='This user has logged in remote location, please log in again and change the password in time'
+            )
         new_token = await create_new_token(
             refresh_token,
             token_payload.session_uuid,

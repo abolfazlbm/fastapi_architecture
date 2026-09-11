@@ -27,7 +27,7 @@ id_key = Annotated[
     )
     if PrimaryKeyType.autoincrement == settings.DATABASE_PK_MODE
     # Snowflake algorithm Mapped type primary key
-    # Details：https://fastapi-practices.github.io/fastapi_best_architecture_docs/backend/reference/pk.html
+    # Details:https://fastapi-practices.github.io/fastapi_best_architecture_docs/backend/reference/pk.html
     else mapped_column(
         BigInteger,
         primary_key=True,
@@ -46,15 +46,15 @@ class UniversalText(TypeDecorator[str]):
     impl = LONGTEXT if DataBaseType.mysql == settings.DATABASE_TYPE else Text
     cache_ok = True
 
-    def process_bind_param(self, value: str | None, dialect) -> str | None:  # noqa: ANN001
+    def process_bind_param(self, value: str | None, dialect) -> str | None:  # ruff:ignore[missing-type-function-argument]
         return value
 
-    def process_result_value(self, value: str | None, dialect) -> str | None:  # noqa: ANN001
+    def process_result_value(self, value: str | None, dialect) -> str | None:  # ruff:ignore[missing-type-function-argument]
         return value
 
 
 class TimeZone(TypeDecorator[datetime]):
-    """PostgreSQL、MySQL Compatibility Time Zone Awareness Type"""
+    """PostgreSQL, MySQL Compatibility Time Zone Awareness Type"""
 
     impl = DateTime(timezone=True)
     cache_ok = True
@@ -63,19 +63,19 @@ class TimeZone(TypeDecorator[datetime]):
     def python_type(self) -> type[datetime]:
         return datetime
 
-    def process_bind_param(self, value: datetime | None, dialect) -> datetime | None:  # noqa: ANN001
+    def process_bind_param(self, value: datetime | None, dialect) -> datetime | None:  # ruff:ignore[missing-type-function-argument]
         if value is not None and value.utcoffset() != timezone.now().utcoffset():
             # TODO Handle daylight saving time offsets
             value = timezone.from_datetime(value)
         return value
 
-    def process_result_value(self, value: datetime | None, dialect) -> datetime | None:  # noqa: ANN001
+    def process_result_value(self, value: datetime | None, dialect) -> datetime | None:  # ruff:ignore[missing-type-function-argument]
         if value is not None and value.tzinfo is None:
             value = value.replace(tzinfo=timezone.tz_info)
         return value
 
 
-# Mixin: 一object-oriented programming concepts to make the structure clearer, `Wiki <https://en.wikipedia.org/wiki/Mixin/>`__
+# Mixin: an object-oriented concept that makes the structure clearer, `Wiki <https://en.wikipedia.org/wiki/Mixin/>`__
 class UserMixin(MappedAsDataclass):
     """User Mixin data class"""
 
@@ -103,7 +103,7 @@ class DateTimeMixin(MappedAsDataclass):
 
 
 class LogicalDeleteMixin(MappedAsDataclass):
-    """逻辑删除 Mixin 数据类"""
+    """Soft-delete mixin data class"""
 
     deleted: Mapped[int] = mapped_column(
         BigInteger,
@@ -111,14 +111,14 @@ class LogicalDeleteMixin(MappedAsDataclass):
         default=0,
         server_default='0',
         sort_order=999,
-        comment='是否已删除（0：否；id：是）',
+        comment='Whether it has been deleted (0: No; id: Yes)',
     )
     deleted_time: Mapped[datetime | None] = mapped_column(
         TimeZone,
         init=False,
         default=None,
         sort_order=999,
-        comment='删除时间',
+        comment='Deletion time',
     )
 
 

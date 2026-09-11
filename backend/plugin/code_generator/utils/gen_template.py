@@ -5,7 +5,7 @@ from pydantic.alias_generators import to_pascal
 
 from backend.common.enums import PrimaryKeyType
 from backend.core.conf import settings
-from backend.plugin.code_generator.model import GenBusiness, GenColumn
+from backend.plugin.code_generator.model import CodeGenBusiness, CodeGenColumn
 from backend.plugin.code_generator.path_conf import JINJA2_TEMPLATE_DIR
 from backend.plugin.code_generator.utils.type_conversion import sql_type_to_sqlalchemy_name
 from backend.utils.snowflake import snowflake
@@ -28,20 +28,20 @@ class GenTemplate:
 
     def get_template(self, jinja_file: str) -> Template:
         """
-        Get Jinja2 template object
+        Get a Jinja2 template object
 
         :param jinja_file: Jinja2 template file path
-        :return: Template object
+        :return:
         """
         return self.env.get_template(jinja_file)
 
     @staticmethod
-    def get_template_path_mapping(business: GenBusiness) -> dict[str, str]:
+    def get_template_path_mapping(business: CodeGenBusiness) -> dict[str, str]:
         """
-        Get the path mapping from template files to generated files
+        Get the path mapping from templates to generated files
 
-        :param business: code generation business object
-        :return: {template path: generated file path}
+        :param business: Code-generation business object
+        :return:
         """
         app_name = business.app_name
         filename = business.filename
@@ -59,12 +59,12 @@ class GenTemplate:
             f'sql/postgresql/init{pk_suffix}.jinja': f'{app_name}/sql/postgresql/init{pk_suffix}.sql',
         }
 
-    def get_init_files(self, business: GenBusiness) -> dict[str, str]:
+    def get_init_files(self, business: CodeGenBusiness) -> dict[str, str]:
         """
-        Get the __init__.py file that needs to be generated and its contents
+        Get the __init__.py files to generate and their content
 
-        :param business: business object
-        :return: {relative path: file content}
+        :param business: Business object
+        :return:
         """
         app_name = business.app_name
         table_name = business.table_name
@@ -84,12 +84,14 @@ class GenTemplate:
         }
 
     @staticmethod
-    def get_vars(business: GenBusiness, models: Sequence[GenColumn]) -> dict[str, str | Sequence[GenColumn]]:
+    def get_vars(
+        business: CodeGenBusiness, models: Sequence[CodeGenColumn]
+    ) -> dict[str, str | Sequence[CodeGenColumn]]:
         """
         Get template variables
 
-        :param business: code generation business object
-        :param models: code generation model object list
+        :param business: Code-generation business object
+        :param models: List of code-generation model objects
         :return:
         """
         vars_dict = {

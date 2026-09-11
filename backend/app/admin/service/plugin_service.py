@@ -79,7 +79,7 @@ class PluginService:
         if settings.ENVIRONMENT != 'dev':
             raise errors.RequestError(msg='Disable uninstalling plug-ins in non-development environments')
         if plugin in get_required_plugins():
-            raise errors.RequestError(msg=f'插件 {plugin} 为必需插件，禁止卸载')
+            raise errors.RequestError(msg=f'Plug-in {plugin} is a required plug-in and cannot be uninstalled.')
         plugin_dir = anyio.Path(PLUGIN_DIR / plugin)
         if not await plugin_dir.exists():
             raise errors.NotFoundError(msg='Plugin does not exist')

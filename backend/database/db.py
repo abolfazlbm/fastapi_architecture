@@ -1,6 +1,7 @@
 import sys
 
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Mapping
+from contextlib import AbstractAsyncContextManager
 from functools import partial
 from typing import Annotated, Any, TypeAlias
 from uuid import uuid4
@@ -23,10 +24,10 @@ from backend.core.conf import settings
 
 def get_database_url(*, unittest: bool = False, with_database: bool = True) -> URL:
     """
-    Create a database link
+    Create a database URL
 
-    :param unittest: whether to use for unit testing
-    :param with_database: whether to include the database name (not required when creating the database)
+    :param unittest: Whether it is used for unit tests
+    :param with_database: Whether to include the database name(not required when creating a database)
     :return:
     """
     if with_database:
@@ -49,9 +50,9 @@ def get_database_url(*, unittest: bool = False, with_database: bool = True) -> U
 
 def create_database_async_engine(url: str | URL) -> AsyncEngine:
     """
-    Create a database asynchronous engine
+    Create an asynchronous database engine
 
-    :param url: database connection address
+    :param url: Database connection URL
     :return:
     """
     try:
@@ -61,41 +62,85 @@ def create_database_async_engine(url: str | URL) -> AsyncEngine:
             echo_pool=settings.DATABASE_POOL_ECHO,
             future=True,
             # Medium concurrency
-            pool_size=10, # Low:- High:+
-            max_overflow=20, # Low:- High:+
-            pool_timeout=30, # Low: + High:-
-            pool_recycle=3600, # Low: + High:-
-            pool_pre_ping=True, # Low: False High: True
-            pool_use_lifo=False, # Low: False High: True
+            pool_size=10,  # Low:- High:+
+            max_overflow=20,  # Low:- High:+
+            pool_timeout=30,  # Low:+ High:-
+            pool_recycle=3600,  # Low:+ High:-
+            pool_pre_ping=True,  # Low:False High:True
+            pool_use_lifo=False,  # Low:False High:True
         )
     except Exception as e:
         log.error(f'Database connection failed {e}')
         sys.exit()
 
 
-def create_database_async_session(engine: AsyncEngine) -> async_sessionmaker[AsyncSession | Any]:
-    """
-    Create a database asynchronous session
+class DatabaseAsyncSessionMaker:
+    """Select the matching async_sessionmaker by data-source name"""
 
-    :param engine: database asynchronous engine
+    def __init__(self, makers: Mapping[str, async_sessionmaker[AsyncSession]]) -> None:
+        if 'default' not in makers:
+            raise ValueError('The session factory must include the default data source')
+        self._makers = dict(makers)
+
+    def _get_maker(self, source: str) -> async_sessionmaker[AsyncSession]:
+        """
+        Get the session factory for a data source
+
+        :param source: data sourceName
+        :return:
+        """
+        try:
+            return self._makers[source]
+        except KeyError as e:
+            raise ValueError(f'Unknown database data source: {source}') from e
+
+    def __call__(self, source: str = 'default', **kwargs: Any) -> AsyncSession:
+        """
+        Create a database session
+
+        :param source: data sourceName
+        :return:
+        """
+        return self._get_maker(source)(**kwargs)
+
+    def begin(self, source: str = 'default') -> AbstractAsyncContextManager[AsyncSession]:
+        """
+        Create a session and open a transaction; commit and close on exit
+
+        :param source: data sourceName
+        :return:
+        """
+        return self._get_maker(source).begin()
+
+
+def create_database_async_session(
+    async_engine: AsyncEngine,
+    *,
+    source_binds: Mapping[str, AsyncEngine] | None = None,
+) -> DatabaseAsyncSessionMaker:
+    """
+    Create an asynchronous database session supporting named data sources
+
+    :param async_engine: Default data-source asynchronous engine
+    :param source_binds: Additional data-source asynchronous engines
     :return:
     """
-    return async_sessionmaker(
-        bind=engine,
-        class_=AsyncSession,
-        autoflush=False,  # Disable automatic refresh
-        expire_on_commit=False, # Disable expiration of commit
-    )
+    engines = dict(source_binds or {})
+    engines.setdefault('default', async_engine)
+    return DatabaseAsyncSessionMaker({
+        source: async_sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
+        for source, engine in engines.items()
+    })
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    """Get database session"""
+    """Get the default data-source session"""
     async with async_db_session() as session:
         yield session
 
 
 async def get_db_transaction() -> AsyncGenerator[AsyncSession, None]:
-    """Get a database session with a transaction"""
+    """Get the default data-source transactional session"""
     async with async_db_session.begin() as session:
         yield session
 
@@ -119,24 +164,43 @@ def uuid4_str() -> str:
 
 # SQLA Async Engines And Sessions
 async_engine = create_database_async_engine(get_database_url())
-async_db_session = create_database_async_session(async_engine)
+_database_engines: dict[str, AsyncEngine] = {'default': async_engine}
+for source, url in settings.DATABASE_SOURCES.items():
+    if not source or source == 'default':
+        raise ValueError('DATABASE_SOURCES data-source name cannot be empty or default')
+    _database_engines[source] = create_database_async_engine(url)
+
+async_db_session = create_database_async_session(async_engine, source_binds=_database_engines)
+
+
+def get_database_engines() -> Mapping[str, AsyncEngine]:
+    """Get all database engines"""
+    return _database_engines
+
+
+async def dispose_database() -> None:
+    """Dispose all database connection pools"""
+    for engine in _database_engines.values():
+        await engine.dispose()
+
 
 # SQLA Connection pool indicator monitoring
-event.listen(
-    async_engine.sync_engine.pool,
-    'connect',
-    partial(observe_sqlalchemy_pool_connections, pool=async_engine.sync_engine.pool),
-)
-event.listen(
-    async_engine.sync_engine.pool,
-    'checkout',
-    partial(observe_sqlalchemy_pool_connections, pool=async_engine.sync_engine.pool),
-)
-event.listen(
-    async_engine.sync_engine.pool,
-    'checkin',
-    partial(observe_sqlalchemy_pool_connections, pool=async_engine.sync_engine.pool),
-)
+for source, engine in _database_engines.items():
+    event.listen(
+        engine.sync_engine.pool,
+        'connect',
+        partial(observe_sqlalchemy_pool_connections, pool=engine.sync_engine.pool, source=source),
+    )
+    event.listen(
+        engine.sync_engine.pool,
+        'checkout',
+        partial(observe_sqlalchemy_pool_connections, pool=engine.sync_engine.pool, source=source),
+    )
+    event.listen(
+        engine.sync_engine.pool,
+        'checkin',
+        partial(observe_sqlalchemy_pool_connections, pool=engine.sync_engine.pool, source=source),
+    )
 
 # Session Annotated
 CurrentSession: TypeAlias = Annotated[AsyncSession, Depends(get_db)]

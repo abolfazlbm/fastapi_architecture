@@ -6,7 +6,7 @@
 
 Enterprise-level backend architecture solution
 
-English | [简体中文](./README.zh-CN.md)
+English
 
 [![GitHub](https://img.shields.io/github/license/fastapi-practices/fastapi_best_architecture)](https://github.com/fastapi-practices/fastapi_best_architecture/blob/master/LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
@@ -43,6 +43,20 @@ springBoot...). ), but a self-righteous directory structure that you can give it
 
 For more details, please check
 the [official documentation](https://fastapi-practices.github.io/fastapi_best_architecture_docs/)
+
+## Sponsors
+
+<div align="center">
+  <table>
+    <tr>
+      <td align="center">
+        <a href="https://claude.uy/home">
+          <img src="https://purple-sun-4f5a.wuyao1243.workers.dev/" alt="Claude.uy" width="400">
+        </a>
+      </td>
+    </tr>
+  </table>
+</div>
 
 ## Contributors
 

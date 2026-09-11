@@ -32,7 +32,7 @@ REQUEST_LIMITER_BUCKET_CACHE_BUFFER_MS = 10_000
 
 @dataclass(slots=True)
 class RedisBucketState:
-    """Redis bucket 缓存状态"""
+    """Cached Redis bucket state."""
 
     bucket: RedisBucket
     last_seen: int
@@ -40,9 +40,9 @@ class RedisBucketState:
 
 async def _maybe_await(value: T | Awaitable[T]) -> T:
     """
-    兼容同步值和异步值
+    Support synchronous and asynchronous values
 
-    :param value: 同步值或 Awaitable 对象
+    :param value: Synchronous value or Awaitable object
     :return:
     """
     if isawaitable(value):
@@ -52,7 +52,7 @@ async def _maybe_await(value: T | Awaitable[T]) -> T:
 
 async def _redis_time_ms(redis: Redis) -> int:
     """
-    获取 Redis 服务端当前时间
+    Get the Redis server's current time
 
     :return:
     """
@@ -61,15 +61,15 @@ async def _redis_time_ms(redis: Redis) -> int:
 
 
 class RedisTimeBucket(RedisBucket):
-    """使用 Redis 服务端时间的 Redis bucket"""
+    """Redis bucket that uses the Redis server clock."""
 
     async def now(self) -> int:
-        """获取 Redis 服务端当前时间"""
+        """Get the current time from the Redis server."""
         return await _redis_time_ms(self.redis)
 
 
 class RedisBucketFactory(BucketFactory):
-    """按请求标识符路由到独立 Redis bucket"""
+    """Route request identifiers to independent Redis buckets."""
 
     def __init__(
         self,
@@ -78,11 +78,11 @@ class RedisBucketFactory(BucketFactory):
         max_cache_size: int = REQUEST_LIMITER_BUCKET_CACHE_MAX_SIZE,
     ) -> None:
         """
-        初始化 Redis bucket 工厂
+        Initialize the Redis bucket factory
 
-        :param rates: pyrate_limiter Rate 对象列表
-        :param bucket_key: Redis key 前缀
-        :param max_cache_size: 本地 bucket 缓存最大数量
+        :param rates: pyrate_limiter Rate object list
+        :param bucket_key: Redis key prefix
+        :param max_cache_size: Maximum number of locally cached buckets
         :return:
         """
         self.rates = rates
@@ -94,19 +94,19 @@ class RedisBucketFactory(BucketFactory):
 
     async def wrap_item(self, name: str, weight: int = 1) -> RateItem:
         """
-        包装限流项
+        Wrap a rate-limit item
 
-        :param name: 限流标识符
-        :param weight: 请求权重
+        :param name: Rate-limit identifier
+        :param weight: Request weight
         :return:
         """
         return RateItem(name, await _redis_time_ms(redis_client), weight=weight)
 
     async def get(self, item: RateItem) -> RedisBucket:
         """
-        获取标识符对应的 Redis bucket
+        Get the Redis bucket for the identifier
 
-        :param item: 限流项
+        :param item: rate-limit item
         :return:
         """
         bucket_key = self._bucket_key(item.name)
@@ -132,18 +132,18 @@ class RedisBucketFactory(BucketFactory):
 
     async def get_bucket(self, name: str) -> RedisBucket:
         """
-        获取标识符对应的 Redis bucket
+        Get the Redis bucket for the identifier
 
-        :param name: 限流标识符
+        :param name: Rate-limit identifier
         :return:
         """
         return await self.get(await self.wrap_item(name))
 
     async def _evict(self, now: int) -> None:
         """
-        淘汰本地 bucket 缓存
+        Evict the local bucket cache
 
-        :param now: 当前时间戳，单位毫秒
+        :param now: Current timestamp in milliseconds
         :return:
         """
         for bucket_key, state in list(self.buckets.items()):
@@ -157,12 +157,12 @@ class RedisBucketFactory(BucketFactory):
 
     async def _dispose(self, bucket_key: str, state: RedisBucketState, now: int, *, cleanup: bool) -> None:
         """
-        移除本地 bucket 并按需清理 Redis 过期数据
+        Remove the local bucket and optionally clean expired Redis data
 
         :param bucket_key: Redis bucket key
-        :param state: Redis bucket 缓存状态
-        :param now: 当前时间戳，单位毫秒
-        :param cleanup: 是否执行 Redis 过期数据清理
+        :param state: Cached Redis bucket state
+        :param now: Current timestamp in milliseconds
+        :param cleanup: Whether to clean expired Redis data
         :return:
         """
         self.buckets.pop(bucket_key, None)
@@ -174,9 +174,9 @@ class RedisBucketFactory(BucketFactory):
 
     def _bucket_key(self, name: str) -> str:
         """
-        生成标识符对应的 Redis bucket key
+        Generate the Redis bucket key for an identifier
 
-        :param name: 限流标识符
+        :param name: Rate-limit identifier
         :return:
         """
         digest = sha256(name.encode()).hexdigest()
@@ -185,9 +185,9 @@ class RedisBucketFactory(BucketFactory):
     @staticmethod
     def _rate_key(rates: list[Rate]) -> str:
         """
-        生成限流策略对应的 Redis key 片段
+        Generate the Redis key fragment for a rate-limit policy
 
-        :param rates: pyrate_limiter Rate 对象列表
+        :param rates: pyrate_limiter Rate object list
         :return:
         """
         value = ':'.join(f'{rate.limit}:{rate.interval}' for rate in sorted(rates, key=lambda rate: rate.interval))
@@ -196,10 +196,10 @@ class RedisBucketFactory(BucketFactory):
 
 def default_identifier(request: Request) -> str:
     """
-   default identifier
+    default identifier
 
-    :param request: FastAPI request object
-    :return:
+     :param request: FastAPI request object
+     :return:
     """
     ip = get_request_ip(request)
     return f'{ip}:{request.scope["path"]}'

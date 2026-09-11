@@ -41,7 +41,7 @@ async def get_github_oauth2_url() -> ResponseSchemaModel[str]:
     description='After Github authorization, it will automatically redirect to the current address and obtain user information, and automatically create system users through user information',
     dependencies=[Depends(RateLimiter(Rate(5, Duration.MINUTE)))],
 )
-async def github_oauth2_callback(  # noqa: ANN201
+async def github_oauth2_callback(  # ruff:ignore[missing-return-type-undocumented-public-function]
     db: CurrentSessionTransaction,
     response: Response,
     background_tasks: BackgroundTasks,

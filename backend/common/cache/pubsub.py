@@ -15,10 +15,10 @@ class CachePubSubManager:
     @staticmethod
     async def publish_invalidation(cache_key: str, *, delete_by_prefix: bool) -> None:
         """
-        Publish cache failure notifications
+        Publish a cache invalidation notification
 
         :param cache_key: Cache key
-        :param delete_by_prefix: Whether to delete all caches that match the prefix
+        :param delete_by_prefix: Whether to delete all caches matching the prefix
         :return:
         """
         try:
@@ -28,7 +28,7 @@ class CachePubSubManager:
             log.warning(f'[CachePubSub] Publishing notifications failed: {e}')
 
     @staticmethod
-    async def subscribe_and_listen() -> None:  # noqa: C901
+    async def subscribe_and_listen() -> None:  # ruff:ignore[complex-structure]
         """Subscribe and listen to cache failure notifications"""
         reconnect_attempts = 0
 

@@ -88,9 +88,11 @@ class SnowflakeNodeManager:
                 await asyncio.sleep(settings.SNOWFLAKE_HEARTBEAT_INTERVAL_SECONDS)
                 try:
                     await redis_client.expire(key, settings.SNOWFLAKE_NODE_TTL_SECONDS)
-                    log.debug(f'Snowflake algorithm node heartbeat task starts：datacenter_id={datacenter_id}, worker_id={worker_id}')
+                    log.debug(
+                        f'Snowflake algorithm node heartbeat task starts:datacenter_id={datacenter_id}, worker_id={worker_id}'
+                    )
                 except Exception as e:
-                    log.error(f'Snowflake algorithm node heartbeat task fails：{e}')
+                    log.error(f'Snowflake algorithm node heartbeat task fails:{e}')
 
         self._heartbeat_task = asyncio.create_task(heartbeat())
 
@@ -101,7 +103,9 @@ class SnowflakeNodeManager:
             try:
                 await self._heartbeat_task
             except asyncio.CancelledError:
-                log.debug(f'Snowflake algorithm node heartbeat task release：datacenter_id={self.datacenter_id}, worker_id={self.worker_id}')
+                log.debug(
+                    f'Snowflake algorithm node heartbeat task release:datacenter_id={self.datacenter_id}, worker_id={self.worker_id}'
+                )
 
         if self.datacenter_id is not None and self.worker_id is not None:
             key = f'{self.node_redis_prefix}:{self.datacenter_id}:{self.worker_id}'
@@ -134,13 +138,17 @@ class Snowflake:
                 self.datacenter_id = settings.SNOWFLAKE_DATACENTER_ID
                 self.worker_id = settings.SNOWFLAKE_WORKER_ID
                 log.debug(
-                    f'Snowflake algorithm uses environment variables to fix nodes：datacenter_id={self.datacenter_id}, worker_id={self.worker_id}'
+                    f'Snowflake algorithm uses environment variables to fix nodes:datacenter_id={self.datacenter_id}, worker_id={self.worker_id}'
                 )
             elif (settings.SNOWFLAKE_DATACENTER_ID is not None and settings.SNOWFLAKE_WORKER_ID is None) or (
                 settings.SNOWFLAKE_DATACENTER_ID is None and settings.SNOWFLAKE_WORKER_ID is not None
             ):
-                log.error('Snowflake algorithm datacenter_id and worker_id are configured incorrectly, only allowing both non-None or both to be None')
-                raise errors.ServerError(msg='Snowflake algorithm configuration failed, please contact the system administrator')
+                log.error(
+                    'Snowflake algorithm datacenter_id and worker_id are configured incorrectly, only allowing both non-None or both to be None'
+                )
+                raise errors.ServerError(
+                    msg='Snowflake algorithm configuration failed, please contact the system administrator'
+                )
             else:
                 # Redis dynamic allocation
                 self._node_manager = SnowflakeNodeManager()
@@ -148,16 +156,24 @@ class Snowflake:
                 self._auto_allocated = True
                 await self._node_manager.start_heartbeat(self.datacenter_id, self.worker_id)
                 log.debug(
-                    f'Snowflake algorithm uses Redis to dynamically allocate nodes：datacenter_id={self.datacenter_id}, worker_id={self.worker_id}'
+                    f'Snowflake algorithm uses Redis to dynamically allocate nodes:datacenter_id={self.datacenter_id}, worker_id={self.worker_id}'
                 )
 
             # Strict verification range
             if not (0 <= self.datacenter_id <= SnowflakeConfig.MAX_DATACENTER_ID):
-                log.error(f'Snowflake algorithm datacenter_id configuration failed, must be between 0~{SnowflakeConfig.MAX_DATACENTER_ID}')
-                raise errors.ServerError(msg='Snowflake algorithm data center configuration failed, please contact the system administrator')
+                log.error(
+                    f'Snowflake algorithm datacenter_id configuration failed, must be between 0~{SnowflakeConfig.MAX_DATACENTER_ID}'
+                )
+                raise errors.ServerError(
+                    msg='Snowflake algorithm data center configuration failed, please contact the system administrator'
+                )
             if not (0 <= self.worker_id <= SnowflakeConfig.MAX_WORKER_ID):
-                log.error(f'Snowflake algorithm worker_id configuration failed, must be between 0~{SnowflakeConfig.MAX_WORKER_ID}')
-                raise errors.ServerError(msg='Snowflake algorithm working machine configuration failed, please contact the system administrator')
+                log.error(
+                    f'Snowflake algorithm worker_id configuration failed, must be between 0~{SnowflakeConfig.MAX_WORKER_ID}'
+                )
+                raise errors.ServerError(
+                    msg='Snowflake algorithm working machine configuration failed, please contact the system administrator'
+                )
 
             self._initialized = True
 
@@ -193,7 +209,9 @@ class Snowflake:
                     log.warning(f'Detected clock rollback {back_ms} ms, waiting for recovery...')
                     timestamp = self._till_next_ms(self.last_timestamp)
                 else:
-                    raise errors.ServerError(msg=f'Snowflake ID generation failed, the clock is set back more than {back_ms} ms, please contact the system administrator immediately')
+                    raise errors.ServerError(
+                        msg=f'Snowflake ID generation failed, the clock is set back more than {back_ms} ms, please contact the system administrator immediately'
+                    )
 
             # The sequence number is incremented within the same millisecond.
             if timestamp == self.last_timestamp:

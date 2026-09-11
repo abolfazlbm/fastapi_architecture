@@ -31,8 +31,12 @@ class TaskScheduler(Base):
     queue: Mapped[str | None] = mapped_column(sa.String(256), comment='Queue defined in CELERY_TASK_QUEUES')
     exchange: Mapped[str | None] = mapped_column(sa.String(256), comment='Exchange for low-level AMQP routing')
     routing_key: Mapped[str | None] = mapped_column(sa.String(256), comment='Routing key for low-level AMQP routing')
-    start_time: Mapped[datetime | None] = mapped_column(TimeZone, comment='The time when the task started to be triggered')
-    expire_time: Mapped[datetime | None] = mapped_column(TimeZone, comment='Deadline time when the task is no longer triggered')
+    start_time: Mapped[datetime | None] = mapped_column(
+        TimeZone, comment='The time when the task started to be triggered'
+    )
+    expire_time: Mapped[datetime | None] = mapped_column(
+        TimeZone, comment='Deadline time when the task is no longer triggered'
+    )
     expire_seconds: Mapped[int | None] = mapped_column(comment='The number of seconds the task will no longer trigger')
     type: Mapped[int] = mapped_column(comment='Scheduling type (0 interval 1 timing)')
     interval_every: Mapped[int | None] = mapped_column(comment='Number of intervals before the task runs again')
@@ -41,18 +45,20 @@ class TaskScheduler(Base):
     one_off: Mapped[bool] = mapped_column(default=False, comment='Whether to run only once')
     enabled: Mapped[bool] = mapped_column(default=True, comment='Whether to enable the task')
     total_run_count: Mapped[int] = mapped_column(default=0, comment='Total number of task triggers')
-    last_run_time: Mapped[datetime | None] = mapped_column(TimeZone, default=None, comment='The last time the task was triggered')
+    last_run_time: Mapped[datetime | None] = mapped_column(
+        TimeZone, default=None, comment='The last time the task was triggered'
+    )
     remark: Mapped[str | None] = mapped_column(UniversalText, default=None, comment='Remark')
 
     no_changes: bool = False
 
     @staticmethod
-    def before_insert_or_update(mapper, connection, target) -> None:  # noqa: ANN001
+    def before_insert_or_update(mapper, connection, target) -> None:  # ruff:ignore[missing-type-function-argument]
         if target.expire_seconds is not None and target.expire_time:
             raise errors.ConflictError(msg='expires and expire_seconds can only be set to one')
 
     @classmethod
-    def changed(cls, mapper, connection, target) -> None:  # noqa: ANN001
+    def changed(cls, mapper, connection, target) -> None:  # ruff:ignore[missing-type-function-argument]
         if not target.no_changes:
             cls.update_changed(mapper, connection, target)
 
@@ -62,7 +68,7 @@ class TaskScheduler(Base):
         await redis_client.set(f'{settings.CELERY_REDIS_PREFIX}:last_update', timezone.to_str(now))
 
     @classmethod
-    def update_changed(cls, mapper, connection, target) -> None:  # noqa: ANN001
+    def update_changed(cls, mapper, connection, target) -> None:  # ruff:ignore[missing-type-function-argument]
         asyncio.create_task(cls.update_changed_async())
 
 

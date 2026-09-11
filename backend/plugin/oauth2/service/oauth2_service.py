@@ -66,7 +66,7 @@ class OAuth2Service:
             if email:
                 sys_user = await user_dao.check_email(db, email)
 
-            #Create system user
+            # Create system user
             if not sys_user:
                 base_username = username or text_captcha(5)
                 username_candidates = [base_username, *[f'{base_username}_{text_captcha(5)}' for _ in range(10)]]
@@ -77,7 +77,7 @@ class OAuth2Service:
                     None,
                 )
                 if username is None:
-                    raise errors.ConflictError(msg='用户名已存在，请重试')
+                    raise errors.ConflictError(msg='Username already exists; retry')
                 new_sys_user = AddOAuth2UserParam(
                     username=username,
                     password=None,
@@ -93,7 +93,7 @@ class OAuth2Service:
             new_user_social = CreateUserSocialParam(sid=sid, source=source.value, user_id=sys_user.id)
             await user_social_dao.create(db, new_user_social)
 
-        #Create token
+        # Create token
         access_token_data = await jwt.create_access_token(
             sys_user.id,
             multi_login=sys_user.is_multi_login,

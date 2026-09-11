@@ -21,16 +21,16 @@ from backend.utils.dynamic_import import get_model_objects
 
 def check_plugin_installed(plugin_name: str) -> bool:
     """
-    检查插件是否已安装
+    Check whether a plugin is installed
 
-    :param plugin_name: 插件名称
+    :param plugin_name: Plugin Name
     :return:
     """
     return (PLUGIN_DIR / plugin_name / '__init__.py').exists()
 
 
 def get_required_plugins() -> tuple[str, ...]:
-    """获取必需插件列表"""
+    """Get the required plugin list"""
     required_plugins = list(settings.PLUGIN_REQUIRED)
     if not settings.RBAC_ROLE_MENU_MODE and 'casbin_rbac' not in required_plugins:
         required_plugins.append('casbin_rbac')
@@ -38,11 +38,13 @@ def get_required_plugins() -> tuple[str, ...]:
 
 
 def check_required_plugins() -> None:
-    """检查必需插件"""
+    """Check required plugins"""
     required_plugins = get_required_plugins()
     missing_plugins = [name for name in required_plugins if not check_plugin_installed(name)]
     if missing_plugins:
-        raise PluginInjectError(f'当前系统缺少以下插件: {", ".join(missing_plugins)}，请先安装对应插件')
+        raise PluginInjectError(
+            f'The following required plugins are missing: {", ".join(missing_plugins)}. Install them before continuing.'
+        )
 
 
 @lru_cache(maxsize=128)
@@ -50,7 +52,7 @@ def get_plugins() -> tuple[str, ...]:
     """Get plugin list"""
     plugin_packages = []
 
-    #Travel the plugin directory
+    # Travel the plugin directory
     for item in os.listdir(PLUGIN_DIR):
         item_path = PLUGIN_DIR / item
         if not os.path.isdir(item_path) and item == '__pycache__':
@@ -96,7 +98,9 @@ def load_plugin_config(plugin: str) -> dict[str, Any]:
     """
     toml_path = PLUGIN_DIR / plugin / 'plugin.toml'
     if not os.path.exists(toml_path):
-        raise PluginInjectError(f'Plugin {plugin} is missing plugin.toml configuration file, please check if the plugin is legal')
+        raise PluginInjectError(
+            f'Plugin {plugin} is missing plugin.toml configuration file, please check if the plugin is legal'
+        )
 
     with open(toml_path, encoding='utf-8') as f:
         return rtoml.load(f)
@@ -124,24 +128,29 @@ def parse_plugin_config() -> tuple[list[PluginEntry], list[PluginEntry]]:
             plugin_config = load_plugin_config(plugin)
             plugin_type = validate_plugin_config(plugin, plugin_config)
 
-            # 补充插件信息
+            # Complete plugin information
             plugin_config['plugin']['name'] = plugin
             plugin_cache_key = f'{settings.PLUGIN_REDIS_PREFIX}:{plugin}'
             plugin_cache_info = run_await(current_redis_client.get)(plugin_cache_key)
             plugin_config['plugin']['enable'] = get_plugin_enable(plugin_cache_info, StatusType.enable.value)
 
-            plugin_entry = PluginEntry(
-                name=plugin,
-                depends_on=plugin_config['plugin'].get('depends_on'),
-                extend=plugin_config['app']['extend'] if plugin_type == PluginLevelType.extend else None,
-                routers=plugin_config['app']['router'] if plugin_type == PluginLevelType.app else None,
-                api=plugin_config['api'] if plugin_type == PluginLevelType.extend else None,
-            )
-
             if plugin_type == PluginLevelType.extend:
-                extend_plugins.append(plugin_entry)
-            else:
-                app_plugins.append(plugin_entry)
+                extend_plugins.append(
+                    PluginEntry(
+                        name=plugin,
+                        depends_on=plugin_config['plugin'].get('depends_on'),
+                        extend=plugin_config['app']['extend'],
+                        api=plugin_config['api'],
+                    )
+                )
+            elif plugin_type == PluginLevelType.app:
+                app_plugins.append(
+                    PluginEntry(
+                        name=plugin,
+                        depends_on=plugin_config['plugin'].get('depends_on'),
+                        routers=plugin_config['app']['router'],
+                    )
+                )
 
             # Cache the latest plug-in information
             run_await(current_redis_client.set)(plugin_cache_key, json.dumps(plugin_config, ensure_ascii=False))
@@ -179,7 +188,9 @@ def resolve_plugin_order(plugins: list[PluginEntry]) -> list[PluginEntry]:
             for dep_name in plugin.depends_on:
                 dep_plugin = plugin_map.get(dep_name)
                 if dep_plugin is None:
-                    raise PluginConfigError(f'Plugin {plugin.name} depends on plugin {dep_name}, but plugin {dep_name} does not exist')
+                    raise PluginConfigError(
+                        f'Plugin {plugin.name} depends on plugin {dep_name}, but plugin {dep_name} does not exist'
+                    )
                 visit(dep_plugin)
             visiting.pop()
 

@@ -28,11 +28,15 @@ class User(Base):
     email: Mapped[str | None] = mapped_column(sa.String(256), default=None, index=True, comment='Email')
     phone: Mapped[str | None] = mapped_column(sa.String(11), default=None, comment='Phone Number')
     avatar: Mapped[str | None] = mapped_column(sa.String(256), default=None, comment='Avatar')
-    status: Mapped[int] = mapped_column(default=1, index=True, comment='User account status (0 is disabled, 1 is normal)')
+    status: Mapped[int] = mapped_column(
+        default=1, index=True, comment='User account status (0 is disabled, 1 is normal)'
+    )
     is_superuser: Mapped[bool] = mapped_column(default=False, comment='Super permission (0 No 1 Yes)')
     is_staff: Mapped[bool] = mapped_column(default=False, comment='Backend management login (0 No 1 Yes)')
     is_multi_login: Mapped[bool] = mapped_column(default=False, comment='Whether to log in repeatedly (0 No 1 Yes)')
-    join_time: Mapped[datetime] = mapped_column(TimeZone, init=False, default_factory=timezone.now, comment='Register time')
+    join_time: Mapped[datetime] = mapped_column(
+        TimeZone, init=False, default_factory=timezone.now, comment='Register time'
+    )
     last_login_time: Mapped[datetime | None] = mapped_column(
         TimeZone, init=False, onupdate=timezone.now, comment='Last login time'
     )

@@ -63,7 +63,7 @@ async def _validation_exception_handler(exc: RequestValidationError | Validation
         error_input = error.get('input')
         field = str(error.get('loc')[-1])
         error_msg = error.get('msg')
-        message = f'{field} {error_msg}，Entry：{error_input}' if settings.ENVIRONMENT == 'dev' else error_msg
+        message = f'{field} {error_msg},Entry:{error_input}' if settings.ENVIRONMENT == 'dev' else error_msg
     msg = f'Illegal request parameters: {message}'
     data = {'errors': errors} if settings.ENVIRONMENT == 'dev' else None
     content = {
@@ -76,7 +76,7 @@ async def _validation_exception_handler(exc: RequestValidationError | Validation
     return MsgSpecJSONResponse(status_code=StandardResponseCode.HTTP_422, content=content)
 
 
-def register_exception(app: FastAPI) -> None:  # noqa: C901
+def register_exception(app: FastAPI) -> None:  # ruff:ignore[complex-structure]
     @app.exception_handler(HTTPException)
     async def http_exception_handler(request: Request, exc: HTTPException):
         """

@@ -205,13 +205,19 @@ async def get_current_user(db: AsyncSession, pk: int) -> User:
     if not user.status:
         raise errors.AuthorizationError(msg='The user has been locked, please contact the system administrator')
     if user.dept_id and not user.dept:
-        raise errors.AuthorizationError(msg='The department to which the user belongs does not exist or has been deleted, please contact the system administrator')
+        raise errors.AuthorizationError(
+            msg='The department to which the user belongs does not exist or has been deleted, please contact the system administrator'
+        )
     if user.dept and not user.dept.status:
-        raise errors.AuthorizationError(msg='The department to which the user belongs has been locked, please contact the system administrator')
+        raise errors.AuthorizationError(
+            msg='The department to which the user belongs has been locked, please contact the system administrator'
+        )
     if user.roles:
         role_status = [role.status for role in user.roles]
         if all(status == 0 for status in role_status):
-            raise errors.AuthorizationError(msg="The user's role has been locked, please contact the system administrator")
+            raise errors.AuthorizationError(
+                msg="The user's role has been locked, please contact the system administrator"
+            )
     return user
 
 
@@ -255,7 +261,9 @@ async def jwt_authentication(token: str) -> GetUserInfoWithRelationDetail:
     if token != redis_token:
         raise errors.TokenError(msg='Token have expired')
 
-    return await get_jwt_user(ctx.user_id)
+    user = await get_jwt_user(ctx.user_id)
+    ctx.is_superuser = user.is_superuser
+    return user
 
 
 def jwt_authentication_verify(
@@ -276,7 +284,7 @@ def jwt_authentication_verify(
     return token.credentials
 
 
-# JWT 依赖注入
+# JWT dependency injection
 DependsJwtAuth = Depends(jwt_authentication_verify)
 
 

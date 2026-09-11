@@ -4,7 +4,7 @@ from backend.common.schema import SchemaBase
 from backend.plugin.code_generator.utils.type_conversion import sql_type_to_sqlalchemy
 
 
-class GenColumnSchemaBase(SchemaBase):
+class CodeGenColumnSchemaBase(SchemaBase):
     """Code generation model basic model"""
 
     name: str = Field(description='column name')
@@ -15,7 +15,7 @@ class GenColumnSchemaBase(SchemaBase):
     length: int = Field(description='column length')
     is_pk: bool = Field(False, description='Is it the primary key')
     is_nullable: bool = Field(False, description='Can it be null')
-    gen_business_id: int = Field(description='Code generation business ID')
+    code_gen_business_id: int = Field(description='Code generation business ID')
 
     @field_validator('type')
     @classmethod
@@ -24,21 +24,21 @@ class GenColumnSchemaBase(SchemaBase):
         return sql_type_to_sqlalchemy(v)
 
 
-class CreateGenColumnParam(GenColumnSchemaBase):
+class CreateCodeGenColumnParam(CodeGenColumnSchemaBase):
     """Create code generation model column parameters"""
 
 
-class CreateGenColumnInternalParam(CreateGenColumnParam):
-    """创建代码生成模型列内部参数"""
+class CreateCodeGenColumnInternalParam(CreateCodeGenColumnParam):
+    """Internal parameters for creating code-generation model columns"""
 
-    pd_type: str | None = Field(None, description='列类型对应的 pydantic 类型')
+    pd_type: str | None = Field(None, description='The pydantic type corresponding to the column type')
 
 
-class UpdateGenColumnParam(GenColumnSchemaBase):
+class UpdateCodeGenColumnParam(CodeGenColumnSchemaBase):
     """Update code generation model column parameters"""
 
 
-class GetGenColumnDetail(GenColumnSchemaBase):
+class GetCodeGenColumnDetail(CodeGenColumnSchemaBase):
     """Get code generation model column details"""
 
     model_config = ConfigDict(from_attributes=True)

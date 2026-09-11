@@ -46,11 +46,11 @@ async def get_location_online(ip: str) -> dict | None:
     """
     async with httpx.AsyncClient(timeout=3) as client:
         try:
-            response = await client.get(f'http://ip-api.com/json/{ip}?lang=zh-CN')
+            response = await client.get(f'http://ip-api.com/json/{ip}?lang=en')
             if response.status_code == 200:
                 return response.json()
         except Exception as e:
-            log.error(f'Failed to obtain IP address locality online, error message：{e}')
+            log.error(f'Failed to obtain IP address locality online, error message:{e}')
             return None
 
 

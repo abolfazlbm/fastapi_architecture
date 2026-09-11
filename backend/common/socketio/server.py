@@ -42,7 +42,9 @@ async def connect(sid, environ, auth) -> bool:
     # No authorization direct connection
     if token == settings.WS_NO_AUTH_MARKER:
         if settings.ENVIRONMENT == 'prod':
-            log.error('WebSocket Connection failed: Authorization-free direct connection is prohibited in the production environment')
+            log.error(
+                'WebSocket Connection failed: Authorization-free direct connection is prohibited in the production environment'
+            )
             return False
         await redis_client.set(f'{settings.TOKEN_ONLINE_REDIS_PREFIX}:sid:{sid}', session_uuid)
         await redis_client.sadd(f'{settings.TOKEN_ONLINE_REDIS_PREFIX}:session:{session_uuid}', sid)

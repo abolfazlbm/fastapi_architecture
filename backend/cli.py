@@ -95,7 +95,7 @@ def setup_env_file() -> bool:
         db_host = Prompt.ask('database host', default='127.0.0.1')
         db_port = Prompt.ask('database port', default='5432' if db_type == 'postgresql' else '3306')
         db_user = Prompt.ask('database username', default='postgres' if db_type == 'postgresql' else 'root')
-        db_password = Prompt.ask('database password', password=True, default='123456')
+        db_password = Prompt.ask('database password', password=True, default='CHANGE_ME')
 
         console.note('Configure Redis connection information...')
         redis_host = Prompt.ask('Redis host', default='127.0.0.1')
@@ -115,7 +115,7 @@ def setup_env_file() -> bool:
         settings.DATABASE_PORT = db_port
         env_content = env_content.replace("DATABASE_USER='postgres'", f"DATABASE_USER='{db_user}'")
         settings.DATABASE_USER = db_user
-        env_content = env_content.replace("DATABASE_PASSWORD='123456'", f"DATABASE_PASSWORD='{db_password}'")
+        env_content = env_content.replace("DATABASE_PASSWORD='CHANGE_ME'", f"DATABASE_PASSWORD='{db_password}'")
         settings.DATABASE_PASSWORD = db_password
         env_content = env_content.replace("REDIS_HOST='127.0.0.1'", f"REDIS_HOST='{redis_host}'")
         settings.REDIS_HOST = redis_host
@@ -197,7 +197,9 @@ async def auto_init() -> None:
     panel_content.append('\n • Redis connection information')
     panel_content.append('\n • Token key (automatically generated)')
 
-    console.print(Panel(panel_content, title=f'fba (v{__version__}) - environment variable', border_style='cyan', padding=(1, 2)))
+    console.print(
+        Panel(panel_content, title=f'fba (v{__version__}) - environment variable', border_style='cyan', padding=(1, 2))
+    )
     if not setup_env_file():
         raise cappa.Exit('.env file configuration failed', code=1)
 
@@ -205,7 +207,11 @@ async def auto_init() -> None:
     panel_content = _build_db_config_panel_content()
 
     console.print(Panel(panel_content, title=f'fba (v{__version__}) - database', border_style='cyan', padding=(1, 2)))
-    ok = Prompt.ask('The database will be created/rebuilt soon[red][/red], are you sure to continue?', choices=['y', 'n'], default='n')
+    ok = Prompt.ask(
+        'The database will be created/rebuilt soon[red][/red], are you sure to continue?',
+        choices=['y', 'n'],
+        default='n',
+    )
 
     if ok.lower() == 'y':
         async_init_engine = create_database_async_engine(get_database_url(with_database=False))
@@ -234,16 +240,16 @@ async def init(db: AsyncSession, redis: RedisCli) -> None:
     """Interactively initialize database table structure and data"""
     panel_content = _build_db_config_panel_content()
     pk_details = panel_content.from_markup(
-        '[link=https://fastapi-practices.github.io/fastapi_best_architecture_docs/backend/reference/pk.html]（LearnMore）[/]'
+        '[link=https://fastapi-practices.github.io/fastapi_best_architecture_docs/backend/reference/pk.html](LearnMore)[/]'
     )
     panel_content.append(pk_details)
-    panel_content.append('\n\n【Redis deploy】', style='bold green')
-    panel_content.append('\n\n  • host：')
+    panel_content.append('\n\n[Redis deploy]', style='bold green')
+    panel_content.append('\n\n  • host:')
     panel_content.append(f'{settings.REDIS_HOST}:{settings.REDIS_PORT}', style='yellow')
-    panel_content.append('\n  • database：')
+    panel_content.append('\n • Database:')
     panel_content.append(f'{settings.REDIS_DATABASE}', style='yellow')
     plugins = get_plugins()
-    panel_content.append('\n\n【Plugin Installed】', style='bold green')
+    panel_content.append('\n\n[Plugin Installed]', style='bold green')
     panel_content.append('\n\n  • ')
     if plugins:
         panel_content.append(f'{", ".join(plugins)}', style='yellow')
@@ -252,7 +258,9 @@ async def init(db: AsyncSession, redis: RedisCli) -> None:
 
     console.print(Panel(panel_content, title=f'fba (v{__version__}) - initialize', border_style='cyan', padding=(1, 2)))
     ok = Prompt.ask(
-        'We are about to [red]create/rebuild database tables[/red] and [red]execute all database scripts[/red]. Are you sure to continue? ', choices=['y', 'n'], default='n'
+        'We are about to [red]create/rebuild database tables[/red] and [red]execute all database scripts[/red]. Are you sure to continue? ',
+        choices=['y', 'n'],
+        default='n',
     )
 
     if ok.lower() == 'y':
@@ -285,7 +293,7 @@ async def init(db: AsyncSession, redis: RedisCli) -> None:
         console.warning('Initialization operation canceled')
 
 
-def run(host: str, port: int, reload: bool, workers: int) -> None:  # noqa: FBT001
+def run(host: str, port: int, reload: bool, workers: int) -> None:  # ruff:ignore[boolean-type-hint-positional-argument]
     """Start API service"""
     url = f'http://{host}:{port}'
     docs_url = url + settings.FASTAPI_DOCS_URL
@@ -293,22 +301,22 @@ def run(host: str, port: int, reload: bool, workers: int) -> None:  # noqa: FBT0
     openapi_url = url + (settings.FASTAPI_OPENAPI_URL or '')
 
     panel_content = Text()
-    panel_content.append('Python version：', style='bold cyan')
+    panel_content.append('Python version:', style='bold cyan')
     panel_content.append(f'{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}', style='white')
 
     panel_content.append('\nAPI RequestAddress: ', style='bold cyan')
     panel_content.append(f'{url}{settings.FASTAPI_API_V1_PATH}', style='blue')
 
-    panel_content.append('\n\nambient mode：', style='bold green')
+    panel_content.append('\n\nambient mode:', style='bold green')
     env_style = 'yellow' if settings.ENVIRONMENT == 'dev' else 'green'
     panel_content.append(f'{settings.ENVIRONMENT.upper()}', style=env_style)
 
     plugins = get_plugins()
-    panel_content.append('\nPlugin installed：', style='bold green')
+    panel_content.append('\nPlugin installed:', style='bold green')
     if plugins:
         panel_content.append(f'{", ".join(plugins)}', style='yellow')
     else:
-        panel_content.append('No', style='white')
+        panel_content.append('no', style='white')
 
     if settings.ENVIRONMENT == 'dev':
         panel_content.append(f'\n\n📖 Swagger Document: {docs_url}', style='bold magenta')
@@ -316,7 +324,10 @@ def run(host: str, port: int, reload: bool, workers: int) -> None:  # noqa: FBT0
         panel_content.append(f'\n📡 OpenAPI JSON: {openapi_url}', style='bold magenta')
 
     panel_content.append('\n🌐 Architecture official documentation: ', style='bold magenta')
-    panel_content.append('#')
+    panel_content.append('https://docs.fba.wu-clan.cc/fastapi_best_architecture_docs/')
+
+    panel_content.append('\n\nSponsors:', style='bold yellow')
+    panel_content.append('Claude.uy', style='link https://claude.uy/home')
 
     console.print(Panel(panel_content, title=f'fba (v{__version__})', border_style='purple', padding=(1, 2)))
     granian.Granian(
@@ -361,11 +372,11 @@ def run_celery_flower(port: int, basic_auth: str) -> None:
         pass
 
 
-async def install_plugin(  # noqa: C901
+async def install_plugin(  # ruff:ignore[complex-structure]
     path: str | None,
     repo_url: str | None,
-    frontend: bool,  # noqa: FBT001
-    no_sql: bool,  # noqa: FBT001
+    frontend: bool,  # ruff:ignore[boolean-type-hint-positional-argument]
+    no_sql: bool,  # ruff:ignore[boolean-type-hint-positional-argument]
     db_type: DataBaseType,
     pk_type: PrimaryKeyType,
 ) -> None:
@@ -415,7 +426,9 @@ async def install_plugin(  # noqa: C901
                 async with async_db_session.begin() as db:
                     await execute_sql_scripts(db, sql_file)
             else:
-                console.warning(f'Plugin {plugin_name} does not provide an initialization SQL script and skips database initialization.')
+                console.warning(
+                    f'Plugin {plugin_name} does not provide an initialization SQL script and skips database initialization.'
+                )
 
     except Exception as e:
         raise cappa.Exit(e.msg if isinstance(e, BaseExceptionError) else str(e), code=1)
@@ -453,7 +466,11 @@ async def sync_plugin_deps(plugin: str | None = None) -> None:
         await install_requirements_async(plugin)
     except Exception as e:
         raise cappa.Exit(e.msg if isinstance(e, BaseExceptionError) else str(e), code=1)
-    console.tip(f'plugin {plugin} dependency installation is completed' if plugin else 'all plug-in dependency installation is completed')
+    console.tip(
+        f'plugin {plugin} dependency installation is completed'
+        if plugin
+        else 'all plug-in dependency installation is completed'
+    )
 
 
 async def sync_deps(plugin: str | None, *, no_project: bool = False, no_plugin: bool = False) -> None:
@@ -470,7 +487,7 @@ async def sync_deps(plugin: str | None, *, no_project: bool = False, no_plugin: 
         await sync_plugin_deps(plugin)
 
 
-async def remove_plugin(plugin: str | None, *, no_sql: bool = False) -> None:  # noqa: C901
+async def remove_plugin(plugin: str | None, *, no_sql: bool = False) -> None:  # ruff:ignore[complex-structure]
     """Uninstall plugin"""
     if settings.ENVIRONMENT != 'dev':
         raise cappa.Exit('Plug-in uninstallation is only available in development environment', code=1)
@@ -478,7 +495,7 @@ async def remove_plugin(plugin: str | None, *, no_sql: bool = False) -> None:  #
     async def remove() -> None:
         plugin_dir = PLUGIN_DIR / plugin
         if not plugin_dir.exists():
-            raise cappa.Exit(f'plugin {plugin} does not exist', code=1)
+            raise cappa.Exit(f'Plugin {plugin} does not exist', code=1)
 
         if not no_sql:
             destroy_sql_file = await get_plugin_destroy_sql(plugin, settings.DATABASE_TYPE, settings.DATABASE_PK_MODE)
@@ -487,7 +504,9 @@ async def remove_plugin(plugin: str | None, *, no_sql: bool = False) -> None:  #
                 async with async_db_session.begin() as db:
                     await execute_destroy_sql_scripts(db, destroy_sql_file)
             else:
-                console.warning(f'Plug-in {plugin} does not provide a destruction SQL script and skips database cleanup')
+                console.warning(
+                    f'Plug-in {plugin} does not provide a destruction SQL script and skips database cleanup'
+                )
 
         console.note(f'Uninstalling plugin {plugin} dependencies...')
         await uninstall_requirements_async(plugin)
@@ -500,7 +519,9 @@ async def remove_plugin(plugin: str | None, *, no_sql: bool = False) -> None:  #
         console.note(f'Backup file: {backup_file}')
         console.tip(f'Plug-in {plugin} was uninstalled successfully')
         console.print()
-        console.warning('Please remove the relevant configuration and restart the service according to the plug-in instructions (README.md)')
+        console.warning(
+            'Please remove the relevant configuration and restart the service according to the plug-in instructions (README.md)'
+        )
 
     plugins = get_plugins()
     if not plugins:
@@ -509,13 +530,15 @@ async def remove_plugin(plugin: str | None, *, no_sql: bool = False) -> None:  #
     if not plugin:
         table = Table(show_header=True, header_style='bold magenta')
         table.add_column('Serial number', style='cyan', no_wrap=True, justify='center')
-        table.add_column('Plugin name', style='green', no_wrap=True)
+        table.add_column('Plugin Name', style='green', no_wrap=True)
 
         for idx, name in enumerate(plugins, 1):
             table.add_row(str(idx), name)
 
         console.print(table)
-        choice = IntPrompt.ask('Please select the plug-in number to be uninstalled', choices=[str(i) for i in range(1, len(plugins) + 1)])
+        choice = IntPrompt.ask(
+            'Please select the plug-in number to be uninstalled', choices=[str(i) for i in range(1, len(plugins) + 1)]
+        )
         plugin = plugins[choice - 1]
     else:
         if plugin not in plugins:
@@ -527,7 +550,7 @@ async def remove_plugin(plugin: str | None, *, no_sql: bool = False) -> None:  #
     try:
         await remove()
     except Exception as e:
-        raise cappa.Exit(f'Plug-in uninstall failed：{e}', code=1)
+        raise cappa.Exit(f'Plug-in uninstall failed:{e}', code=1)
 
 
 async def get_sql_scripts() -> list[str]:
@@ -565,7 +588,7 @@ async def execute_sql_scripts(db: AsyncSession, sql_scripts: str, *, is_init: bo
         for stmt in stmts:
             await conn.exec_driver_sql(stmt)
     except Exception as e:
-        raise cappa.Exit(f'SQL Script execution failed：{e}', code=1)
+        raise cappa.Exit(f'SQL Script execution failed:{e}', code=1)
 
     if not is_init:
         console.tip('SQL script has been executed')
@@ -594,15 +617,17 @@ async def import_table(
         raise cappa.Exit('Code generation is only available in development environments', code=1)
 
     try:
-        from backend.plugin.code_generator.schema.gen import ImportParam
-        from backend.plugin.code_generator.service.gen_service import gen_service
+        from backend.plugin.code_generator.schema.code_gen import ImportParam
+        from backend.plugin.code_generator.service.code_gen_service import code_gen_service
     except ImportError:
-        raise cappa.Exit('Code generation plug-in usage failed to import, please contact the system administrator', code=1)
+        raise cappa.Exit(
+            'Code generation plug-in usage failed to import, please contact the system administrator', code=1
+        )
 
     try:
         obj = ImportParam(app=app, table_schema=table_schema, table_name=table_name)
         async with async_db_session.begin() as db:
-            await gen_service.import_business_and_model(db=db, obj=obj)
+            await code_gen_service.import_business_and_model(db=db, obj=obj)
         console.tip('Code generation business and model columns are imported successfully')
         console.log('\nTry it quickly [bold cyan]fba codegen[/bold cyan] Generate code~')
     except Exception as e:
@@ -615,24 +640,28 @@ async def generate(*, preview: bool = False) -> None:
         raise cappa.Exit('Code generation is only available in development environments', code=1)
 
     try:
-        from backend.plugin.code_generator.service.business_service import gen_business_service
-        from backend.plugin.code_generator.service.gen_service import gen_service
+        from backend.plugin.code_generator.service.business_service import code_gen_business_service
+        from backend.plugin.code_generator.service.code_gen_service import code_gen_service
     except ImportError:
-        raise cappa.Exit('Code generation plug-in usage import failed, please contact the system administrator', code=1)
+        raise cappa.Exit(
+            'Code generation plug-in usage failed to import, please contact the system administrator', code=1
+        )
 
     try:
         ids = []
         async with async_db_session() as db:
-            results = await gen_business_service.get_all(db=db)
+            results = await code_gen_business_service.get_all(db=db)
 
         if not results:
-            raise cappa.Exit('[red]No code generation business available! Please import first through the import command！[/]')
+            raise cappa.Exit(
+                '[red]No code generation business available! Please import first through the import command![/]'
+            )
 
         table = Table(show_header=True, header_style='bold magenta')
         table.add_column('Business number', style='cyan', no_wrap=True, justify='center')
         table.add_column('Application name', style='green', no_wrap=True)
         table.add_column('Generate path', style='yellow')
-        table.add_column('Remark', style='blue')
+        table.add_column('Remarks', style='blue')
 
         for result in results:
             ids.append(result.id)
@@ -648,9 +677,9 @@ async def generate(*, preview: bool = False) -> None:
 
         # preview
         async with async_db_session() as db:
-            preview_data = await gen_service.preview(db=db, pk=business)
+            preview_data = await code_gen_service.preview(db=db, pk=business)
 
-        console.print('\n[bold yellow]The following files will be generated：[/]')
+        console.print('\n[bold yellow]The following files will be generated:[/]')
         file_table = Table(show_header=True, header_style='bold cyan')
         file_table.add_column('file path', style='white')
         file_table.add_column('size', style='green', justify='right')
@@ -667,12 +696,14 @@ async def generate(*, preview: bool = False) -> None:
             return
 
         # generate
-        console.print('\n[bold red]Warning: Code generation will write disk files (overwrites), do not use in production environments!!![/]')
+        console.print(
+            '\n[bold red]Warning: Code generation will write disk files (overwrites), do not use in production environments!!![/]'
+        )
         ok = Prompt.ask('\nAre you sure you want to continue generating code?', choices=['y', 'n'], default='n')
 
         if ok.lower() == 'y':
             async with async_db_session.begin() as db:
-                gen_path = await gen_service.generate(db=db, pk=business)
+                gen_path = await code_gen_service.generate(db=db, pk=business)
 
             console.print()
             console.tip('The code has been generated')
@@ -695,7 +726,10 @@ def run_alembic(*args: str) -> None:
 class Init:
     auto: Annotated[
         bool,
-        cappa.Arg(default=False, help='Automated initialization mode: automatically create .env, install dependencies, create database and initialize table structure'),
+        cappa.Arg(
+            default=False,
+            help='Automated initialization mode: automatically create .env, install dependencies, create database and initialize table structure',
+        ),
     ]
 
     async def __call__(self) -> None:
@@ -787,7 +821,10 @@ class Remove:
 class Deps:
     plugin: Annotated[
         str | None,
-        cappa.Arg(default=None, help='Specify the plug-in name, if not specified, all plug-in dependencies will be synchronized'),
+        cappa.Arg(
+            default=None,
+            help='Specify the plug-in name, if not specified, all plug-in dependencies will be synchronized',
+        ),
     ]
     no_project: Annotated[
         bool,
@@ -847,7 +884,7 @@ class Flower:
     ]
     basic_auth: Annotated[
         str,
-        cappa.Arg(default='admin:123456', help='Username and password for page login'),
+        cappa.Arg(default='admin:CHANGE_ME', help='Username and password for page login'),
     ]
 
     def __call__(self) -> None:
@@ -880,12 +917,20 @@ class Import:
         await import_table(self.app, self.table_schema, self.table_name)
 
 
-@cappa.command(name='codegen', help='Code generation (experience the complete functions, please deploy the fba vben front-end project yourself)', default_long=True)
+@cappa.command(
+    name='codegen',
+    help='Code generation (experience the complete functions, please deploy the fba vben front-end project yourself)',
+    default_long=True,
+)
 @dataclass
 class CodeGenerator:
     preview: Annotated[
         bool,
-        cappa.Arg(short='-p', default=False, help='Only previews the files that will be generated, no actual generation operation is performed'),
+        cappa.Arg(
+            short='-p',
+            default=False,
+            help='Only previews the files that will be generated, no actual generation operation is performed',
+        ),
     ]
     subcmd: cappa.Subcommands[Import | None] = None
 
@@ -998,7 +1043,7 @@ class Alembic:
     subcmd: cappa.Subcommands[Revision | Upgrade | Downgrade | Current | History | Heads]
 
 
-@cappa.command(help='一An efficient fba command line interface', default_long=True)
+@cappa.command(help='An efficient fba command-line interface', default_long=True)
 @dataclass
 class FbaCli:
     sql: Annotated[

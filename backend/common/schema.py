@@ -35,7 +35,7 @@ class SchemaBase(BaseModel):
     if PrimaryKeyType.snowflake == settings.DATABASE_PK_MODE:
         from pydantic import field_serializer
 
-        # 详情：https://fastapi-practices.github.io/fastapi_best_architecture_docs/backend/reference/pk.html#%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9
+        # Details:https://fastapi-practices.github.io/fastapi_best_architecture_docs/backend/reference/pk.html#%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9
         @field_serializer('id', check_fields=False)
         def serialize_id(self, value: int) -> str | int:
             if self.model_config.get('from_attributes'):

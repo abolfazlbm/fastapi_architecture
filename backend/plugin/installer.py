@@ -51,7 +51,7 @@ async def _append_env_example(plugin_path: anyio.Path) -> None:
         await f.write(new_content)
 
 
-async def install_zip_plugin(file: UploadFile | str) -> str:  # noqa: C901
+async def install_zip_plugin(file: UploadFile | str) -> str:  # ruff:ignore[complex-structure]
     """
     Install the ZIP plug-in
 
@@ -137,7 +137,9 @@ async def install_git_plugin(repo_url: str) -> str:
     """
     match = is_git_url(repo_url)
     if not match:
-        raise errors.RequestError(msg='The Git warehouse address format is illegal and only supports HTTP/HTTPS protocols')
+        raise errors.RequestError(
+            msg='The Git warehouse address format is illegal and only supports HTTP/HTTPS protocols'
+        )
     repo_name = match.group('repo')
     path = anyio.Path(PLUGIN_DIR / repo_name)
     if await path.exists():
@@ -159,57 +161,62 @@ async def install_git_plugin(repo_url: str) -> str:
 
 async def install_git_frontend_plugin(repo_url: str, frontend_project_root: str) -> str:
     """
-    安装前端 Git 插件
+    Install a frontend Git plugin
 
-    :param repo_url: Git 仓库地址
-    :param frontend_project_root: 前端项目根路径
+    :param repo_url: Git repository URL
+    :param frontend_project_root: Frontend project root
     :return:
     """
     match = is_git_url(repo_url)
     if not match:
-        raise errors.RequestError(msg='Git 仓库地址格式非法，仅支持 HTTP/HTTPS 协议')
+        raise errors.RequestError(
+            msg='The Git warehouse address format is illegal and only supports HTTP/HTTPS protocols'
+        )
 
     if not frontend_project_root.strip():
-        raise errors.RequestError(msg='前端项目根路径不能为空')
+        raise errors.RequestError(msg='Frontend project rootcannot be empty')
 
     frontend_root = await (await anyio.Path(frontend_project_root).expanduser()).resolve()
     if not await frontend_root.exists():
-        raise errors.RequestError(msg='前端项目根路径不存在')
+        raise errors.RequestError(msg='Frontend project rootdoes not exist')
     if not await frontend_root.is_dir():
-        raise errors.RequestError(msg='前端项目根路径非法')
+        raise errors.RequestError(msg='Frontend project rootis invalid')
 
     plugins_dir = frontend_root.joinpath('apps', 'web-antdv-next', 'src', 'plugins')
     if not await plugins_dir.exists() or not await plugins_dir.is_dir():
-        raise errors.RequestError(msg='未检测到前端插件目录，请确认路径下存在 apps/web-antdv-next/src/plugins')
+        raise errors.RequestError(
+            msg='Frontend plugin directory was not found; confirm that apps/web-antdv-next/src/plugins exists under the path'
+        )
 
     repo_name = match.group('repo')
-    plugin_name = repo_name.removesuffix('_ui')
+    # Repository names may use an _ui or -ui suffix; the installation directory omits it
+    plugin_name = repo_name.removesuffix('_ui') if repo_name.endswith('_ui') else repo_name.removesuffix('-ui')
     if not plugin_name:
-        raise errors.RequestError(msg='前端插件仓库名称非法')
+        raise errors.RequestError(msg='Frontend plugin repository name is invalid')
 
     target_path = anyio.Path(plugins_dir / plugin_name)
     if await target_path.exists():
-        raise errors.ConflictError(msg=f'{plugin_name} 前端插件已安装')
+        raise errors.ConflictError(msg=f'{repo_name} Plugin installed')
 
     try:
         await run_in_threadpool(porcelain.clone, repo_url, plugins_dir / plugin_name, checkout=True)
     except Exception as e:
-        log.error(f'前端插件安装失败: {e}')
-        raise errors.ServerError(msg='前端插件安装失败，请稍后重试') from e
+        log.error(f'Plugin installation failed: {e}')
+        raise errors.ServerError(msg='Plugin installation failed; please try again later') from e
 
     return plugin_name
 
 
 def remove_plugin(plugin_dir: os.PathLike) -> None:
     """
-    删除插件
+    Delete a plugin
 
-    :param plugin_dir: 插件目录
+    :param plugin_dir: Plugin Directory
     :return:
     """
     import shutil
 
-    def _on_error(func, path, _exc_info) -> None:  # noqa: ANN001
+    def _on_error(func, path, _exc_info) -> None:  # ruff:ignore[missing-type-function-argument]
         os.chmod(path, stat.S_IWRITE)
         func(path)
 
@@ -218,10 +225,10 @@ def remove_plugin(plugin_dir: os.PathLike) -> None:
 
 def zip_plugin(plugin_dir: os.PathLike, target: os.PathLike | io.BytesIO) -> None:
     """
-    zip 压缩插件
+    zip compress a plugin
 
-    :param plugin_dir: 插件目录
-    :param target: 压缩目标
+    :param plugin_dir: Plugin Directory
+    :param target: compression target
     :return:
     """
     with zipfile.ZipFile(target, 'w') as zf:

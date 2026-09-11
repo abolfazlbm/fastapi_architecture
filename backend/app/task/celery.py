@@ -77,8 +77,8 @@ def init_celery() -> celery.Celery:
         task_send_sent_event=True,
     )
 
-    # 在 Celery Setting this parameter in is invalid
-    # 参数：https://github.com/celery/celery/issues/7270
+    # This setting is invalid in Celery
+    # Parameter:https://github.com/celery/celery/issues/7270
     app.loader.override_backends = {'db': 'backend.app.task.database:DatabaseBackend'}
 
     # Automatically discover tasks

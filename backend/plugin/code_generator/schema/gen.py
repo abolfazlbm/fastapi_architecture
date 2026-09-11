@@ -1,11 +1,3 @@
-from pydantic import Field
+"""Backward-compatible imports for the renamed code-generation schema module."""
 
-from backend.common.schema import SchemaBase
-
-
-class ImportParam(SchemaBase):
-    """Import parameters"""
-
-    app: str = Field(description='Application name, used to generate code to the specified app')
-    table_schema: str = Field(description='Database name')
-    table_name: str = Field(description='Database table name')
+from backend.plugin.code_generator.schema.code_gen import *  # ruff: ignore[undefined-local-with-import-star]

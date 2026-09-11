@@ -4,7 +4,7 @@ from functools import cache
 from re import Pattern
 from typing import Any, Literal
 
-from pydantic import model_validator
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
 
 from backend.core.path_conf import ENV_EXAMPLE_FILE_PATH, ENV_FILE_PATH
@@ -51,6 +51,7 @@ class Settings(BaseSettings):
     DATABASE_PORT: int
     DATABASE_USER: str
     DATABASE_PASSWORD: str
+    DATABASE_SOURCES: dict[str, str] = Field(default_factory=dict)
 
     # Database
     DATABASE_ECHO: bool | Literal['debug'] = False
@@ -149,14 +150,18 @@ class Settings(BaseSettings):
         'created_time',
         'updated_time',
     ]
-    DATA_PERMISSION_MODEL_TEMPLATE_VARIABLES: list[dict[str, str]] = [ # Template variables available for data rule models
+    DATA_PERMISSION_MODEL_TEMPLATE_VARIABLES: list[
+        dict[str, str]
+    ] = [  # Template variables available for data rule models
         {'key': '__ALL__', 'comment': 'All models'},
     ]
-    DATA_PERMISSION_COLUMN_TEMPLATE_VARIABLES: list[dict[str, str]] = [ # Template variables available for data rule fields
+    DATA_PERMISSION_COLUMN_TEMPLATE_VARIABLES: list[
+        dict[str, str]
+    ] = [  # Template variables available for data rule fields
         {'key': '__dept_id__', 'comment': 'Department ID'},
         {'key': '__created_by__', 'comment': 'Creator'},
     ]
-    DATA_PERMISSION_TEMPLATE_VARIABLES: list[dict[str, str]] = [ # Template variables available for data rule values
+    DATA_PERMISSION_TEMPLATE_VARIABLES: list[dict[str, str]] = [  # Template variables available for data rule values
         {'key': '${user_id}', 'comment': 'Current logged in user ID'},
         {'key': '${dept_id}', 'comment': 'Current logged in user department ID'},
         {'key': '${now}', 'comment': 'Current time'},
@@ -207,7 +212,7 @@ class Settings(BaseSettings):
 
     # Trace ID
     TRACE_ID_REQUEST_HEADER_KEY: str = 'X-Request-ID'
-    TRACE_ID_LOG_LENGTH: int = 32 # UUID length must be less than or equal to 32
+    TRACE_ID_LOG_LENGTH: int = 32  # UUID length must be less than or equal to 32
     TRACE_ID_LOG_DEFAULT_VALUE: str = '-'
 
     # log
@@ -253,18 +258,18 @@ class Settings(BaseSettings):
     PLUGIN_REDIS_PREFIX: str = 'fba:plugin'
 
     # I18n deploy
-    I18N_DEFAULT_LANGUAGE: str = 'zh-CN'
+    I18N_DEFAULT_LANGUAGE: str = 'en-US'
 
     # Grafana
     GRAFANA_METRICS_ENABLE: bool = False
     GRAFANA_OTLP_GRPC_ENDPOINT: str = 'fba_alloy:4317'
-    # The following configurations are static definitions. After modification, you need to manually synchronize the relevant Grafana configurations.：
-    # - GRAFANA_PROMETHEUS_APP_NAME：deploy/backend/grafana/fba_datasource.yml
+    # The following configurations are static definitions. After modification, you need to manually synchronize the relevant Grafana configurations.:
+    # - GRAFANA_PROMETHEUS_APP_NAME:deploy/backend/grafana/fba_datasource.yml
     #   deploy/backend/grafana/dashboards/fba_server.json
-    # - GRAFANA_CELERY_OTEL_SERVICE_NAME：deploy/backend/grafana/dashboards/fba_celery.json
-    # - GRAFANA_METRICS_PATH：deploy/backend/grafana/fba_config.alloy
+    # - GRAFANA_CELERY_OTEL_SERVICE_NAME:deploy/backend/grafana/dashboards/fba_celery.json
+    # - GRAFANA_METRICS_PATH:deploy/backend/grafana/fba_config.alloy
     #   deploy/backend/grafana/dashboards/fba_server.json
-    # - GRAFANA_PROMETHEUS_EXEMPLAR_TRACE_ID_KEY：deploy/backend/grafana/fba_datasource.yml
+    # - GRAFANA_PROMETHEUS_EXEMPLAR_TRACE_ID_KEY:deploy/backend/grafana/fba_datasource.yml
     GRAFANA_PROMETHEUS_APP_NAME: str = 'fba_server'
     GRAFANA_CELERY_OTEL_SERVICE_NAME: str = 'fba_celery_worker'
     GRAFANA_METRICS_PATH: str = '/metrics'
@@ -303,7 +308,7 @@ class Settings(BaseSettings):
     OAUTH2_GOOGLE_CLIENT_ID: str
     OAUTH2_GOOGLE_CLIENT_SECRET: str
 
-    # Basic configuration（in plugin.toml）
+    # Basic configuration(in plugin.toml)
     OAUTH2_STATE_REDIS_PREFIX: str
     OAUTH2_STATE_EXPIRE_SECONDS: int
     OAUTH2_GITHUB_REDIRECT_URI: str
@@ -318,7 +323,7 @@ class Settings(BaseSettings):
     EMAIL_USERNAME: str
     EMAIL_PASSWORD: str
 
-    # Basic configuration（in plugin.toml）
+    # Basic configuration(in plugin.toml)
     EMAIL_HOST: str
     EMAIL_PORT: int
     EMAIL_SSL: bool

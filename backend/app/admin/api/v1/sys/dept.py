@@ -76,7 +76,9 @@ async def update_dept(
         DependsRBAC,
     ],
 )
-async def delete_dept(db: CurrentSessionTransaction, pk: Annotated[int, Path(description='Department ID')]) -> ResponseModel:
+async def delete_dept(
+    db: CurrentSessionTransaction, pk: Annotated[int, Path(description='Department ID')]
+) -> ResponseModel:
     count = await dept_service.delete(db=db, pk=pk)
     if count > 0:
         return response_base.success()

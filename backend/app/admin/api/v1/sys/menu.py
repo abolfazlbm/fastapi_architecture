@@ -13,7 +13,9 @@ from backend.database.db import CurrentSession, CurrentSessionTransaction
 router = APIRouter()
 
 
-@router.get('/sidebar', summary='get user menu sidebar', description='adapted vben admin v5', dependencies=[DependsJwtAuth])
+@router.get(
+    '/sidebar', summary='get user menu sidebar', description='adapted vben admin v5', dependencies=[DependsJwtAuth]
+)
 async def get_user_sidebar(db: CurrentSession, request: Request) -> ResponseSchemaModel[list[dict[str, Any] | None]]:
     menu = await menu_service.get_sidebar(db=db, request=request)
     return response_base.success(data=menu)

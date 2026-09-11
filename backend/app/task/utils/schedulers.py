@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     from redis.asyncio.lock import Lock
 
 # This scheduler must wake up more frequently than the regular 5 minutes, as it requires consideration of external changes to the schedule
-_DEFAULT_MAX_INTERVAL: Final = 5 # seconds
+_DEFAULT_MAX_INTERVAL: Final = 5  # seconds
 
 # Plan the lock duration to avoid repeated creation
 _DEFAULT_MAX_LOCK_TIMEOUT: Final = _DEFAULT_MAX_INTERVAL * 5  # seconds
@@ -42,7 +42,7 @@ logger = get_logger('fba.schedulers')
 class ModelEntry(ScheduleEntry):
     """Task Scheduling Entity"""
 
-    def __init__(self, model: TaskScheduler, app=None) -> None:  # noqa:ANN001,C901
+    def __init__(self, model: TaskScheduler, app=None) -> None:  # ruff:ignore[missing-type-function-argument, complex-structure]
         super().__init__(
             app=app or current_app._get_current_object(),
             name=model.name,
@@ -58,7 +58,7 @@ class ModelEntry(ScheduleEntry):
             elif model.type == TaskSchedulerType.CRONTAB and model.crontab is not None:
                 self.schedule = TzAwareCrontab.from_string(model.crontab)
             else:
-                raise errors.NotFoundError(msg=f'{self.name} plan is empty！')
+                raise errors.NotFoundError(msg=f'{self.name} plan is empty!')
             # logger.debug('Schedule: {}'.format(self.schedule))
         except Exception as e:
             logger.error(f'Disable task with scheduled empty {self.name}, details: {e}')
@@ -110,7 +110,7 @@ class ModelEntry(ScheduleEntry):
             # 5 seconds delay when re-enabled
             return schedules.schedstate(is_due=False, next=5)
 
-        # Run only after 'start_time'
+        # Only run after 'start_time'
         if self.model.start_time is not None:
             now = timezone.now()
             start_time = timezone.from_datetime(self.model.start_time)
@@ -125,11 +125,11 @@ class ModelEntry(ScheduleEntry):
             self.model.no_changes = False
             save_fields = ('enabled',)
             run_await(self.save)(save_fields)
-            return schedules.schedstate(is_due=False, next=1000000000)  # High latency, avoid rechecking
+            return schedules.schedstate(is_due=False, next=1000000000)  # Long delay to avoid repeated checks
 
         return self.schedule.is_due(self.last_run_at)
 
-    def __next__(self):  # noqa: ANN204
+    def __next__(self):  # ruff:ignore[missing-return-type-special-method]
         self.model.last_run_time = timezone.now()
         self.model.total_run_count += 1
         self.model.no_changes = True
@@ -139,7 +139,7 @@ class ModelEntry(ScheduleEntry):
 
     async def save(self, fields: tuple = ()) -> None:
         """
-        Save task status field
+        Save task-status fields
 
         :param fields: Other fields to save
         :return:
@@ -161,7 +161,7 @@ class ModelEntry(ScheduleEntry):
                 logger.warning(f'task {self.model.name} does not exist, skip update')
 
     @classmethod
-    async def from_entry(cls, name, app=None, **entry) -> ModelEntry:  # noqa: ANN001
+    async def from_entry(cls, name, app=None, **entry) -> ModelEntry:  # ruff:ignore[missing-type-function-argument]
         """Save or update local task schedule"""
         async with async_db_session.begin() as db:
             stmt = select(TaskScheduler).where(TaskScheduler.name == name, TaskScheduler.deleted == 0)
@@ -196,7 +196,7 @@ class ModelEntry(ScheduleEntry):
                 if not obj:
                     obj = TaskScheduler(**CreateTaskSchedulerParam(task=task, **spec).model_dump())
             elif isinstance(schedule, schedules.crontab):
-                crontab = f'{schedule._orig_minute} {schedule._orig_hour} {schedule._orig_day_of_month} {schedule._orig_month_of_year} {schedule._orig_day_of_week}'  # noqa: E501
+                crontab = f'{schedule._orig_minute} {schedule._orig_hour} {schedule._orig_day_of_month} {schedule._orig_month_of_year} {schedule._orig_day_of_week}'
                 crontab_verify(crontab)
                 spec = {
                     'name': name,
@@ -209,7 +209,7 @@ class ModelEntry(ScheduleEntry):
                 if not obj:
                     obj = TaskScheduler(**CreateTaskSchedulerParam(task=task, **spec).model_dump())
             else:
-                raise errors.NotFoundError(msg=f'Plan types that are not supported yet：{schedule}')
+                raise errors.NotFoundError(msg=f'Plan types that are not supported yet:{schedule}')
 
             return obj
 
@@ -229,7 +229,7 @@ class ModelEntry(ScheduleEntry):
         for k in ['id', 'created_time', 'updated_time', 'deleted', 'deleted_time']:
             try:
                 del model_dict[k]
-            except KeyError:  # noqa:PERF203
+            except KeyError:  # ruff:ignore[try-except-in-loop]
                 continue
         model_dict.update(
             args=json.dumps(args, ensure_ascii=False) if args else None,
@@ -297,7 +297,7 @@ class DatabaseScheduler(Scheduler):
             return False
         return super().schedules_equal(*args, **kwargs)
 
-    def reserve(self, entry):  # noqa: ANN001, ANN201
+    def reserve(self, entry):  # ruff:ignore[missing-type-function-argument, missing-return-type-undocumented-public-function]
         """Rewrite the parent function"""
         new_entry = next(entry)
         # entries need to be stored by name because the entry may change
@@ -324,7 +324,7 @@ class DatabaseScheduler(Scheduler):
                     logger.debug(f'Save task {name} latest status to database')
                     tried.add(name)
                 except KeyError as e:
-                    logger.error(f'Save task {name} Latest status failed：{e} ')
+                    logger.error(f'Save task {name} Latest status failed:{e} ')
                     failed.add(name)
         except DatabaseError:
             logger.exception('Database error occurred during synchronization')
@@ -384,7 +384,7 @@ class DatabaseScheduler(Scheduler):
             self._last_update = now
 
     async def get_all_task_schedulers(self) -> dict:
-        """Get all task schedules"""
+        """get all task schedules"""
         async with async_db_session() as db:
             logger.debug('DatabaseScheduler: Fetching database schedule')
             stmt = select(TaskScheduler).where(
@@ -428,11 +428,11 @@ class DatabaseScheduler(Scheduler):
 
 
 @beat_init.connect
-def acquire_distributed_beat_lock(sender=None, **kwargs) -> None:  # noqa: ANN001
+def acquire_distributed_beat_lock(sender=None, **kwargs) -> None:  # ruff:ignore[missing-type-function-argument]
     """
-    Try to acquire the lock at startup
+    Attempt to acquire the lock at startup
 
-    :param sender: The sender to which the receiver should respond
+    :param sender: Sender to which the receiver should respond
     :return:
     """
     scheduler = sender.scheduler

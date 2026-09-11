@@ -49,8 +49,8 @@ class Get{{ schema_name }}Detail({{ schema_name }}SchemaBase):
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
+    id: int = Field(description='Primary key ID')
     {% if datetime_mixin %}
-    created_time: datetime
-    updated_time: datetime | None = None
+    created_time: datetime = Field(description='Create time')
+    updated_time: datetime | None = Field(None, description='Update time')
     {% endif %}

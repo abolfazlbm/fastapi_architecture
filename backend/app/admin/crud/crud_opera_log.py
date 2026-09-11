@@ -7,15 +7,15 @@ from backend.app.admin.model import OperaLog
 from backend.app.admin.schema.opera_log import CreateOperaLogParam
 
 
-class CRUDOperaLogDao(CRUDPlus[OperaLog]):
+class CRUDOperaLog(CRUDPlus[OperaLog]):
     """Operation log database operation class"""
 
     async def get_select(self, username: str | None, status: int | None, ip: str | None) -> Select:
         """
-        Get operation log list query expression
+        Get the operation-log list query expression
 
-        :param username: Username
-        :param status: operation status
+        :param username: username
+        :param status: Operation status
         :param ip: IP address
         :return:
         """
@@ -34,18 +34,18 @@ class CRUDOperaLogDao(CRUDPlus[OperaLog]):
         """
         Create an operation log
 
-        :param db: database session
-        :param obj: Operation log creation parameters
+        :param db: Database session
+        :param obj: Operation-log creation parameters
         :return:
         """
         await self.create_model(db, obj)
 
     async def bulk_create(self, db: AsyncSession, objs: list[CreateOperaLogParam]) -> None:
         """
-        Bulk creation of operation logs
+        Create operation logs in batches
 
-        :param db: database session
-        :param objs: operation log creation parameter list
+        :param db: Database session
+        :param objs: List of operation-log creation parameters
         :return:
         """
         await self.create_models(db, objs)
@@ -54,7 +54,7 @@ class CRUDOperaLogDao(CRUDPlus[OperaLog]):
         """
         Batch delete operation log
 
-        :param db: database session
+        :param db: Database session
         :param pks: Operation log ID list
         :return:
         """
@@ -65,10 +65,10 @@ class CRUDOperaLogDao(CRUDPlus[OperaLog]):
         """
         Delete all logs
 
-        :param db: database session
+        :param db: Database session
         :return:
         """
         await db.execute(sa_delete(OperaLog))
 
 
-opera_log_dao: CRUDOperaLogDao = CRUDOperaLogDao(OperaLog)
+opera_log_dao: CRUDOperaLog = CRUDOperaLog(OperaLog)

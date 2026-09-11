@@ -21,7 +21,7 @@ from redis.observability.providers import get_observability_instance
 
 from backend.common.log import log, request_id_filter
 from backend.core.conf import settings
-from backend.database.db import async_engine
+from backend.database.db import get_database_engines
 from backend.database.redis import redis_client
 
 
@@ -107,13 +107,16 @@ def init_otel(app: FastAPI) -> None:
     init_metrics(resource)
     init_logging(resource)
 
-    # Redis 原生指标
+    # Redis native metrics
     redis_otel = get_observability_instance()
     redis_otel.init(OTelConfig())
 
     AsyncioInstrumentor().instrument()
     HTTPXClientInstrumentor().instrument()
-    LoggingInstrumentor().instrument(set_logging_format=True)
+    # Do not automatically install OTel handler into stdlib root logger,
+    # to avoid duplicate delivery with the LoggingHandler(loguru sink)registered above.
+    LoggingInstrumentor().instrument(set_logging_format=True, enable_log_auto_instrumentation=False)
     RedisInstrumentor.instrument_client(client=redis_client)  # type: ignore
-    SQLAlchemyInstrumentor().instrument(engine=async_engine.sync_engine)
+    for engine in get_database_engines().values():
+        SQLAlchemyInstrumentor().instrument(engine=engine.sync_engine)
     FastAPIInstrumentor.instrument_app(app)

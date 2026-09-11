@@ -2,7 +2,7 @@ from backend.common.enums import StrEnum
 
 
 class GenMySQLColumnType(StrEnum):
-    """Code generation model column types（MySQL）"""
+    """Code generation model column types(MySQL)"""
 
     # Python type mapping
     BIGINT = 'int'
@@ -67,7 +67,7 @@ class GenMySQLColumnType(StrEnum):
 
 
 class GenPostgreSQLColumnType(StrEnum):
-    """Code generation model column types（PostgreSQL）"""
+    """Code generation model column types(PostgreSQL)"""
 
     # Python type mapping
     BIGINT = 'int'

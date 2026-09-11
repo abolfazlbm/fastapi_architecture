@@ -22,7 +22,7 @@ from backend.utils.trace_id import get_request_trace_id
 class AccessMiddleware(BaseHTTPMiddleware):
     """Access log middleware"""
 
-    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:  # noqa: C901
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:  # ruff:ignore[complex-structure]
         """
         Process requests and log access logs
 
@@ -40,7 +40,9 @@ class AccessMiddleware(BaseHTTPMiddleware):
         method = request.method
 
         if method != 'OPTIONS':
-            log.debug(f'--> Request to start[{path if not request.url.query else request.url.path + "?" + request.url.query}]')
+            log.debug(
+                f'--> Request to start[{path if not request.url.query else request.url.path + "?" + request.url.query}]'
+            )
 
         should_record_metrics = settings.GRAFANA_METRICS_ENABLE and path.startswith(settings.FASTAPI_API_V1_PATH)
         if should_record_metrics:

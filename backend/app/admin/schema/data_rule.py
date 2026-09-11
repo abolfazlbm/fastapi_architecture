@@ -16,6 +16,7 @@ class DataRuleSchemaBase(SchemaBase):
     expression: RoleDataRuleExpressionType = Field(description='Expression type')
     value: str = Field(description='rule value')
 
+
 class CreateDataRuleParam(DataRuleSchemaBase):
     """Create data rule parameters"""
 

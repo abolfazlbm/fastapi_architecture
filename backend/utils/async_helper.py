@@ -57,7 +57,7 @@ def run_await(coro: Callable[..., Awaitable[T]] | Callable[..., Coroutine[Any, A
     """Wrap the coroutine in a function until it is executed"""
 
     @wraps(coro)
-    def wrapped(*args, **kwargs):  # noqa: ANN202
+    def wrapped(*args, **kwargs):  # ruff:ignore[missing-return-type-private-function]
         inner = coro(*args, **kwargs)
         if not asyncio.iscoroutine(inner) and not asyncio.isfuture(inner):
             raise TypeError(f'Expected coroutine or future, got {type(inner)}')

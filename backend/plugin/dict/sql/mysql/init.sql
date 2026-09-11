@@ -7,12 +7,12 @@ set @dict_menu_id = LAST_INSERT_ID();
 
 insert into sys_menu (title, name, path, sort, icon, type, component, perms, status, display, cache, link, remark, parent_id, created_time, updated_time)
 values
-('新增类型', 'AddDictType', null, 0, null, 2, null, 'dict:type:add', 1, 0, 1, '', null, @dict_menu_id, now(), null),
-('修改类型', 'EditDictType', null, 0, null, 2, null, 'dict:type:edit', 1, 0, 1, '', null, @dict_menu_id, now(), null),
-('删除类型', 'DeleteDictType', null, 0, null, 2, null, 'dict:type:del', 1, 0, 1, '', null, @dict_menu_id, now(), null),
-('新增数据', 'AddDictData', null, 0, null, 2, null, 'dict:data:add', 1, 0, 1, '', null, @dict_menu_id, now(), null),
-('修改数据', 'EditDictData', null, 0, null, 2, null, 'dict:data:edit', 1, 0, 1, '', null, @dict_menu_id, now(), null),
-('删除数据', 'DeleteDictData', null, 0, null, 2, null, 'dict:data:del', 1, 0, 1, '', null, @dict_menu_id, now(), null);
+('AddDictType', 'AddDictType', null, 0, null, 2, null, 'dict:type:add', 1, 0, 1, '', null, @dict_menu_id, now(), null),
+('Modify type', 'EditDictType', null, 0, null, 2, null, 'dict:type:edit', 1, 0, 1, '', null, @dict_menu_id, now(), null),
+('DeleteDictType', 'DeleteDictType', null, 0, null, 2, null, 'dict:type:del', 1, 0, 1, '', null, @dict_menu_id, now(), null),
+('New data', 'AddDictData', null, 0, null, 2, null, 'dict:data:add', 1, 0, 1, '', null, @dict_menu_id, now(), null),
+('Modify data', 'EditDictData', null, 0, null, 2, null, 'dict:data:edit', 1, 0, 1, '', null, @dict_menu_id, now(), null),
+('Delete data', 'DeleteDictData', null, 0, null, 2, null, 'dict:data:del', 1, 0, 1, '', null, @dict_menu_id, now(), null);
 
 insert into sys_dict_type (id, name, code, remark, created_time, updated_time)
 values

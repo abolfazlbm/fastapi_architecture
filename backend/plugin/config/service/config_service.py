@@ -113,7 +113,7 @@ class ConfigService:
 
         changed_keys = [obj.key for obj in objs if config_map[obj.id].key != obj.key]
         if len(changed_keys) != len(set(changed_keys)):
-            raise errors.ConflictError(msg='参数配置键名重复')
+            raise errors.ConflictError(msg='Parameter-setting key name is duplicated')
 
         key_configs = await config_dao.get_all_by_keys(db, list(set(changed_keys)))
         key_owner = {config.key: config.id for config in key_configs}

@@ -3,66 +3,66 @@ from collections.abc import Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus
 
-from backend.plugin.code_generator.model import GenColumn
+from backend.plugin.code_generator.model import CodeGenColumn
 from backend.plugin.code_generator.schema.column import (
-    CreateGenColumnInternalParam,
-    CreateGenColumnParam,
-    UpdateGenColumnParam,
+    CreateCodeGenColumnInternalParam,
+    CreateCodeGenColumnParam,
+    UpdateCodeGenColumnParam,
 )
 
 
-class CRUDGenColumn(CRUDPlus[GenColumn]):
+class CRUDCodeGenColumn(CRUDPlus[CodeGenColumn]):
     """Code generation model column CRUD class"""
 
-    async def get(self, db: AsyncSession, pk: int) -> GenColumn | None:
+    async def get(self, db: AsyncSession, pk: int) -> CodeGenColumn | None:
         """
-        Get code generation model columns
+        Get a code-generation model column
 
-        :param db: database session
-        :param pk: code generation model ID
+        :param db: Database session
+        :param pk: Code-generation model ID
         :return:
         """
         return await self.select_model(db, pk)
 
-    async def get_all_by_business(self, db: AsyncSession, business_id: int) -> Sequence[GenColumn]:
+    async def get_all_by_business(self, db: AsyncSession, business_id: int) -> Sequence[CodeGenColumn]:
         """
-        Get all code generation model columns
+        Get all code-generation model columns
 
-        :param db: database session
-        :param business_id: Business ID
+        :param db: Database session
+        :param business_id: business ID
         :return:
         """
-        return await self.select_models_order(db, sort_columns='sort', gen_business_id=business_id)
+        return await self.select_models_order(db, sort_columns='sort', code_gen_business_id=business_id)
 
-    async def create(self, db: AsyncSession, obj: CreateGenColumnParam, pd_type: str | None) -> None:
+    async def create(self, db: AsyncSession, obj: CreateCodeGenColumnParam, pd_type: str | None) -> None:
         """
         Create code generation model columns
 
-        :param db: database session
+        :param db: Database session
         :param obj: Create code generation model column parameters
-        :param pd_type: Pydantic type
+        :param pd_type: Pydantic Type
         :return:
         """
         await self.create_model(db, obj, pd_type=pd_type)
 
-    async def bulk_create(self, db: AsyncSession, objs: list[CreateGenColumnInternalParam]) -> None:
+    async def bulk_create(self, db: AsyncSession, objs: list[CreateCodeGenColumnInternalParam]) -> None:
         """
-        批量创建代码生成模型列
+        Create code-generation model columns in bulk
 
-        :param db: 数据库会话
-        :param objs: 创建代码生成模型列参数列表
+        :param db: Database session
+        :param objs: List of code-generation model-column creation parameters
         :return:
         """
         await self.create_models(db, objs)
 
-    async def update(self, db: AsyncSession, pk: int, obj: UpdateGenColumnParam, pd_type: str | None) -> int:
+    async def update(self, db: AsyncSession, pk: int, obj: UpdateCodeGenColumnParam, pd_type: str | None) -> int:
         """
         Update code generation model columns
 
-        :param db: database session
-        :param pk: code generation model column ID
+        :param db: Database session
+        :param pk: Code GenerationModel Column ID
         :param obj: Update code generation model column parameters
-        :param pd_type: Pydantic type
+        :param pd_type: Pydantic Type
         :return:
         """
         return await self.update_model(db, pk, obj, pd_type=pd_type)
@@ -71,11 +71,11 @@ class CRUDGenColumn(CRUDPlus[GenColumn]):
         """
         Remove code generation model columns
 
-        :param db: database session
-        :param pk: code generation model column ID
+        :param db: Database session
+        :param pk: Code GenerationModel Column ID
         :return:
         """
         return await self.delete_model(db, pk)
 
 
-gen_column_dao: CRUDGenColumn = CRUDGenColumn(GenColumn)
+code_gen_column_dao: CRUDCodeGenColumn = CRUDCodeGenColumn(CodeGenColumn)

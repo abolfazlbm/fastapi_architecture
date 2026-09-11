@@ -2037,7 +2037,7 @@
         "y": 47
       },
       "id": 106,
-      "title": "🔍 链路追踪",
+      "title": "🔍 Distributed Tracing",
       "type": "row"
     },
     {
@@ -2045,7 +2045,7 @@
         "type": "tempo",
         "uid": "tempo"
       },
-      "description": "Celery Worker 的分布式追踪数据，点击 Trace ID 可跳转到 Explore 查看完整调用链",
+      "description": "Distributed tracing data for Celery workers. Click a Trace ID to open the complete call chain in Explore",
       "fieldConfig": {
         "defaults": {
           "custom": {
@@ -2097,7 +2097,7 @@
                 "id": "links",
                 "value": [
                   {
-                    "title": "查看调用链",
+                    "title": "View Call Chain",
                     "url": "/explore?orgId=1&left={\"datasource\":\"tempo\",\"queries\":[{\"refId\":\"A\",\"queryType\":\"traceql\",\"query\":\"${__value.raw}\"}],\"range\":{\"from\":\"now-1h\",\"to\":\"now\"}}"
                   }
                 ]
@@ -2116,7 +2116,7 @@
               },
               {
                 "id": "displayName",
-                "value": "时间"
+                "value": "Time"
               }
             ]
           },
@@ -2128,7 +2128,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "任务"
+                "value": "Task"
               }
             ]
           },
@@ -2144,7 +2144,7 @@
               },
               {
                 "id": "displayName",
-                "value": "耗时"
+                "value": "time-consuming"
               },
               {
                 "id": "custom.cellOptions",

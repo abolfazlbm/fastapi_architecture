@@ -24,7 +24,7 @@ from backend.common.observability.otel import init_otel
 from backend.common.response.response_code import StandardResponseCode
 from backend.core.conf import settings
 from backend.core.path_conf import STATIC_DIR, UPLOAD_DIR
-from backend.database.db import create_tables
+from backend.database.db import create_tables, dispose_database
 from backend.database.redis import redis_client
 from backend.middleware.access_middleware import AccessMiddleware
 from backend.middleware.i18n_middleware import I18nMiddleware
@@ -85,6 +85,9 @@ async def register_init(app: FastAPI) -> AsyncGenerator[None, None]:
 
         # Close redis connection
         await redis_client.aclose()
+
+        # Dispose the database connection pool
+        await dispose_database()
 
 
 def register_app() -> FastAPI:

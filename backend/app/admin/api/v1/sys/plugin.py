@@ -54,7 +54,10 @@ async def install_plugin(
 async def uninstall_plugin(plugin: Annotated[str, Path(description='Plugin Name')]) -> ResponseModel:
     await plugin_service.uninstall(plugin=plugin)
     return response_base.success(
-        res=CustomResponse(code=200, msg=f'Plugin {plugin} Uninstalled successfully, please remove the relevant configuration and restart the service according to the plug-in instructions (README.md)'),
+        res=CustomResponse(
+            code=200,
+            msg=f'Plugin {plugin} Uninstalled successfully, please remove the relevant configuration and restart the service according to the plug-in instructions (README.md)',
+        ),
     )
 
 

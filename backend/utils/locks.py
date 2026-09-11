@@ -13,8 +13,8 @@ async def acquire_distributed_reload_lock() -> AsyncGenerator[None, Any]:
     """Get distributed hot reload lock"""
     lock = redis_client.lock(
         'fba:reload_lock',
-        timeout=300, # Lock timeout: 5 minutes
-        blocking_timeout=60, # Timeout for acquiring lock waiting: 60 seconds
+        timeout=300,  # Lock timeout: 5 minutes
+        blocking_timeout=60,  # Timeout for acquiring lock waiting: 60 seconds
     )
     await lock.acquire()
 
