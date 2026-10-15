@@ -1,12 +1,12 @@
 <div align="center">
 
-<img alt="Logo 包含了 FBA 三个字母抽象结合，形成了一个类似从地面扩散投影上来的闪电" width="320" src="https://wu-clan.github.io/picx-images-hosting/logo/fba.png">
+<img alt="The logo combines the letters FBA into an abstract lightning bolt projected upward from the ground" width="320" src="https://wu-clan.github.io/picx-images-hosting/logo/fba.png">
 
 # FastAPI Best Architecture
 
-企业级后端架构解决方案
+Enterprise-level backend architecture solutions
 
-简体中文 | [English](./README.md)
+Simplified Chinese | [English](./README.md)
 
 [![GitHub](https://img.shields.io/github/license/fastapi-practices/fastapi_best_architecture)](https://github.com/fastapi-practices/fastapi_best_architecture/blob/master/LICENSE)
 [![Python](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org/downloads/)
@@ -23,25 +23,25 @@
 
 </div>
 
-## 三层架构
+## Three-tier architecture
 
-mvc 架构作为常规设计模式，在 python web 中很常见，但是三层架构更令人着迷
+MVC is a common design pattern in Python web development, but the three-tier architecture is even more compelling.
 
-但请注意，我们并没有传统的多 app （微服务）目录结构（django、springBoot...），而是自以为是的目录结构，如果您不喜欢这种模式，可以对其进行任意改造！
+Please note that we use an opinionated directory structure rather than the traditional multi-app (microservices) layout found in Django or Spring Boot. Feel free to adapt it to your needs!
 
-| 工作流程 | java           | fastapi_best_architecture |
+| Workflow | java           | fastapi_best_architecture |
 |------|----------------|---------------------------|
-| 视图   | controller     | api                       |
-| 数据传输 | dto            | schema                    |
-| 业务逻辑 | service + impl | service                   |
-| 数据访问 | dao / mapper   | crud                      |
-| 模型   | model / entity | model                     |
+| View   | controller     | api                       |
+| Data transfer | dto            | schema                    |
+| Business logic | service + impl | service                   |
+| Data access | dao / mapper   | crud                      |
+| Model   | model / entity | model                     |
 
-## 帮助
+## Help
 
-更多详情请查看 [官方文档](https://fastapi-practices.github.io/fastapi_best_architecture_docs/)
+For more details, see the [official documentation](https://fastapi-practices.github.io/fastapi_best_architecture_docs/)
 
-## 赞助商
+## Sponsors
 
 <div align="center">
   <table>
@@ -55,13 +55,13 @@ mvc 架构作为常规设计模式，在 python web 中很常见，但是三层�
   </table>
 </div>
 
-## 贡献者
+## Contributors
 
 <a href="https://github.com/fastapi-practices/fastapi_best_architecture/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=fastapi-practices/fastapi_best_architecture"/>
 </a>
 
-## 特别鸣谢
+## Special thanks
 
 - [FastAPI](https://fastapi.tiangolo.com/)
 - [Pydantic](https://docs.pydantic.dev/latest/)
@@ -70,12 +70,12 @@ mvc 架构作为常规设计模式，在 python web 中很常见，但是三层�
 - [Ruff](https://beta.ruff.rs/docs/)
 - ...
 
-## 互动
+## Community
 
 [Discord](https://wu-clan.github.io/homepage/)
 
-## 许可证
+## License
 
-本项目由 [MIT](https://github.com/fastapi-practices/fastapi_best_architecture/blob/master/LICENSE) 许可证的条款进行许可
+This project is licensed under the terms of the [MIT](https://github.com/fastapi-practices/fastapi_best_architecture/blob/master/LICENSE) license.
 
 [![Stargazers over time](https://starchart.cc/fastapi-practices/fastapi_best_architecture.svg?variant=adaptive)](https://starchart.cc/fastapi-practices/fastapi_best_architecture)

@@ -55,7 +55,7 @@ class CodeGenService:
         :return:
         """
         if settings.ENVIRONMENT != 'dev':
-            raise errors.ForbiddenError(msg='禁止在非开发环境下导入代码生成业务')
+            raise errors.ForbiddenError(msg='Code generation business can only be imported in development')
 
         table_info = await code_gen_dao.get_table(db, obj.table_schema, obj.table_name)
         if not table_info:

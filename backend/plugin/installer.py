@@ -159,53 +159,53 @@ async def install_git_plugin(repo_url: str) -> str:
 
 async def install_git_frontend_plugin(repo_url: str, frontend_project_root: str) -> str:
     """
-    安装前端 Git 插件
+    Install a frontend plugin from Git
 
-    :param repo_url: Git 仓库地址
-    :param frontend_project_root: 前端项目根路径
+    :param repo_url: Git repository URL
+    :param frontend_project_root: Frontend project root path
     :return:
     """
     match = is_git_url(repo_url)
     if not match:
-        raise errors.RequestError(msg='Git 仓库地址格式非法，仅支持 HTTP/HTTPS 协议')
+        raise errors.RequestError(msg='Invalid Git repository URL; only HTTP/HTTPS protocols are supported')
 
     if not frontend_project_root.strip():
-        raise errors.RequestError(msg='前端项目根路径不能为空')
+        raise errors.RequestError(msg='Frontend project root path must not be empty')
 
     frontend_root = await (await anyio.Path(frontend_project_root).expanduser()).resolve()
     if not await frontend_root.exists():
-        raise errors.RequestError(msg='前端项目根路径不存在')
+        raise errors.RequestError(msg='Frontend project root path does not exist')
     if not await frontend_root.is_dir():
-        raise errors.RequestError(msg='前端项目根路径非法')
+        raise errors.RequestError(msg='Invalid frontend project root path')
 
     plugins_dir = frontend_root.joinpath('apps', 'web-antdv-next', 'src', 'plugins')
     if not await plugins_dir.exists() or not await plugins_dir.is_dir():
-        raise errors.RequestError(msg='未检测到前端插件目录，请确认路径下存在 apps/web-antdv-next/src/plugins')
+        raise errors.RequestError(msg='Missing frontend plugin directory: apps/web-antdv-next/src/plugins')
 
     repo_name = match.group('repo')
-    # 仓库名允许 _ui 或 -ui 后缀，安装目录不保留该后缀
+    # Repository names may end with _ui or -ui; the installation directory omits this suffix
     plugin_name = repo_name.removesuffix('_ui') if repo_name.endswith('_ui') else repo_name.removesuffix('-ui')
     if not plugin_name:
-        raise errors.RequestError(msg='前端插件仓库名称非法')
+        raise errors.RequestError(msg='Invalid frontend plugin repository name')
 
     target_path = anyio.Path(plugins_dir / plugin_name)
     if await target_path.exists():
-        raise errors.ConflictError(msg=f'{plugin_name} 前端插件已安装')
+        raise errors.ConflictError(msg=f'{plugin_name} frontend plugin is already installed')
 
     try:
         await run_in_threadpool(porcelain.clone, repo_url, plugins_dir / plugin_name, checkout=True)
     except Exception as e:
-        log.error(f'前端插件安装失败: {e}')
-        raise errors.ServerError(msg='前端插件安装失败，请稍后重试') from e
+        log.error(f'Frontend plugin installation failed: {e}')
+        raise errors.ServerError(msg='Frontend plugin installation failed; please try again later') from e
 
     return plugin_name
 
 
 def remove_plugin(plugin_dir: os.PathLike) -> None:
     """
-    删除插件
+    Delete a plugin
 
-    :param plugin_dir: 插件目录
+    :param plugin_dir: Plugin directory
     :return:
     """
     import shutil
@@ -219,10 +219,10 @@ def remove_plugin(plugin_dir: os.PathLike) -> None:
 
 def zip_plugin(plugin_dir: os.PathLike, target: os.PathLike | io.BytesIO) -> None:
     """
-    zip 压缩插件
+    Compress a plugin into a ZIP archive
 
-    :param plugin_dir: 插件目录
-    :param target: 压缩目标
+    :param plugin_dir: Plugin directory
+    :param target: Archive destination
     :return:
     """
     with zipfile.ZipFile(target, 'w') as zf:

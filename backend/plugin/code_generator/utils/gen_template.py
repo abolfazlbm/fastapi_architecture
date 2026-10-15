@@ -30,7 +30,7 @@ class GenTemplate:
         """
         Get Jinja2 template object
 
-        :param jinja_file: Jinja2 模板文件路径
+        :param jinja_file: Jinja2 template file path
         :return:
         """
         return self.env.get_template(jinja_file)
@@ -40,7 +40,7 @@ class GenTemplate:
         """
         Get the path mapping from template files to generated files
 
-        :param business: 代码生成业务对象
+        :param business: Code generation business object
         :return:
         """
         app_name = business.app_name
@@ -63,7 +63,7 @@ class GenTemplate:
         """
         Get the __init__.py file that needs to be generated and its contents
 
-        :param business: 业务对象
+        :param business: Business object
         :return:
         """
         app_name = business.app_name

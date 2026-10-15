@@ -79,9 +79,9 @@ class CodeGenBusinessService:
 
         business = await code_gen_business_dao.get(db, pk)
         if not business:
-            raise errors.NotFoundError(msg='代码生成业务不存在')
+            raise errors.NotFoundError(msg='Code generation business does not exist')
         if business.table_name != obj.table_name and await code_gen_business_dao.get_by_name(db, obj.table_name):
-            raise errors.ConflictError(msg='代码生成业务已存在')
+            raise errors.ConflictError(msg='Code generation business already exists')
         return await code_gen_business_dao.update(db, pk, obj)
 
     @staticmethod
@@ -96,7 +96,7 @@ class CodeGenBusinessService:
 
         business = await code_gen_business_dao.get(db, pk)
         if not business:
-            raise errors.NotFoundError(msg='代码生成业务不存在')
+            raise errors.NotFoundError(msg='Code generation business does not exist')
         return await code_gen_business_dao.delete(db, pk)
 
 

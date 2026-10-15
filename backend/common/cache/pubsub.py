@@ -45,8 +45,8 @@ class CachePubSubManager:
                 # Publish the subscription successfully
                 reconnect_attempts = 0
 
-                # 带超时轮询而不是 listen()，每次进入读取都会触发健康检查 PING，
-                # 避免连接被静默断开后协程永久挂起
+                # Poll with a timeout instead of listen(); each read triggers a health-check PING,
+                # preventing the coroutine from hanging indefinitely after a silent disconnection
                 while True:
                     message = await pubsub.get_message(
                         ignore_subscribe_messages=True,

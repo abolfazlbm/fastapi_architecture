@@ -319,7 +319,7 @@ def run(host: str, port: int, reload: bool, workers: int) -> None:  # ruff:ignor
 
     panel_content.append('\n🌐 Architecture official documentation: ', style='bold magenta')
     panel_content.append('#')
-    panel_content.append('\n\n赞助商：', style='bold yellow')
+    panel_content.append('\n\nSponsors:', style='bold yellow')
     panel_content.append('Claude.uy', style='link https://claude.uy/home')
 
 
@@ -857,7 +857,7 @@ class Flower:
     ]
     read_only: Annotated[
         bool,
-        cappa.Arg(long=['--read-only', '--no-read-only'], default=True, help='只读监控模式，关闭后允许管理操作'),
+        cappa.Arg(long=['--read-only', '--no-read-only'], default=True, help='Read-only mode; disable for management'),
     ]
 
     def __call__(self) -> None:
@@ -1008,7 +1008,7 @@ class Alembic:
     subcmd: cappa.Subcommands[Revision | Upgrade | Downgrade | Current | History | Heads]
 
 
-@cappa.command(help='一An efficient fba command line interface', default_long=True)
+@cappa.command(help='An efficient fba command line interface', default_long=True)
 @dataclass
 class FbaCli:
     sql: Annotated[

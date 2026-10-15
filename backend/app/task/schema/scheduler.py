@@ -42,9 +42,9 @@ class GetTaskSchedulerDetail(TaskSchedulerSchemaBase):
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: int = Field(description='任务调度 ID')
-    status: StatusType = Field(description='状态')
-    total_run_count: int = Field(description='已运行总次数')
-    last_run_time: datetime | None = Field(None, description='最后运行时间')
-    created_time: datetime = Field(description='创建时间')
-    updated_time: datetime | None = Field(None, description='更新时间')
+    id: int = Field(description='Task schedule ID')
+    status: StatusType = Field(description='Status')
+    total_run_count: int = Field(description='Total run count')
+    last_run_time: datetime | None = Field(None, description='Last run time')
+    created_time: datetime = Field(description='Creation time')
+    updated_time: datetime | None = Field(None, description='Update time')

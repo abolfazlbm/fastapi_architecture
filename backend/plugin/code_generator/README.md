@@ -19,7 +19,7 @@ The `[settings]` of `plugin.toml` in the plugin directory contains the following
 CODE_GENERATOR_DOWNLOAD_ZIP_FILENAME = 'fba_generator'
 ```
 
-当前项目的 `backend/core/conf.py` 已包含以下字段：
+The following fields are already included in `backend/core/conf.py`:
 
 ```python
 ################################################
@@ -28,11 +28,11 @@ CODE_GENERATOR_DOWNLOAD_ZIP_FILENAME = 'fba_generator'
 CODE_GENERATOR_DOWNLOAD_ZIP_FILENAME: str
 ```
 
-## 配置项说明
+## Configuration options
 
-- `CODE_GENERATOR_DOWNLOAD_ZIP_FILENAME`：控制代码生成结果下载压缩包的文件名
+- `CODE_GENERATOR_DOWNLOAD_ZIP_FILENAME`: Name of the ZIP archive downloaded for generated code
 
-## 使用方式
+## Usage
 
 1. After installing and enabling the plug-in, restart the backend service
 2. Maintain business configuration and model column information

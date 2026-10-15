@@ -29,7 +29,7 @@ from backend.database.redis import redis_client
 
 
 class SQLAlchemyInstrumentor(BaseSQLAlchemyInstrumentor):
-    """保留依赖检查，仅扩展已验证的 SQLAlchemy 2.1.1 兼容范围"""
+    """Keep dependency checks and only extend the verified compatibility range to SQLAlchemy 2.1.1"""
 
     _instance = None
 
@@ -106,7 +106,7 @@ def init_logging(resource: Resource) -> None:
     _logs.set_logger_provider(provider)
 
     def otel_log_filter(record: dict[str, Any]) -> bool:
-        """保留共享请求 ID，并在格式化前检查 OTEL 日志是否启用"""
+        """Preserve the shared request ID and check whether OTEL logging is enabled before formatting"""
         logger = provider.get_logger(record['name'])
         return request_id_filter(record) and logger.enabled(
             context=get_current(), severity_number=std_to_otel(record['level'].no)
@@ -122,19 +122,19 @@ def init_logging(resource: Resource) -> None:
 
 
 def init_otel() -> None:
-    """初始化 OpenTelemetry provider 和外部服务采集"""
+    """Initialize OpenTelemetry providers and instrumentation for external services"""
     resource = init_resource(settings.GRAFANA_PROMETHEUS_APP_NAME)
     init_tracer(resource)
     init_metrics(resource)
     init_logging(resource)
 
-    # Redis 原生指标
+    # Native Redis metrics
     redis_otel = get_observability_instance()
     redis_otel.init(OTelConfig())
 
     AsyncioInstrumentor().instrument()
     HTTPXClientInstrumentor().instrument()
-    # 禁止在 stdlib root logger 安装 OTEL handler，避免与 loguru sink 重复推送
+    # Do not install an OTEL handler on the stdlib root logger to avoid duplicate exports through the loguru sink
     LoggingInstrumentor().instrument(set_logging_format=True, enable_log_auto_instrumentation=False)
     RedisInstrumentor.instrument_client(client=redis_client)  # type: ignore
     SQLAlchemyInstrumentor().instrument(

@@ -147,7 +147,7 @@ class PrimaryKeyType(StrEnum):
 
 
 class LifespanStage(IntEnum):
-    """lifespan 执行阶段"""
+    """Lifespan execution stage"""
 
     core = 0
     plugin = 1

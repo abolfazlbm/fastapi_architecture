@@ -129,7 +129,7 @@ class Snowflake:
         if self._initialized:
             return
 
-        # 初始化涉及 Redis IO，必须用 asyncio.Lock，threading.Lock 会在 await 期间锁死事件循环
+        # Initialization uses Redis I/O; use asyncio.Lock as threading.Lock blocks the event loop during await
         async with self._init_lock:
             if self._initialized:
                 return

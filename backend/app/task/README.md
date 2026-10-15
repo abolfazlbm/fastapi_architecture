@@ -26,10 +26,10 @@ For local debugging, redis is recommended
 
 For online environments, use rabbitmq for forced use
 
-## Flower 只读监控
+## Flower read-only monitoring
 
-`fba celery flower` 默认启用只读模式，允许查看 worker 和任务，禁止撤销任务、调整进程池、关闭 worker 等管理操作。Supervisor 部署也显式启用只读模式。
+`fba celery flower` enables read-only mode by default. Workers and tasks can be viewed, while administrative operations such as revoking tasks, resizing process pools, and shutting down workers are disabled. Supervisor deployments also explicitly enable read-only mode.
 
-需要管理操作时，使用 `fba celery flower --no-read-only`。部署方式可将 `fba_celery_flower.conf` 中的 `--read-only=True` 改为 `--read-only=False`。
+To enable administrative operations, use `fba celery flower --no-read-only`. For deployed instances, change `--read-only=True` to `--read-only=False` in `fba_celery_flower.conf`.
 
-Flower 2.2 对跨站写请求进行校验，反向代理应保留正确的 Host；同源 Basic Auth 页面无需额外的 cookie XSRF token。
+Flower 2.2 validates cross-site write requests, so reverse proxies should preserve the correct Host header. Same-origin Basic Auth pages do not require an additional cookie XSRF token.

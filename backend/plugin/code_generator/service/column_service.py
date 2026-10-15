@@ -30,7 +30,7 @@ class CodeGenColumnService:
         if not column:
             raise errors.NotFoundError(msg='Code generation model column does not exist')
         if not await code_gen_business_dao.get(db, column.code_gen_business_id):
-            raise errors.NotFoundError(msg='代码生成业务不存在')
+            raise errors.NotFoundError(msg='Code generation business does not exist')
         return column
 
     @staticmethod
@@ -54,7 +54,7 @@ class CodeGenColumnService:
         """
 
         if not await code_gen_business_dao.get(db, business_id):
-            raise errors.NotFoundError(msg='代码生成业务不存在')
+            raise errors.NotFoundError(msg='Code generation business does not exist')
         return await code_gen_column_dao.get_all_by_business(db, business_id)
 
     @staticmethod
@@ -68,7 +68,7 @@ class CodeGenColumnService:
         """
 
         if not await code_gen_business_dao.get(db, obj.code_gen_business_id):
-            raise errors.NotFoundError(msg='代码生成业务不存在')
+            raise errors.NotFoundError(msg='Code generation business does not exist')
 
         code_gen_columns = await code_gen_column_dao.get_all_by_business(db, obj.code_gen_business_id)
         if obj.name in [code_gen_column.name for code_gen_column in code_gen_columns]:
@@ -90,11 +90,11 @@ class CodeGenColumnService:
 
         column = await code_gen_column_dao.get(db, pk)
         if not column:
-            raise errors.NotFoundError(msg='代码生成模型列不存在')
+            raise errors.NotFoundError(msg='Code generation model column does not exist')
         if not await code_gen_business_dao.get(db, column.code_gen_business_id):
-            raise errors.NotFoundError(msg='代码生成业务不存在')
+            raise errors.NotFoundError(msg='Code generation business does not exist')
         if not await code_gen_business_dao.get(db, obj.code_gen_business_id):
-            raise errors.NotFoundError(msg='代码生成业务不存在')
+            raise errors.NotFoundError(msg='Code generation business does not exist')
         if obj.name != column.name:
             code_gen_columns = await code_gen_column_dao.get_all_by_business(db, obj.code_gen_business_id)
             if obj.name in [code_gen_column.name for code_gen_column in code_gen_columns]:
@@ -115,9 +115,9 @@ class CodeGenColumnService:
 
         column = await code_gen_column_dao.get(db, pk)
         if not column:
-            raise errors.NotFoundError(msg='代码生成模型列不存在')
+            raise errors.NotFoundError(msg='Code generation model column does not exist')
         if not await code_gen_business_dao.get(db, column.code_gen_business_id):
-            raise errors.NotFoundError(msg='代码生成业务不存在')
+            raise errors.NotFoundError(msg='Code generation business does not exist')
         return await code_gen_column_dao.delete(db, pk)
 
 

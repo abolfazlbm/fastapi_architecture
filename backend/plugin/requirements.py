@@ -89,7 +89,7 @@ def install_requirements(plugin: str | None) -> None:  # ruff:ignore[complex-str
         if not _is_in_virtualenv():
             pip_install.append('--system')
         if settings.PLUGIN_PIP_CHINA:
-            # 使用 PyPI 作为优先索引，国内源作为回退来源
+            # Use PyPI as the primary index and Chinese mirrors as fallback sources
             pip_install.extend([
                 '--default-index',
                 settings.PLUGIN_PIP_INDEX_URL,

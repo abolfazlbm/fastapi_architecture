@@ -68,8 +68,8 @@ class Settings(BaseSettings):
 
     # Redis
     REDIS_TIMEOUT: int = 5
-    REDIS_MAX_CONNECTIONS: int = 100  # 连接池上限
-    REDIS_POOL_TIMEOUT: int = 20  # 等待空闲连接超时（秒）
+    REDIS_MAX_CONNECTIONS: int = 100  # Connection pool limit
+    REDIS_POOL_TIMEOUT: int = 20  # Timeout for waiting for an available connection (seconds)
 
     # Cache
     CACHE_LOCAL_ENABLED: bool = True
@@ -79,9 +79,9 @@ class Settings(BaseSettings):
     CACHE_CONFIG_REDIS_PREFIX: str = 'fba:cache:config'
     CACHE_DICT_REDIS_PREFIX: str = 'fba:cache:dict'
     CACHE_PUBSUB_CHANNEL: str = 'fba:cache:invalidate'
-    CACHE_PUBSUB_RECONNECT_DELAY: int = 5  # 重连延迟（秒）
-    CACHE_PUBSUB_MAX_RECONNECT_ATTEMPTS: int = 10  # 最大重连次数
-    CACHE_PUBSUB_POLL_TIMEOUT: float = 1.0  # 订阅消息轮询超时（秒）
+    CACHE_PUBSUB_RECONNECT_DELAY: int = 5  # Reconnection delay (seconds)
+    CACHE_PUBSUB_MAX_RECONNECT_ATTEMPTS: int = 10  # Maximum reconnection attempts
+    CACHE_PUBSUB_POLL_TIMEOUT: float = 1.0  # Subscription message polling timeout (seconds)
 
     # .env Snowflake
     SNOWFLAKE_ENABLED: bool = False
@@ -171,7 +171,7 @@ class Settings(BaseSettings):
     WS_NO_AUTH_MARKER: str = 'internal'
 
     # CORS
-    CORS_ALLOWED_ORIGINS: list[str] = ['*']  # 末尾不带斜杠
+    CORS_ALLOWED_ORIGINS: list[str] = ['*']  # No trailing slash
     CORS_EXPOSE_HEADERS: list[str] = [
         'X-Request-ID',
     ]

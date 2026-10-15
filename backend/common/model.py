@@ -75,7 +75,7 @@ class TimeZone(TypeDecorator[datetime]):
         return value
 
 
-# Mixin: 一object-oriented programming concepts to make the structure clearer, `Wiki <https://en.wikipedia.org/wiki/Mixin/>`__
+# Mixin: object-oriented concepts to make the structure clearer, `Wiki <https://en.wikipedia.org/wiki/Mixin/>`__
 class UserMixin(MappedAsDataclass):
     """User Mixin data class"""
 
@@ -103,7 +103,7 @@ class DateTimeMixin(MappedAsDataclass):
 
 
 class LogicalDeleteMixin(MappedAsDataclass):
-    """逻辑删除 Mixin 数据类"""
+    """Soft-delete mixin data class"""
 
     deleted: Mapped[int] = mapped_column(
         BigInteger,
@@ -111,14 +111,14 @@ class LogicalDeleteMixin(MappedAsDataclass):
         default=0,
         server_default='0',
         sort_order=999,
-        comment='是否已删除（0：否；id：是）',
+        comment='Deletion status (0: not deleted; id: deleted)',
     )
     deleted_time: Mapped[datetime | None] = mapped_column(
         TimeZone,
         init=False,
         default=None,
         sort_order=999,
-        comment='删除时间',
+        comment='Deletion time',
     )
 
 

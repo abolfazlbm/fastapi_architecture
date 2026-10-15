@@ -18,7 +18,7 @@ async def acquire_distributed_reload_lock() -> AsyncGenerator[None, Any]:
         blocking_timeout=60, # Timeout for acquiring lock waiting: 60 seconds
     )
     if not await lock.acquire():
-        raise errors.ServerError(msg='获取热重载锁超时，请稍后重试')
+        raise errors.ServerError(msg='Timed out acquiring the hot-reload lock; please try again later')
 
     # File lock (notifies the file monitor to skip reloading)
     lock_path = anyio.Path(RELOAD_LOCK_FILE)

@@ -16,10 +16,10 @@ _VALID_DATABASES: Final = frozenset({'mysql', 'postgresql'})
 
 
 def _validate_settings(v: dict[str, Any]) -> dict[str, Any]:
-    """校验插件配置项名称和值类型"""
+    """Validate plugin setting names and value types"""
     invalid_keys = [key for key in v if not key.isupper()]
     if invalid_keys:
-        raise PluginConfigError(f'settings 配置项名称必须全大写，无效的配置项: {", ".join(invalid_keys)}')
+        raise PluginConfigError(f'Setting names must be uppercase; invalid settings: {", ".join(invalid_keys)}')
 
     invalid_values = [
         key
@@ -29,7 +29,7 @@ def _validate_settings(v: dict[str, Any]) -> dict[str, Any]:
     ]
     if invalid_values:
         raise PluginConfigError(
-            f'settings 配置项值仅支持字符串、数字、布尔值或字符串列表，无效的配置项: {", ".join(invalid_values)}'
+            f'Settings accept strings, numbers, booleans or string lists; invalid settings: {", ".join(invalid_values)}'
         )
     return v
 
@@ -44,7 +44,7 @@ class PluginInfoSchema(BaseModel):
     author: str = Field(..., min_length=1, max_length=50, description='author')
     tags: list[str] = Field(..., min_length=1, description='tag')
     database: list[str] = Field(..., min_length=1, description='Database support')
-    depends_on: list[str] = Field(default_factory=list, description='依赖的插件列表')
+    depends_on: list[str] = Field(default_factory=list, description='Plugin dependencies')
 
     @field_validator('version')
     @classmethod
@@ -82,17 +82,17 @@ class PluginInfoSchema(BaseModel):
     @field_validator('depends_on')
     @classmethod
     def validate_depends_on(cls, v: list[str]) -> list[str]:
-        """校验插件依赖配置"""
+        """Validate plugin dependency configuration"""
         for dep in v:
             if not dep or not isinstance(dep, str):
-                raise PluginConfigError(f'依赖的插件列表必须为非空字符串，当前值: {dep}')
+                raise PluginConfigError(f'Plugin dependencies must be non-empty strings; current value: {dep}')
         return v
 
 
 class CapabilityPluginInfoSchema(PluginInfoSchema):
-    """能力型插件信息模型"""
+    """Capability plugin information model"""
 
-    database: list[str] = Field(default_factory=list, description='数据库支持')
+    database: list[str] = Field(default_factory=list, description='Supported databases')
 
 
 class AppPluginAppSchema(BaseModel):
@@ -145,7 +145,7 @@ class AppPluginConfigSchema(BaseModel):
     @field_validator('settings')
     @classmethod
     def validate_settings(cls, v: dict[str, Any]) -> dict[str, Any]:
-        """校验配置项"""
+        """Validate settings"""
         return _validate_settings(v)
 
 
@@ -177,22 +177,22 @@ class ExtendPluginConfigSchema(BaseModel):
     @field_validator('settings')
     @classmethod
     def validate_settings(cls, v: dict[str, Any]) -> dict[str, Any]:
-        """校验配置项"""
+        """Validate settings"""
         return _validate_settings(v)
 
 
 class CapabilityPluginConfigSchema(BaseModel):
-    """能力型插件配置模型"""
+    """Capability plugin configuration model"""
 
     model_config = ConfigDict(extra='forbid')
 
-    plugin: CapabilityPluginInfoSchema = Field(..., description='插件信息')
-    settings: dict[str, Any] = Field(default_factory=dict, description='配置项')
+    plugin: CapabilityPluginInfoSchema = Field(..., description='Plugin information')
+    settings: dict[str, Any] = Field(default_factory=dict, description='Settings')
 
     @field_validator('settings')
     @classmethod
     def validate_settings(cls, v: dict[str, Any]) -> dict[str, Any]:
-        """校验配置项"""
+        """Validate settings"""
         return _validate_settings(v)
 
 
@@ -235,7 +235,7 @@ def validate_plugin_config(plugin_name: str, config: dict[str, Any]) -> PluginLe
     model_dir = plugin_dir / 'model'
     if model_dir.is_dir():
         if not config['plugin'].get('database'):
-            raise PluginConfigError(f'插件 {plugin_name} 包含 model 目录时必须声明支持的数据库')
+            raise PluginConfigError(f'Plugin {plugin_name} with a model directory must declare supported databases')
 
         sql_dir = plugin_dir / 'sql'
         supported_db_types = []

@@ -29,9 +29,9 @@ class CreateCodeGenColumnParam(CodeGenColumnSchemaBase):
 
 
 class CreateCodeGenColumnInternalParam(CreateCodeGenColumnParam):
-    """创建代码生成模型列内部参数"""
+    """Internal parameters for creating code generation model columns"""
 
-    pd_type: str | None = Field(None, description='列类型对应的 pydantic 类型')
+    pd_type: str | None = Field(None, description='Pydantic type corresponding to the column type')
 
 
 class UpdateCodeGenColumnParam(CodeGenColumnSchemaBase):

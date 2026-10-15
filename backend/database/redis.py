@@ -28,17 +28,17 @@ class RedisCli(Redis):
         """
         Initialize the Redis client
 
-        :param host: Redis 服务器的主机地址
-        :param port: Redis 服务器的端口号
-        :param password: Redis 认证密码
-        :param db: 使用的 Redis 逻辑数据库索引
-        :param socket_timeout: Socket 读写操作的超时时间
-        :param socket_connect_timeout: 建立 TCP 连接时的超时时间
-        :param socket_keepalive: 是否开启 TCP Keepalive 探测
-        :param health_check_interval: 健康检查间隔时间（秒）
-        :param decode_responses: 是否自动将 Redis 返回的字节流（bytes）解码为字符串（utf-8）
-        :param max_connections: 连接池最大连接数，超出后排队等待而不是无限新建
-        :param pool_timeout: 等待空闲连接的超时时间（秒）
+        :param host: Redis server host address
+        :param port: Redis server port number
+        :param password: Redis authentication password
+        :param db: Redis logical database index to use
+        :param socket_timeout: Timeout for socket read and write operations
+        :param socket_connect_timeout: Timeout for establishing a TCP connection
+        :param socket_keepalive: Whether to enable TCP keepalive probes
+        :param health_check_interval: Health-check interval (seconds)
+        :param decode_responses: Whether to automatically decode bytes returned by Redis into UTF-8 strings
+        :param max_connections: Maximum pool size; queue when exhausted instead of creating unlimited connections
+        :param pool_timeout: Timeout for waiting for an available connection (seconds)
         """
         pool = BlockingConnectionPool(
             max_connections=max_connections,
@@ -54,7 +54,7 @@ class RedisCli(Redis):
             decode_responses=decode_responses,
         )
         super().__init__(connection_pool=pool)
-        # 连接池由客户端独占，aclose 时一并释放
+        # The client exclusively owns the connection pool and disposes of it on aclose
         self.auto_close_connection_pool = True
 
     async def init(self) -> None:
@@ -81,10 +81,10 @@ class RedisCli(Redis):
         """
         Delete all keys of the specified prefix
 
-        :param key_prefix: 要删除的键前缀
-        :param exclude_keys: 要排除的键或键列表
-        :param batch_size: 批量删除的大小
-        :param count: 每次扫描批次的数量
+        :param key_prefix: Prefix of keys to delete
+        :param exclude_keys: Key or list of keys to exclude
+        :param batch_size: Deletion batch size
+        :param count: Number of entries requested per scan batch
         :return:
         """
         exclude_set = (
@@ -118,14 +118,14 @@ class RedisCli(Redis):
 
     async def mget_batched(self, keys: list[str], batch_size: int = 1000) -> list[str | None]:
         """
-        分批获取多个 key 的值
+        Get values for multiple keys in batches
 
-        :param keys: 键列表
-        :param batch_size: 每批数量
+        :param keys: List of keys
+        :param batch_size: Batch size
         :return:
         """
         if batch_size <= 0:
-            raise ValueError('batch_size 必须大于 0')
+            raise ValueError('batch_size must be greater than 0')
         if not keys:
             return []
         values: list[str | None] = []
@@ -135,26 +135,26 @@ class RedisCli(Redis):
 
     async def exists_batched(self, keys: list[str], batch_size: int = 1000) -> list[bool]:
         """
-        分批判断多个 key 是否存在
+        Check whether multiple keys exist in batches
 
-        :param keys: 键列表
-        :param batch_size: 每批数量
+        :param keys: List of keys
+        :param batch_size: Batch size
         :return:
         """
         if batch_size <= 0:
-            raise ValueError('batch_size 必须大于 0')
+            raise ValueError('batch_size must be greater than 0')
         return [value is not None for value in await self.mget_batched(keys, batch_size=batch_size)]
 
     async def smembers_many(self, keys: list[str], batch_size: int = 100) -> list[set[str]]:
         """
-        分批获取多个集合的成员
+        Get members of multiple sets in batches
 
-        :param keys: 键列表
-        :param batch_size: 每批数量
+        :param keys: List of keys
+        :param batch_size: Batch size
         :return:
         """
         if batch_size <= 0:
-            raise ValueError('batch_size 必须大于 0')
+            raise ValueError('batch_size must be greater than 0')
         if not keys:
             return []
         members: list[set[str]] = []
@@ -169,14 +169,14 @@ class RedisCli(Redis):
 
     async def delete_batched(self, keys: list[str], batch_size: int = 1000) -> int:
         """
-        分批删除多个 key
+        Delete multiple keys in batches
 
-        :param keys: 键列表
-        :param batch_size: 每批数量
+        :param keys: List of keys
+        :param batch_size: Batch size
         :return:
         """
         if batch_size <= 0:
-            raise ValueError('batch_size 必须大于 0')
+            raise ValueError('batch_size must be greater than 0')
         if not keys:
             return 0
         deleted = 0

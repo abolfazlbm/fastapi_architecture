@@ -33,9 +33,9 @@ class _CustomPageParams(BaseModel, AbstractParams):
 
 
 class _CustomCursorParams(CursorParams):
-    """自定义游标分页参数"""
+    """Custom cursor pagination parameters"""
 
-    size: int = Query(50, ge=1, le=200, description='每页数量')
+    size: int = Query(50, ge=1, le=200, description='Items per page')
 
 
 class _Links(BaseModel):
@@ -167,8 +167,8 @@ async def paging_data(
 
     :param db: database session
     :param select: SQL query statement
-    :param bind_params: 数据与总数查询共用的绑定参数
-    :param execute_options: 数据与总数查询共用的执行选项
+    :param bind_params: Bind parameters shared by the data and count queries
+    :param execute_options: Execution options shared by the data and count queries
     :param kwargs: More fastapi-pagination apaginate parameters
     :return:
     """

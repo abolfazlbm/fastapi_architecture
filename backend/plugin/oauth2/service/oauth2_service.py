@@ -77,7 +77,7 @@ class OAuth2Service:
                     None,
                 )
                 if username is None:
-                    raise errors.ConflictError(msg='用户名已存在，请重试')
+                    raise errors.ConflictError(msg='Username already exists; please try again')
                 new_sys_user = AddOAuth2UserParam(
                     username=username,
                     password=None,

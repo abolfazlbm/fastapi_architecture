@@ -12,15 +12,15 @@ from backend.plugin.oauth2.schema.user_social import CreateUserSocialParam
 
 
 class UserSocialService:
-    """用户社交账号服务类"""
+    """User social account service class"""
 
     @staticmethod
     async def get_bindings(*, db: AsyncSession, user_id: int) -> list[str]:
         """
         Get the user’s bound social account
 
-        :param db: 数据库会话
-        :param user_id: 用户 ID
+        :param db: Database session
+        :param user_id: User ID
         :return:
         """
         bindings = await user_social_dao.get_by_user_id(db, user_id)

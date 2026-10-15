@@ -11,7 +11,7 @@ class CodeGenColumn(DataClassBase):
     __tablename__ = 'code_gen_column'
     __table_args__ = (
         sa.UniqueConstraint('code_gen_business_id', 'name', name='uk_code_gen_column_business_id_name'),
-        {'comment': '代码生成模型列表'},
+        {'comment': 'Code generation model columns'},
     )
 
     id: Mapped[id_key] = mapped_column(init=False)

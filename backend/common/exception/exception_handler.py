@@ -43,7 +43,7 @@ async def _validation_exception_handler(exc: RequestValidationError | Validation
     """
     errors = []
     for error in exc.errors():
-        # 用于 ai-buddy 插件，脱敏校验错误中的敏感输入，避免异常响应泄露请求内容
+        # For ai-buddy, redact sensitive validation inputs to prevent request content leaking in error responses
         if (
             error.get('type') == 'json_invalid'
             or any(
@@ -65,7 +65,7 @@ async def _validation_exception_handler(exc: RequestValidationError | Validation
             error['input'] = '[REDACTED]'
         elif isinstance(error.get('input'), dict) and 'secret' in error['input']:
             error['input'] = {**error['input'], 'secret': '[REDACTED]'}
-        # 非 en-US 语言下，使用自定义错误信息
+        # Use custom error messages for languages other than en-US
         if i18n.current_language != 'en-US':
             custom_message = t(f'pydantic.{error["type"]}')
             if custom_message:

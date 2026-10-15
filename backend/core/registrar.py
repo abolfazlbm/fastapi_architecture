@@ -86,7 +86,7 @@ async def register_init(app: FastAPI) -> AsyncGenerator[None, None]:
         # Close redis connection
         await redis_client.aclose()
 
-        # 释放数据库连接池
+        # Dispose of database connection pools
         await dispose_database()
 
 
@@ -105,7 +105,7 @@ def register_app() -> FastAPI:
         telemetry={
             'tracing': settings.GRAFANA_METRICS_ENABLE,
             'metrics': settings.GRAFANA_METRICS_ENABLE,
-            # 异常日志由现有中间件记录，避免重复导出
+            # Existing middleware logs exceptions; avoid duplicate exports
             'logs': False,
             'auto_configure': False,
         },

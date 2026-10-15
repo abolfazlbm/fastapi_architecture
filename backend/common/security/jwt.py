@@ -88,7 +88,7 @@ async def get_jwt_user(user_id: int) -> GetUserInfoWithRelationDetail:
     """
     Get JWT user
 
-    :param user_id: 用户 ID
+    :param user_id: User ID
     :return:
     """
     user_key = f'{settings.JWT_USER_REDIS_PREFIX}:{user_id}'
@@ -147,7 +147,7 @@ def jwt_authentication_verify(
     return token.credentials
 
 
-# JWT 依赖注入
+# JWT dependency injection
 DependsJwtAuth = Depends(jwt_authentication_verify)
 
 

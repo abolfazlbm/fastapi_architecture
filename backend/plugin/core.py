@@ -21,16 +21,16 @@ from backend.utils.dynamic_import import get_model_objects
 
 def check_plugin_installed(plugin_name: str) -> bool:
     """
-    检查插件是否已安装
+    Check whether a plugin is installed
 
-    :param plugin_name: 插件名称
+    :param plugin_name: Plugin name
     :return:
     """
     return (PLUGIN_DIR / plugin_name / '__init__.py').exists()
 
 
 def get_required_plugins() -> tuple[str, ...]:
-    """获取必需插件列表"""
+    """Get the list of required plugins"""
     required_plugins = list(settings.PLUGIN_REQUIRED)
     if not settings.RBAC_ROLE_MENU_MODE and 'casbin_rbac' not in required_plugins:
         required_plugins.append('casbin_rbac')
@@ -38,11 +38,11 @@ def get_required_plugins() -> tuple[str, ...]:
 
 
 def check_required_plugins() -> None:
-    """检查必需插件"""
+    """Check required plugins"""
     required_plugins = get_required_plugins()
     missing_plugins = [name for name in required_plugins if not check_plugin_installed(name)]
     if missing_plugins:
-        raise PluginInjectError(f'当前系统缺少以下插件: {", ".join(missing_plugins)}，请先安装对应插件')
+        raise PluginInjectError(f'Missing plugins: {", ".join(missing_plugins)}; install them first')
 
 
 @lru_cache(maxsize=128)
@@ -124,7 +124,7 @@ def parse_plugin_config() -> tuple[list[PluginEntry], list[PluginEntry]]:
             plugin_config = load_plugin_config(plugin)
             plugin_type = validate_plugin_config(plugin, plugin_config)
 
-            # 补充插件信息
+            # Populate plugin information
             plugin_config['plugin']['name'] = plugin
             plugin_cache_key = f'{settings.PLUGIN_REDIS_PREFIX}:{plugin}'
             plugin_cache_info = run_await(current_redis_client.get)(plugin_cache_key)

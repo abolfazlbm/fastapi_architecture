@@ -47,10 +47,10 @@ class CRUDCodeGenColumn(CRUDPlus[CodeGenColumn]):
 
     async def bulk_create(self, db: AsyncSession, objs: list[CreateCodeGenColumnInternalParam]) -> None:
         """
-        批量创建代码生成模型列
+        Create code generation model columns in batches
 
-        :param db: 数据库会话
-        :param objs: 创建代码生成模型列参数列表
+        :param db: Database session
+        :param objs: List of parameters for creating code generation model columns
         :return:
         """
         await self.create_models(db, objs)

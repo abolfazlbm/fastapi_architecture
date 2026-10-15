@@ -92,7 +92,7 @@ class UserService:
         if await user_dao.get_by_username(db, obj.username):
             raise errors.ConflictError(msg='Username registered')
         if obj.email and await user_dao.check_email(db, obj.email):
-            raise errors.ConflictError(msg='邮箱已被绑定')
+            raise errors.ConflictError(msg='Email address is already linked to an account')
         if not obj.password:
             raise errors.RequestError(msg='Password is not allowed to be empty')
         if not await dept_dao.get(db, obj.dept_id):
