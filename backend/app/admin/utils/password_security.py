@@ -64,5 +64,8 @@ async def validate_new_password(db: AsyncSession, user_id: int, new_password: st
     for hist in password_history[: settings.USER_PASSWORD_HISTORY_CHECK_COUNT]:
         if password_verify(new_password, hist.password):
             raise errors.RequestError(
-                msg=f'The new password cannot be the same as the password used the last {settings.USER_PASSWORD_HISTORY_CHECK_COUNT} times'
+                msg=(
+                    f'The new password cannot be the same as the password used the last '
+                    f'{settings.USER_PASSWORD_HISTORY_CHECK_COUNT} times'
+                )
             )

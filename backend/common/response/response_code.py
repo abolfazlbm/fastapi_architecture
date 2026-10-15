@@ -37,7 +37,8 @@ class CustomErrorCode(CustomCodeBase):
 @dataclasses.dataclass
 class CustomResponse:
     """
-    Provide open response status codes instead of enumerations, which can be useful if you want to customize response information
+    Provide open response status codes instead of enumerations, which can be useful if you want to customize response
+    information
     """
 
     code: int

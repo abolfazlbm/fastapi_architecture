@@ -11,7 +11,10 @@ from backend.utils.dynamic_import import import_module_cached
 
 
 def _invalid_router_msg(plugin: str, module_path: str, level: str) -> str:
-    return f'{level}Plugin {plugin} module {module_path} does not contain a valid router; check whether the plugin files are complete'
+    return (
+        f'{level}Plugin {plugin} module {module_path} does not contain a valid router; check whether the plugin files '
+        f'are complete'
+    )
 
 
 def inject_extend_router(plugin: PluginEntry) -> None:

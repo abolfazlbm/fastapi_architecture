@@ -71,7 +71,8 @@ class CachePubSubManager:
             except Exception as e:
                 reconnect_attempts += 1
                 log.error(
-                    f'[CachePubSub] Subscription exception ({reconnect_attempts}/{settings.CACHE_PUBSUB_MAX_RECONNECT_ATTEMPTS}): {e}'
+                    f'[CachePubSub] Subscription exception '
+                    f'({reconnect_attempts}/{settings.CACHE_PUBSUB_MAX_RECONNECT_ATTEMPTS}): {e}'
                 )
 
                 if reconnect_attempts >= settings.CACHE_PUBSUB_MAX_RECONNECT_ATTEMPTS:

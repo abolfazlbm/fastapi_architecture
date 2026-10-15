@@ -154,7 +154,8 @@ class ResponseBase:
 
         .. warning::
 
-            When using this return method, the interface parameters response_model and arrow return type cannot be specified
+            When using this return method, the interface parameters response_model and arrow return type cannot be
+            specified
 
         :param res: return information
         :param data: Return data

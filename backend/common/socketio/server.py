@@ -55,7 +55,8 @@ async def connect(namespace: str, sid: str, _environ: dict[str, Any], auth: dict
     if token == settings.WS_NO_AUTH_MARKER:
         if settings.ENVIRONMENT == 'prod':
             log.error(
-                'WebSocket Connection failed: Authorization-free direct connection is prohibited in the production environment'
+                'WebSocket Connection failed: Authorization-free direct connection is prohibited in the production '
+                'environment'
             )
             return False
         expire = settings.TOKEN_EXPIRE_SECONDS

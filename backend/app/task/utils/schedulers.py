@@ -31,7 +31,8 @@ from backend.utils.timezone import timezone
 if TYPE_CHECKING:
     from redis.asyncio.lock import Lock
 
-# This scheduler must wake up more frequently than the regular 5 minutes, as it requires consideration of external changes to the schedule
+# This scheduler must wake up more frequently than the regular 5 minutes, as it requires consideration of external
+# changes to the schedule
 _DEFAULT_MAX_INTERVAL: Final = 5  # seconds
 
 # Plan the lock duration to avoid repeated creation
@@ -199,7 +200,10 @@ class ModelEntry(ScheduleEntry):
                 if not obj:
                     obj = TaskScheduler(**CreateTaskSchedulerParam(task=task, **spec).model_dump())
             elif isinstance(schedule, schedules.crontab):
-                crontab = f'{schedule._orig_minute} {schedule._orig_hour} {schedule._orig_day_of_month} {schedule._orig_month_of_year} {schedule._orig_day_of_week}'
+                crontab = (
+                    f'{schedule._orig_minute} {schedule._orig_hour} {schedule._orig_day_of_month} '
+                    f'{schedule._orig_month_of_year} {schedule._orig_day_of_week}'
+                )
                 crontab_verify(crontab)
                 spec = {
                     'name': name,

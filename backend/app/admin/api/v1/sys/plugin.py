@@ -40,7 +40,10 @@ async def install_plugin(
     return response_base.success(
         res=CustomResponse(
             code=200,
-            msg=f'Plugin {plugin_name} is installed successfully. Please follow the plugin instructions (README.md) to configure and restart the service',
+            msg=(
+                f'Plugin {plugin_name} is installed successfully. Please follow the plugin instructions (README.md) to '
+                f'configure and restart the service'
+            ),
         ),
     )
 
@@ -48,7 +51,10 @@ async def install_plugin(
 @router.delete(
     '/{plugin}',
     summary='Uninstall plugin',
-    description='This operation will directly delete the plug-in dependencies, but will not directly delete the plug-in. Instead, it will move the plug-in to the backup directory (development environment only)',
+    description=(
+        'This operation will directly delete the plug-in dependencies, but will not directly delete the plug-in. '
+        'Instead, it will move the plug-in to the backup directory (development environment only)'
+    ),
     dependencies=[DependsSuperUser],
 )
 async def uninstall_plugin(plugin: Annotated[str, Path(description='Plugin Name')]) -> ResponseModel:
@@ -56,7 +62,10 @@ async def uninstall_plugin(plugin: Annotated[str, Path(description='Plugin Name'
     return response_base.success(
         res=CustomResponse(
             code=200,
-            msg=f'Plugin {plugin} Uninstalled successfully, please remove the relevant configuration and restart the service according to the plug-in instructions (README.md)',
+            msg=(
+                f'Plugin {plugin} Uninstalled successfully, please remove the relevant configuration and restart the '
+                f'service according to the plug-in instructions (README.md)'
+            ),
         ),
     )
 

@@ -48,7 +48,10 @@ async def rbac_verify(request: Request, _token: str = DependsJwtAuth) -> None:  
     method = request.method
     if method not in {MethodType.GET, MethodType.OPTIONS} and not request.user.is_staff:
         raise errors.AuthorizationError(
-            msg='The user has been banned from background management operations, please contact the system administrator'
+            msg=(
+                'The user has been banned from background management operations, please contact the system '
+                'administrator'
+            )
         )
 
     # RBAC Authentication

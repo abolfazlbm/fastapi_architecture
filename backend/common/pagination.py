@@ -149,7 +149,10 @@ class PageData[SchemaT](_PageDetails):
 
 
 class CursorPageData[SchemaT](_CursorPageDetails):
-    """Unified return model including return data schema, only applicable to cursor paging interface, usage is the same as PageData"""
+    """
+    Unified return model including return data schema, only applicable to cursor paging interface, usage is the same as
+    PageData
+    """
 
     items: Sequence[SchemaT]
 

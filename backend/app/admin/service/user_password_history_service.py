@@ -35,7 +35,9 @@ class UserPasswordHistoryService:
             now = timezone.now()
             if locked_until > now:
                 remaining_minutes = math.ceil((locked_until - now).total_seconds() / 60)
-                raise errors.AuthorizationError(msg=f'Account has been locked, please try again in {remaining_minutes} minutes')
+                raise errors.AuthorizationError(
+                    msg=f'Account has been locked, please try again in {remaining_minutes} minutes'
+                )
             await redis_client.delete(lock_key)
             await redis_client.delete(f'{settings.LOGIN_FAILURE_PREFIX}:{user_id}')
 

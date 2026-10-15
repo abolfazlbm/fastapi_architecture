@@ -52,7 +52,8 @@ class PluginInfoSchema(BaseModel):
         """Verify the version number format"""
         if not match_string(r'^\d+\.\d+\.\d+$', v):
             raise PluginConfigError(
-                f'The version number is in the wrong format, it should be in x.y.z format, such as 1.0.0, the current value: {v}'
+                f'The version number is in the wrong format, it should be in x.y.z format, such as 1.0.0, the '
+                f'current value: {v}'
             )
         return v
 
@@ -76,7 +77,8 @@ class PluginInfoSchema(BaseModel):
             invalid_dbs = set(v) - _VALID_DATABASES
             if invalid_dbs:
                 raise PluginConfigError(
-                    f'The database type is invalid: {", ".join(invalid_dbs)},Supported databases: {", ".join(sorted(_VALID_DATABASES))}'
+                    f'The database type is invalid: {", ".join(invalid_dbs)},Supported databases: '
+                    f'{", ".join(sorted(_VALID_DATABASES))}'
                 )
         return v
 
@@ -135,7 +137,8 @@ class ApiConfigSchema(BaseModel):
             raise PluginConfigError(f'The route prefix must start with "/", the current value: {v}')
         if not match_string(r'^/[a-zA-Z0-9_/-]*$', v):
             raise PluginConfigError(
-                f'The route prefix is malformed and can only contain letters, numbers, underscores, slashes, and hyphens, with current values: {v}'
+                f'The route prefix is malformed and can only contain letters, numbers, underscores, slashes, and '
+                f'hyphens, with current values: {v}'
             )
         return v
 
@@ -176,7 +179,8 @@ class ExtendPluginConfigSchema(BaseModel):
                 )
             if not match_string(r'^[a-zA-Z_][a-zA-Z0-9_]*$', api_name):
                 raise PluginConfigError(
-                    f'api The configuration name is malformed, must start with a letter or underscore, and can only contain letters, numbers, and underscores, the current value: {api_name}'
+                    f'api The configuration name is malformed, must start with a letter or underscore, and can '
+                    f'only contain letters, numbers, and underscores, the current value: {api_name}'
                 )
             validated_api[api_name] = ApiConfigSchema(**api_config) if isinstance(api_config, dict) else api_config
         return validated_api
@@ -268,7 +272,8 @@ def validate_plugin_config(plugin_name: str, config: dict[str, Any]) -> PluginLe
 
         if not supported_db_types:
             raise PluginConfigError(
-                f'PlugIn {plugin_name} At least one database initialization and destruction SQL script must be provided,'
+                f'PlugIn {plugin_name} At least one database initialization and destruction SQL script must be '
+                f'provided,'
                 f'Currently missing: {"; ".join(missing_details)}'
             )
 

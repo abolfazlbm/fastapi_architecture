@@ -93,7 +93,7 @@ class OAuth2Service:
             new_user_social = CreateUserSocialParam(sid=sid, source=source.value, user_id=sys_user.id)
             await user_social_dao.create(db, new_user_social)
 
-        #Create token
+        # Create token
         access_token_data = await create_access_token(
             sys_user.id,
             multi_login=sys_user.is_multi_login,

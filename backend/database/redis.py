@@ -111,7 +111,8 @@ class RedisCli(Redis):
         Get all keys with the specified prefix
 
         :param key_prefix: key prefix to search for
-        :param count: The number of batches scanned each time. The larger the value, the faster the scanning speed, but it will occupy more server resources.
+        :param count: The number of batches scanned each time. The larger the value, the faster the scanning speed, but
+            it will occupy more server resources.
         :return:
         """
         return [key async for key in self.scan_iter(match=f'{key_prefix}:*', count=count)]

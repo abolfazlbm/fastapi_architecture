@@ -53,7 +53,9 @@ async def create_column(db: CurrentSessionTransaction, obj: CreateCodeGenColumnP
     ],
 )
 async def update_column(
-    db: CurrentSessionTransaction, pk: Annotated[int, Path(description='Model Column ID')], obj: UpdateCodeGenColumnParam
+    db: CurrentSessionTransaction,
+    pk: Annotated[int, Path(description='Model Column ID')],
+    obj: UpdateCodeGenColumnParam,
 ) -> ResponseModel:
     count = await code_gen_column_service.update(db=db, pk=pk, obj=obj)
     if count > 0:

@@ -233,7 +233,10 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
             '_truncated': True,
             '_original_size': original_size,
             '_max_size': max_size,
-            '_message': 'The request body is too large or the size is unknown, and the operation log request body record has been skipped',
+            '_message': (
+                'The request body is too large or the size is unknown, and the operation log request body record has '
+                'been skipped'
+            ),
         }
 
     @staticmethod

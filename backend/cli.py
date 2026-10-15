@@ -258,7 +258,10 @@ async def init(db: AsyncSession, redis: RedisCli) -> None:
 
     console.print(Panel(panel_content, title=f'fba (v{__version__}) - initialize', border_style='cyan', padding=(1, 2)))
     ok = Prompt.ask(
-        'We are about to [red]create/rebuild database tables[/red] and [red]execute all database scripts[/red]. Are you sure to continue? ',
+        (
+            'We are about to [red]create/rebuild database tables[/red] and [red]execute all database scripts[/red]. '
+            'Are you sure to continue? '
+        ),
         choices=['y', 'n'],
         default='n',
     )
@@ -329,7 +332,6 @@ def run(host: str, port: int, reload: bool, workers: int) -> None:  # ruff:ignor
     panel_content.append('#')
     panel_content.append('\n\nSponsors:', style='bold yellow')
     panel_content.append('Claude.uy', style='link https://claude.uy/home')
-
 
     console.print(Panel(panel_content, title=f'fba (v{__version__})', border_style='purple', padding=(1, 2)))
     granian.Granian(
@@ -430,7 +432,8 @@ async def install_plugin(  # ruff:ignore[complex-structure]
                     await execute_sql_scripts(db, sql_file)
             else:
                 console.warning(
-                    f'Plugin {plugin_name} does not provide an initialization SQL script and skips database initialization.'
+                    f'Plugin {plugin_name} does not provide an initialization SQL script and skips database '
+                    f'initialization.'
                 )
 
     except Exception as e:
@@ -523,7 +526,8 @@ async def remove_plugin(plugin: str | None, *, no_sql: bool = False) -> None:  #
         console.tip(f'Plug-in {plugin} was uninstalled successfully')
         console.print()
         console.warning(
-            'Please remove the relevant configuration and restart the service according to the plug-in instructions (README.md)'
+            'Please remove the relevant configuration and restart the service according to the plug-in '
+            'instructions (README.md)'
         )
 
     plugins = get_plugins()
@@ -700,7 +704,8 @@ async def generate(*, preview: bool = False) -> None:
 
         # generate
         console.print(
-            '\n[bold red]Warning: Code generation will write disk files (overwrites), do not use in production environments!!![/]'
+            '\n[bold red]Warning: Code generation will write disk files (overwrites), do not use in production '
+            'environments!!![/]'
         )
         ok = Prompt.ask('\nAre you sure you want to continue generating code?', choices=['y', 'n'], default='n')
 
@@ -731,7 +736,10 @@ class Init:
         bool,
         cappa.Arg(
             default=False,
-            help='Automated initialization mode: automatically create .env, install dependencies, create database and initialize table structure',
+            help=(
+                'Automated initialization mode: automatically create .env, install dependencies, create database and '
+                'initialize table structure'
+            ),
         ),
     ]
 

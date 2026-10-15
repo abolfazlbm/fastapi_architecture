@@ -146,7 +146,8 @@ class MappedBase(AsyncAttrs, DeclarativeBase):
 
 class DataClassBase(MappedAsDataclass, MappedBase):
     """
-    Declarative Data Class Base Class with Data Class Integration allows for more advanced configurations, but you must pay attention to some of its features, especially when used with DeclarativeBase
+    Declarative Data Class Base Class with Data Class Integration allows for more advanced configurations, but you must
+    pay attention to some of its features, especially when used with DeclarativeBase
 
     `MappedAsDataclass <https://docs.sqlalchemy.org/en/20/orm/dataclasses.html#orm-declarative-native-dataclasses>`__
     """
@@ -156,7 +157,8 @@ class DataClassBase(MappedAsDataclass, MappedBase):
 
 class Base(DataClassBase, DateTimeMixin, LogicalDeleteMixin):
     """
-    Declarative data class base class, with data class integration, and includes the MiXin data class basic table structure
+    Declarative data class base class, with data class integration, and includes the MiXin data class basic table
+    structure
     """
 
     __abstract__ = True

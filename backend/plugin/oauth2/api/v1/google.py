@@ -38,7 +38,10 @@ async def get_google_oauth2_url() -> ResponseSchemaModel[str]:
 @router.get(
     '/callback',
     summary='google authorization automatic redirect',
-    description='After Google authorization, it will automatically redirect to the current address and obtain user information, and automatically create system users through user information',
+    description=(
+        'After Google authorization, it will automatically redirect to the current address and obtain user '
+        'information, and automatically create system users through user information'
+    ),
     dependencies=[Depends(RateLimiter(Rate(5, Duration.MINUTE)))],
 )
 async def google_oauth2_callback(  # ruff:ignore[missing-return-type-undocumented-public-function]

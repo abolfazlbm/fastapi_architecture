@@ -75,7 +75,10 @@ async def get_current_user(db: AsyncSession, pk: int) -> User:
         raise errors.AuthorizationError(msg='The user has been locked, please contact the system administrator')
     if user.dept_id and not user.dept:
         raise errors.AuthorizationError(
-            msg='The department to which the user belongs does not exist or has been deleted, please contact the system administrator'
+            msg=(
+                'The department to which the user belongs does not exist or has been deleted, please contact the '
+                'system administrator'
+            )
         )
     if user.dept and not user.dept.status:
         raise errors.AuthorizationError(

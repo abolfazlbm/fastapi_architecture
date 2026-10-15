@@ -22,7 +22,8 @@ class RequestPermission:
 
     Notice:
         When using this request permission, you need to set `Depends(RequestPermission('xxx'))` before `DependsRBAC`,
-        Because the interface dependency injection of the current version of FastAPI is performed in positive order, it means that the RBAC identity will be set before verification
+        Because the interface dependency injection of the current version of FastAPI is performed in positive order, it
+        means that the RBAC identity will be set before verification
     """
 
     def __init__(self, value: str) -> None:

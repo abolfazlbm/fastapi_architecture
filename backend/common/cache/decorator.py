@@ -35,7 +35,10 @@ async def _build_cache_key(
 
             if isinstance(value, list):
                 raise errors.ServerError(
-                    msg='Cache key build failed: Extracting fields from lists is not supported, please use key_builder to handle list parameters'
+                    msg=(
+                        'Cache key build failed: Extracting fields from lists is not supported, please use key_builder '
+                        'to handle list parameters'
+                    )
                 )
 
             if hasattr(value, field):
@@ -115,7 +118,8 @@ def cached[**P, T](  # ruff:ignore[complex-structure]
     cache decorator
 
     :param namespace: Cache namespace (usually cache Key prefix)
-    :param key: Get the value of the specified parameter name from the method parameter as the cache Key, mutually exclusive with key_builder
+    :param key: Get the value of the specified parameter name from the method parameter as the cache Key, mutually
+        exclusive with key_builder
     :param key_builder: Custom Key generation function, mutually exclusive with key
     :return:
     """
@@ -183,7 +187,8 @@ def cache_invalidate[**P, T](  # ruff:ignore[complex-structure]
         Cache invalidation decorator
 
     :param namespace: Cache namespace (usually cache Key prefix)
-        :param key: Get the value of the specified parameter name from the method parameter as the cache Key, mutually exclusive with key_builder
+        :param key: Get the value of the specified parameter name from the method parameter as the cache Key, mutually
+            exclusive with key_builder
         :param key_builder: Custom Key generation function, mutually exclusive with key
         :param atomic: Whether to ensure cache atomicity
         :return:

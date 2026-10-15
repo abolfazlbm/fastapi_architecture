@@ -265,7 +265,8 @@ class Settings(BaseSettings):
     # Grafana
     GRAFANA_METRICS_ENABLE: bool = False
     GRAFANA_OTLP_GRPC_ENDPOINT: str = 'fba_alloy:4317'
-    # The following configurations are static definitions. After modification, you need to manually synchronize the relevant Grafana configurations.:
+    # The following configurations are static definitions. After modification, you need to manually synchronize the
+    # relevant Grafana configurations.:
     # - GRAFANA_PROMETHEUS_APP_NAME:deploy/backend/grafana/fba_datasource.yml
     #   deploy/backend/grafana/dashboards/fba_server.json
     # - GRAFANA_CELERY_OTEL_SERVICE_NAME:deploy/backend/grafana/dashboards/fba_celery.json
