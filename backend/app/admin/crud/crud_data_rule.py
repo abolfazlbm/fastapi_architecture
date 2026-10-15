@@ -57,10 +57,10 @@ class CRUDDataRule(CRUDPlus[DataRule]):
 
     async def get_all_by_ids(self, db: AsyncSession, pks: list[int]) -> Sequence[DataRule]:
         """
-        通过 ID 列表批量获取数据规则
+        Get data rules in bulk by ID list
 
-        :param db: 数据库会话
-        :param pks: 规则 ID 列表
+        :param db: Database session
+        :param pks: Rule ID List
         :return:
         """
         return await self.select_models(db, id__in=pks, deleted=0)

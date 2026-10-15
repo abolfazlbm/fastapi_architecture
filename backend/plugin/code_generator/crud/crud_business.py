@@ -14,20 +14,20 @@ class CRUDCodeGenBusiness(CRUDPlus[CodeGenBusiness]):
 
     async def get(self, db: AsyncSession, pk: int) -> CodeGenBusiness | None:
         """
-        Get a code generation business
+        Get a code-generation business
 
-        :param db: database session
-        :param pk: code generation business ID
+        :param db: Database session
+        :param pk: Code Generationbusiness ID
         :return:
         """
         return await self.select_model(db, pk, deleted=0)
 
     async def get_by_name(self, db: AsyncSession, name: str) -> CodeGenBusiness | None:
         """
-        Get code generation business by name
+        Get a code-generation business by name
 
-        :param db: database session
-        :param name: table name
+        :param db: Database session
+        :param name: Table name
         :return:
         """
         return await self.select_model_by_column(db, table_name=name, deleted=0)
@@ -36,16 +36,16 @@ class CRUDCodeGenBusiness(CRUDPlus[CodeGenBusiness]):
         """
         Get all code generation business
 
-        :param db: database session
+        :param db: Database session
         :return:
         """
         return await self.select_models(db, deleted=0)
 
     async def get_select(self, table_name: str | None) -> Select:
         """
-        Get all code generation business query expressions
+        Get the query expression for all code-generation businesses
 
-        :param table_name: business table name
+        :param table_name: Business table name
         :return:
         """
         filters = {'deleted': 0}
@@ -59,8 +59,8 @@ class CRUDCodeGenBusiness(CRUDPlus[CodeGenBusiness]):
         """
         Create a code generation business
 
-        :param db: database session
-        :param obj: Create code generation business parameters
+        :param db: Database session
+        :param obj: Create code to generate business parameters
         :return:
         """
         await self.create_model(db, obj)
@@ -69,8 +69,8 @@ class CRUDCodeGenBusiness(CRUDPlus[CodeGenBusiness]):
         """
         Update code generation business
 
-        :param db: database session
-        :param pk: code generation business ID
+        :param db: Database session
+        :param pk: Code Generationbusiness ID
         :param obj: Update code generation business parameters
         :return:
         """
@@ -80,8 +80,8 @@ class CRUDCodeGenBusiness(CRUDPlus[CodeGenBusiness]):
         """
         Remove code generation business
 
-        :param db: database session
-        :param pk: code generation business ID
+        :param db: Database session
+        :param pk: Code Generationbusiness ID
         :return:
         """
         return await self.delete_model_by_column(

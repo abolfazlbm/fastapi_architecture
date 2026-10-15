@@ -35,7 +35,11 @@ async def get_data_rule_model_columns(
     return response_base.success(data=models)
 
 
-@router.get('/value-template-variables', summary='Available template variables to obtain data rule values', dependencies=[DependsJwtAuth])
+@router.get(
+    '/value-template-variables',
+    summary='Available template variables to obtain data rule values',
+    dependencies=[DependsJwtAuth],
+)
 async def get_data_rule_value_template_variables() -> ResponseSchemaModel[list[GetDataRuleTemplateVariableDetail]]:
     variables = await data_rule_service.get_value_template_variables()
     return response_base.success(data=variables)

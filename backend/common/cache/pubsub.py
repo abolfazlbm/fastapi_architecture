@@ -15,10 +15,10 @@ class CachePubSubManager:
     @staticmethod
     async def publish_invalidation(cache_key: str, *, delete_by_prefix: bool) -> None:
         """
-        Publish cache failure notifications
+        Publish a cache invalidation notification
 
         :param cache_key: Cache key
-        :param delete_by_prefix: Whether to delete all caches that match the prefix
+        :param delete_by_prefix: Whether to delete all caches matching the prefix
         :return:
         """
         try:

@@ -32,6 +32,7 @@ class AddUserParam(AuthSchemaBase):
     dept_id: int = Field(description='Department ID')
     roles: list[int] = Field(description='Role ID List')
 
+
 class AddUserRoleParam(SchemaBase):
     """Add user role"""
 
@@ -65,6 +66,7 @@ class UserInfoSchemaBase(SchemaBase):
     avatar: Annotated[HttpUrl, PlainSerializer(ser_string)] | None = Field(None, description='Avatar address')
     email: CustomEmailStr | None = Field(None, description='Email')
     phone: CustomPhoneNumber | None = Field(None, description='Phone Number')
+
 
 class UpdateUserParam(UserInfoSchemaBase):
     """Update user parameters"""

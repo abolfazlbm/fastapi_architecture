@@ -16,7 +16,11 @@ from backend.utils.limiter import RateLimiter
 router = APIRouter()
 
 
-@router.post('/login/swagger', summary='swagger Debug-specific', description='Used to quickly obtain tokens for swagger authentication')
+@router.post(
+    '/login/swagger',
+    summary='swagger Debug-specific',
+    description='Used to quickly obtain tokens for swagger authentication',
+)
 async def login_swagger(
     db: CurrentSessionTransaction, obj: Annotated[HTTPBasicCredentials, Depends()]
 ) -> GetSwaggerToken:
@@ -40,7 +44,12 @@ async def login(
     return response_base.success(data=data)
 
 
-@router.get('/codes', summary='Get all authorization codes', description='Adaptation vben admin v5', dependencies=[DependsJwtAuth])
+@router.get(
+    '/codes',
+    summary='Get all authorization codes',
+    description='Adaptation vben admin v5',
+    dependencies=[DependsJwtAuth],
+)
 async def get_codes(db: CurrentSession, request: Request) -> ResponseSchemaModel[list[str]]:
     codes = await auth_service.get_codes(db=db, request=request)
     return response_base.success(data=codes)

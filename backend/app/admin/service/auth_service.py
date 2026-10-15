@@ -217,7 +217,9 @@ class AuthService:
         if not user.status:
             raise errors.AuthorizationError(msg='The user has been locked, please contact the system administrator')
         if not user.is_multi_login and await get_user_sessions(user.id) - {token_payload.session_uuid}:
-            raise errors.ForbiddenError(msg='This user has logged in remote location, please log in again and change the password in time')
+            raise errors.ForbiddenError(
+                msg='This user has logged in remote location, please log in again and change the password in time'
+            )
         new_token = await create_new_token(
             refresh_token,
             token_payload.session_uuid,

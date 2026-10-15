@@ -16,10 +16,10 @@ _DESTROY_SQL_PREFIXES: Final = _INIT_SQL_PREFIXES | {'drop', 'delete', 'alter'}
 
 async def parse_sql_script(filepath: str, *, is_destroy: bool = False) -> list[str]:
     """
-    Parse SQL script
+    Parse an SQL script
 
-    :param filepath: script file path
-    :param is_destroy: Whether it is a destruction script, which will allow destructive operations
+    :param filepath: Script file path
+    :param is_destroy: Whether this is a destroy script, allowing destructive operations
     :return:
     """
     path = anyio.Path(filepath)

@@ -93,7 +93,7 @@ def get_tree_data(
         case BuildTreeType.recursive:
             tree = recursive_to_tree(nodes, parent_id=parent_id)
         case _:
-            raise ValueError(f'Invalid algorithm type：{build_type}')
+            raise ValueError(f'Invalid algorithm type:{build_type}')
     return tree
 
 

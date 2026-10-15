@@ -19,11 +19,11 @@ async def load_config(
     status_key: str,
 ) -> None:
     """
-    Load configuration based on configuration type
+    Load configuration by configuration type
 
-    :param db: database session
-    :param config_type_attr: Configuration type attribute name
-    :param mapping: configuration mapping {config_key: converter}
+    :param db: Database session
+    :param config_type_attr: Configuration typeattribute name
+    :param mapping: Configuration mapping {config_key: converter}
     :param status_key: status key
     :return:
     """
@@ -34,7 +34,9 @@ async def load_config(
         from backend.plugin.config.enums import ConfigType
         from backend.plugin.config.service.config_service import config_service
     except ImportError as e:
-        raise ImportError('Parameter configuration plug-in usage failed to import, please contact the system administrator') from e
+        raise ImportError(
+            'Parameter configuration plug-in usage failed to import, please contact the system administrator'
+        ) from e
 
     config_type = getattr(ConfigType, config_type_attr)
     dynamic_config = await config_service.get_all(db=db, type=config_type)
@@ -55,7 +57,7 @@ async def load_user_security_config(db: AsyncSession) -> None:
     """
     Get user security configuration
 
-    :param db: database session
+    :param db: Database session
     :return:
     """
     mapping = {
@@ -75,7 +77,7 @@ async def load_login_config(db: AsyncSession) -> None:
     """
     Get login configuration
 
-    :param db: database session
+    :param db: Database session
     :return:
     """
     mapping = {

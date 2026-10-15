@@ -51,7 +51,9 @@ class PluginInfoSchema(BaseModel):
     def validate_version(cls, v: str) -> str:
         """Verify the version number format"""
         if not match_string(r'^\d+\.\d+\.\d+$', v):
-            raise PluginConfigError(f'The version number is in the wrong format, it should be in x.y.z format, such as 1.0.0, the current value: {v}')
+            raise PluginConfigError(
+                f'The version number is in the wrong format, it should be in x.y.z format, such as 1.0.0, the current value: {v}'
+            )
         return v
 
     @field_validator('tags')
@@ -62,8 +64,7 @@ class PluginInfoSchema(BaseModel):
             invalid_tags = set(v) - _VALID_TAGS
             if invalid_tags:
                 raise PluginConfigError(
-                    f'The tag value is invalid: {", ".join(invalid_tags)}，Supported tags: {", "
-                                                                                         "".join(sorted(_VALID_TAGS))}'
+                    f'Invalid tag value: {", ".join(invalid_tags)},supported tags: {", ".join(sorted(_VALID_TAGS))}'
                 )
         return v
 
@@ -75,7 +76,7 @@ class PluginInfoSchema(BaseModel):
             invalid_dbs = set(v) - _VALID_DATABASES
             if invalid_dbs:
                 raise PluginConfigError(
-                    f'The database type is invalid: {", ".join(invalid_dbs)}，Supported databases: {", ".join(sorted(_VALID_DATABASES))}'
+                    f'The database type is invalid: {", ".join(invalid_dbs)},Supported databases: {", ".join(sorted(_VALID_DATABASES))}'
                 )
         return v
 
@@ -108,7 +109,9 @@ class AppPluginAppSchema(BaseModel):
             raise PluginConfigError('router The configuration cannot be empty')
         for router in v:
             if not router or not isinstance(router, str):
-                raise PluginConfigError(f'router The configuration item must be a non-empty string, the current value: {router}')
+                raise PluginConfigError(
+                    f'router The configuration item must be a non-empty string, the current value: {router}'
+                )
         return v
 
 
@@ -131,7 +134,9 @@ class ApiConfigSchema(BaseModel):
         if not v.startswith('/'):
             raise PluginConfigError(f'The route prefix must start with "/", the current value: {v}')
         if not match_string(r'^/[a-zA-Z0-9_/-]*$', v):
-            raise PluginConfigError(f'The route prefix is malformed and can only contain letters, numbers, underscores, slashes, and hyphens, with current values: {v}')
+            raise PluginConfigError(
+                f'The route prefix is malformed and can only contain letters, numbers, underscores, slashes, and hyphens, with current values: {v}'
+            )
         return v
 
 
@@ -166,7 +171,9 @@ class ExtendPluginConfigSchema(BaseModel):
         validated_api = {}
         for api_name, api_config in v.items():
             if not api_name or not isinstance(api_name, str):
-                raise PluginConfigError(f'api The configuration name must be a non-empty string, the current value: {api_name}')
+                raise PluginConfigError(
+                    f'api The configuration name must be a non-empty string, the current value: {api_name}'
+                )
             if not match_string(r'^[a-zA-Z_][a-zA-Z0-9_]*$', api_name):
                 raise PluginConfigError(
                     f'api The configuration name is malformed, must start with a letter or underscore, and can only contain letters, numbers, and underscores, the current value: {api_name}'
@@ -198,10 +205,10 @@ class CapabilityPluginConfigSchema(BaseModel):
 
 def validate_plugin_config(plugin_name: str, config: dict[str, Any]) -> PluginLevelType:
     """
-    Verify the plug-in configuration
+    Validate plugin configuration
 
-    :p aram plugin_name: Plugin name
-    :p aram config: Plugin configuration dictionary
+    :param plugin_name: Plugin Name
+    :param config: Plugin configuration dictionary
     :return:
     """
     plugin_schema, plugin_level = (

@@ -206,10 +206,10 @@ class RedisBucketFactory(BucketFactory):
 
 def default_identifier(request: Request) -> str:
     """
-   default identifier
+    default identifier
 
-    :param request: FastAPI request object
-    :return:
+     :param request: FastAPI request object
+     :return:
     """
     ip = get_request_ip(request)
     return f'{ip}:{request.scope["path"]}'

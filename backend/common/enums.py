@@ -4,7 +4,7 @@ from typing import Any
 
 
 class _EnumBase:
-    """Enumer base class, providing general method """
+    """Enumer base class, providing general method"""
 
     @classmethod
     def get_member_keys(cls) -> list[str]:

@@ -8,10 +8,10 @@ class CpuInfo(SchemaBase):
 
     physical_num: int = Field(description='Number of physical cores')
     logical_num: int = Field(description='Number of logical cores')
-    max_freq: float = Field(description='Maximum Frequency（MHz）')
-    min_freq: float = Field(description='Minimum Frequency（MHz）')
-    current_freq: float = Field(description='Current Frequency（MHz）')
-    usage: float = Field(description='Usage Rate（%）')
+    max_freq: float = Field(description='Maximum Frequency(MHz)')
+    min_freq: float = Field(description='Minimum Frequency(MHz)')
+    current_freq: float = Field(description='Current Frequency(MHz)')
+    usage: float = Field(description='Usage Rate(%)')
 
 
 class MemInfo(SchemaBase):

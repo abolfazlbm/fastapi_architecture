@@ -62,7 +62,7 @@ async def google_oauth2_callback(  # ruff:ignore[missing-return-type-undocumente
         state=state,
     )
 
-    #Binding process
+    # Binding process
     if data is None:
         return RedirectResponse(url=settings.OAUTH2_FRONTEND_BINDING_REDIRECT_URI)
 

@@ -58,10 +58,10 @@ class CRUDUser(CRUDPlus[User]):
 
     async def get_all_by_usernames(self, db: AsyncSession, usernames: list[str]) -> Sequence[User]:
         """
-        通过用户名列表批量获取用户
+        Get users in bulk by username list
 
-        :param db: 数据库会话
-        :param usernames: 用户名列表
+        :param db: Database session
+        :param usernames: Username list
         :return:
         """
         return await self.select_models(db, username__in=usernames, deleted=0)
@@ -329,7 +329,9 @@ class CRUDUser(CRUDPlus[User]):
 
                 await user_social_dao.delete_by_user_id(db, user_id)
             except ImportError:
-                raise errors.ServerError(msg='OAuth2 Plug-in usage failed to import, please contact the system administrator')
+                raise errors.ServerError(
+                    msg='OAuth2 Plug-in usage failed to import, please contact the system administrator'
+                )
 
         user_role_stmt = delete(user_role).where(user_role.c.user_id == user_id)
         await db.execute(user_role_stmt)

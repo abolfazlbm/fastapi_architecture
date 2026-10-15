@@ -115,4 +115,5 @@ class DeptService:
         count = await dept_dao.delete(db, pk)
         return count
 
+
 dept_service: DeptService = DeptService()

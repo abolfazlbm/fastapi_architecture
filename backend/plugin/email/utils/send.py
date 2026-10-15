@@ -70,4 +70,4 @@ async def send_email(
             await smtp_client.login(settings.EMAIL_USERNAME, settings.EMAIL_PASSWORD)
             await smtp_client.sendmail(settings.EMAIL_USERNAME, recipients, message)
     except Exception as e:
-        log.error(f'Email Delivery Failed：{e}')
+        log.error(f'Email Delivery Failed:{e}')

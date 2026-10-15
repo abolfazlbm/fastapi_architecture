@@ -1,18 +1,18 @@
-#CodeGenerator
+# Code Generator
 
-Code generator plug-in to generate general business code
+Code-generator plugin for producing general business code
 
-- Support maintenance of code generation business configuration and model column information
-- Supports manual mode and automatic table guide mode to generate general business code
-- Supports previewing, writing to disk and downloading generated results
+- Supports maintaining code-generation business settings and model-column information
+- Supports manual and automatic table-import modes for generating general business code
+- Supports previewing, writing to disk, and downloading generated output
 
-## Plug-in type
+## plugin type
 
-- Application-level plug-ins
+- Application-level plugin
 
 ## Configuration instructions
 
-The `[settings]` of `plugin.toml` in the plugin directory contains the following content:
+The `[settings]` section of `plugin.toml` in the plugin directory contains:
 
 ```toml
 [settings]
@@ -22,9 +22,9 @@ CODE_GENERATOR_DOWNLOAD_ZIP_FILENAME = 'fba_generator'
 The following fields are already included in `backend/core/conf.py`:
 
 ```python
-################################################
-# [Plugin] code_generator
-################################################
+##################################################
+# [ Plugin ] code_generator
+##################################################
 CODE_GENERATOR_DOWNLOAD_ZIP_FILENAME: str
 ```
 
@@ -41,10 +41,10 @@ CODE_GENERATOR_DOWNLOAD_ZIP_FILENAME: str
 
 ## Uninstall instructions
 
-- After uninstalling the plug-in, it is recommended to simultaneously remove the relevant plug-in basic configuration and the plug-in configuration in `backend/core/conf.py`
-- If the project has been connected to code generation related pages or automated processes, please clean up the corresponding integration simultaneously.
+- After uninstalling, remove related plugin settings and its configuration from `backend/core/conf.py`
+- If the project integrates code-generation pages or automation, remove the corresponding integration
 
 ## Contact information
 
-- Author: `wu-clan`
-- Feedback method: Submit an Issue or PR
+- author:`wu-clan`
+- Feedback: submit an issue or pull request

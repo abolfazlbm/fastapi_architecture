@@ -1,32 +1,32 @@
 # Email
 
-Email plug-in, provides email sending function, supports verification codes, notifications and other scenarios
+Email plugin providing email delivery for verification codes, notifications, and other scenarios
 
-- Support SMTP email sending
-- Support email scenarios such as verification codes and notifications
-- Supports controlling email service, verification code validity period and Redis prefix based on basic configuration
+- Supports sending email through SMTP
+- Supports verification-code, notification, and other email scenarios
+- Supports basic settings for the email service, verification-code lifetime, and Redis prefix
 
-## Plug-in type
+## plugin type
 
-- Application-level plug-ins
+- Application-level plugin
 
 ## Configuration instructions
 
 Add the following content to `backend/.env`:
 
 ```env
-#[Plugin]email
+# [ Plugin ] email
 EMAIL_USERNAME=''
 EMAIL_PASSWORD=''
 ```
 
-The `[settings]` of `plugin.toml` in the plugin directory contains the following content:
+The `[settings]` section of `plugin.toml` in the plugin directory contains:
 
 ```toml
 [settings]
 EMAIL_CAPTCHA_EXPIRE_SECONDS = 180
-EMAIL_CAPTCHA_REDIS_PREFIX = 'fba:email:captcha'
-EMAIL_HOST = 'smtp.qq.com'
+EMAIL_CAPTCHA_REDIS_PREFIX = 'example:email:captcha'
+EMAIL_HOST = 'smtp.example.com'
 EMAIL_PORT = 465
 EMAIL_SSL = true
 ```
@@ -34,14 +34,14 @@ EMAIL_SSL = true
 The following fields are already included in `backend/core/conf.py`:
 
 ```python
-###############################################
-#[Plugin]email
-###############################################
+##################################################
+# [ Plugin ] email
+##################################################
 # .env
-EMAIL_USERNAME:str
+EMAIL_USERNAME: str
 EMAIL_PASSWORD: str
 
-#Basic configuration (in plugin.toml)
+# Basic configuration(in plugin.toml)
 EMAIL_HOST: str
 EMAIL_PORT: int
 EMAIL_SSL: bool
@@ -65,10 +65,10 @@ EMAIL_CAPTCHA_EXPIRE_SECONDS: int
 
 ## Uninstall instructions
 
-- After uninstalling the plug-in, it is recommended to simultaneously remove the relevant environment variables, plug-in basic configuration and plug-in configuration in `backend/core/conf.py`
-- If the business code is still using the email sending capability, please clean up the corresponding integration simultaneously.
+- After uninstalling the plugin, remove its environment variables, basic settings, and configuration from `backend/core/conf.py`
+- If application code still uses email delivery, remove the corresponding integration
 
 ## Contact information
 
-- Author: `wu-clan`
-- Feedback method: Submit an Issue or PR
+- author:`wu-clan`
+- Feedback: submit an issue or pull request

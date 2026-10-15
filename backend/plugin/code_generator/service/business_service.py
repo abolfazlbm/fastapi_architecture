@@ -18,7 +18,7 @@ class CodeGenBusinessService:
         """
         Get the business with the specified ID
 
-        :param db: database session
+        :param db: Database session
         :param pk: business ID
         :return:
         """
@@ -31,9 +31,9 @@ class CodeGenBusinessService:
     @staticmethod
     async def get_all(*, db: AsyncSession) -> Sequence[CodeGenBusiness]:
         """
-        Get all business
+        Get all businesses
 
-        :param db: database session
+        :param db: Database session
         :return:
         """
 
@@ -42,10 +42,10 @@ class CodeGenBusinessService:
     @staticmethod
     async def get_list(*, db: AsyncSession, table_name: str) -> dict[str, Any]:
         """
-        Get a list of code generation businesses
+        Get the code-generation business list
 
-        :param db: database session
-        :param table_name: business table name
+        :param db: Database session
+        :param table_name: Business table name
         :return:
         """
         business_select = await code_gen_business_dao.get_select(table_name=table_name)
@@ -56,8 +56,8 @@ class CodeGenBusinessService:
         """
         Create a business
 
-        :param db: database session
-        :param obj: Create business parameters
+        :param db: Database session
+        :param obj: Business creation parameters
         :return:
         """
 
@@ -69,11 +69,11 @@ class CodeGenBusinessService:
     @staticmethod
     async def update(*, db: AsyncSession, pk: int, obj: UpdateCodeGenBusinessParam) -> int:
         """
-        Update business
+        Update a business
 
-        :param db: database session
+        :param db: Database session
         :param pk: business ID
-        :param obj: Update business parameters
+        :param obj: Business update parameters
         :return:
         """
 
@@ -87,9 +87,9 @@ class CodeGenBusinessService:
     @staticmethod
     async def delete(*, db: AsyncSession, pk: int) -> int:
         """
-        Delete business
+        Delete Business
 
-        :param db: database session
+        :param db: Database session
         :param pk: business ID
         :return:
         """

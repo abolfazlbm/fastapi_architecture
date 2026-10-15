@@ -23,4 +23,6 @@ class Dept(Base):
     status: Mapped[int] = mapped_column(default=1, comment='Department status (0 disabled 1 normal)')
 
     # parent department
-    parent_id: Mapped[int | None] = mapped_column(sa.BigInteger, default=None, index=True, comment='Parent department ID')
+    parent_id: Mapped[int | None] = mapped_column(
+        sa.BigInteger, default=None, index=True, comment='Parent department ID'
+    )

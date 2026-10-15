@@ -203,7 +203,7 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
                 if args_size > settings.OPERA_LOG_BODY_MAX_SIZE:
                     args = self.build_truncated_body(args_size, settings.OPERA_LOG_BODY_MAX_SIZE)
             except Exception as e:
-                log.error(f'Request parameter truncation processing failed：{e}')
+                log.error(f'Request parameter truncation processing failed:{e}')
 
         return args or None
 

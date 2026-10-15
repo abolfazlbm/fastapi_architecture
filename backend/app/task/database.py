@@ -12,7 +12,7 @@ from backend.app.task.session import SessionManager
 
 class DatabaseBackend(BaseBackend):
     """
-   Rewrite celery.backends.database DatabaseBackend. This type of implementation does not work well with the model, making it difficult for fba to create tables and alembic migrations.
+    Rewrite celery.backends.database DatabaseBackend. This type of implementation does not work well with the model, making it difficult for fba to create tables and alembic migrations.
     """
 
     # ResultSet.iterate should sleep this much between each pool,

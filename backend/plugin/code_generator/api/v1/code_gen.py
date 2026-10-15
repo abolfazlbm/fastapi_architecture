@@ -39,7 +39,7 @@ async def import_table(db: CurrentSessionTransaction, obj: ImportParam) -> Respo
 
 @router.get('/{pk}/preview', summary='Code generation preview', dependencies=[DependsJwtAuth])
 async def preview_code(
-    db: CurrentSession, pk: Annotated[int, Path(description='Business ID')]
+    db: CurrentSession, pk: Annotated[int, Path(description='business ID')]
 ) -> ResponseSchemaModel[dict[str, bytes]]:
     data = await code_gen_service.preview(db=db, pk=pk)
     return response_base.success(data=data)
@@ -47,7 +47,7 @@ async def preview_code(
 
 @router.get('/{pk}/paths', summary='Get code generation path', dependencies=[DependsJwtAuth])
 async def get_generate_paths(
-    db: CurrentSession, pk: Annotated[int, Path(description='Business ID')]
+    db: CurrentSession, pk: Annotated[int, Path(description='business ID')]
 ) -> ResponseSchemaModel[list[str]]:
     data = await code_gen_service.get_generate_path(db=db, pk=pk)
     return response_base.success(data=data)

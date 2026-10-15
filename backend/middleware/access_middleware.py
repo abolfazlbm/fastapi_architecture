@@ -40,7 +40,9 @@ class AccessMiddleware(BaseHTTPMiddleware):
         method = request.method
 
         if method != 'OPTIONS':
-            log.debug(f'--> Request to start[{path if not request.url.query else request.url.path + "?" + request.url.query}]')
+            log.debug(
+                f'--> Request to start[{path if not request.url.query else request.url.path + "?" + request.url.query}]'
+            )
 
         should_record_metrics = settings.GRAFANA_METRICS_ENABLE and path.startswith(settings.FASTAPI_API_V1_PATH)
         if should_record_metrics:

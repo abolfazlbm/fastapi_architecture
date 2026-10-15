@@ -39,20 +39,20 @@ class CRUDConfig(CRUDPlus[Config]):
 
     async def get_all_by_ids(self, db: AsyncSession, pks: list[int]) -> Sequence[Config]:
         """
-        通过 ID 列表批量获取参数配置
+        Get parameter settings in bulk by ID list
 
-        :param db: 数据库会话
-        :param pks: 参数配置 ID 列表
+        :param db: Database session
+        :param pks: Parameter configuration ID list
         :return:
         """
         return await self.select_models(db, id__in=pks, deleted=0)
 
     async def get_all_by_keys(self, db: AsyncSession, keys: list[str]) -> Sequence[Config]:
         """
-        通过键名列表批量获取参数配置
+        Get parameter settings in bulk by key-name list
 
-        :param db: 数据库会话
-        :param keys: 参数配置键名列表
+        :param db: Database session
+        :param keys: Parameter-setting key-name list
         :return:
         """
         return await self.select_models(db, key__in=keys, deleted=0)

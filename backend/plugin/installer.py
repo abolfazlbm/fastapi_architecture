@@ -137,7 +137,9 @@ async def install_git_plugin(repo_url: str) -> str:
     """
     match = is_git_url(repo_url)
     if not match:
-        raise errors.RequestError(msg='The Git warehouse address format is illegal and only supports HTTP/HTTPS protocols')
+        raise errors.RequestError(
+            msg='The Git warehouse address format is illegal and only supports HTTP/HTTPS protocols'
+        )
     repo_name = match.group('repo')
     path = anyio.Path(PLUGIN_DIR / repo_name)
     if await path.exists():

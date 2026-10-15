@@ -15,8 +15,8 @@ class CRUDCodeGen:
         """
         Get all table names
 
-        :param db: database session
-        :param table_schema: database schema name
+        :param db: Database session
+        :param table_schema: Database schema Name
         :return:
         """
         if DataBaseType.mysql == settings.DATABASE_TYPE:
@@ -53,9 +53,9 @@ class CRUDCodeGen:
         """
         Get table information
 
-        :param db: database session
-        :param table_schema: database schema name
-        :param table_name: table name
+        :param db: Database session
+        :param table_schema: Database schema Name
+        :param table_name: Table name
         :return:
         """
         if DataBaseType.mysql == settings.DATABASE_TYPE:
@@ -95,9 +95,9 @@ class CRUDCodeGen:
         """
         Get all column information
 
-        :param db: database session
-        :param table_schema: database schema name
-        :param table_name: table name
+        :param db: Database session
+        :param table_schema: Database schema Name
+        :param table_name: Table name
         :return:
         """
         if DataBaseType.mysql == settings.DATABASE_TYPE:

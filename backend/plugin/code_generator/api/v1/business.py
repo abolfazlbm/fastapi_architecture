@@ -51,7 +51,9 @@ async def get_businesses_paginated(
     return response_base.success(data=page_data)
 
 
-@router.get('/{pk}/columns', summary='Get all model columns of the code generation business', dependencies=[DependsJwtAuth])
+@router.get(
+    '/{pk}/columns', summary='Get all model columns of the code generation business', dependencies=[DependsJwtAuth]
+)
 async def get_business_all_columns(
     db: CurrentSession,
     pk: Annotated[int, Path(description='Business ID')],

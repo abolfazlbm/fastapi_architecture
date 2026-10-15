@@ -21,7 +21,7 @@ class OtelTraceIdPlugin(Plugin):
     key = settings.TRACE_ID_REQUEST_HEADER_KEY
 
     async def process_request(self, request: Request) -> Any:
-        """从 OpenTelemetry span extracted from trace_id"""
+        """Extract the trace_id from the OpenTelemetry span"""
         span = trace.get_current_span()
         span_ctx = span.get_span_context()
 

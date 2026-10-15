@@ -66,7 +66,7 @@ class OAuth2Service:
             if email:
                 sys_user = await user_dao.check_email(db, email)
 
-            #Create system user
+            # Create system user
             if not sys_user:
                 base_username = username or text_captcha(5)
                 username_candidates = [base_username, *[f'{base_username}_{text_captcha(5)}' for _ in range(10)]]

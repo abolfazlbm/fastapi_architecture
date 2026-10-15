@@ -75,7 +75,7 @@ def install_requirements(plugin: str | None) -> None:  # ruff:ignore[complex-str
     """
     Install plugin dependencies
 
-    :p aram plugin: Specify the plugin name, otherwise check all plugins
+    :param plugin: Specific plugin name; if omitted, check all plugins
     :return:
     """
     plugins = [plugin] if plugin else get_plugins()
@@ -116,7 +116,7 @@ def install_requirements(plugin: str | None) -> None:  # ruff:ignore[complex-str
                 continue
             except subprocess.CalledProcessError as e:
                 if attempt == max_retries - 1:
-                    raise PluginInstallError(f'Plugin {plugin} dependency installation failed：{e}') from e
+                    raise PluginInstallError(f'Plugin {plugin} dependency installation failed:{e}') from e
                 continue
 
 
@@ -124,7 +124,7 @@ def uninstall_requirements(plugin: str) -> None:
     """
     Uninstall plugin dependencies
 
-    :p aram plugin: The name of the plugin
+    :param plugin: Plugin Name
     :return:
     """
     requirements_file = PLUGIN_DIR / plugin / 'requirements.txt'
@@ -137,14 +137,14 @@ def uninstall_requirements(plugin: str) -> None:
             pip_uninstall.append('--system')
         subprocess.check_call(pip_uninstall, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except subprocess.CalledProcessError as e:
-        raise PluginInstallError(f'Plugin {plugin} dependency uninstall failed：{e}') from e
+        raise PluginInstallError(f'Plugin {plugin} dependency uninstall failed:{e}') from e
 
 
 async def install_requirements_async(plugin: str | None = None) -> None:
     """
     Install plugin dependencies asynchronously
 
-    Due to Windows platform limitations, a perfect fully asynchronous scheme cannot be achieved, details:
+    Due to Windows limitations, a fully asynchronous solution is not possible; details:
     https://stackoverflow.com/questions/44633458/why-am-i-getting-notimplementederror-with-async-and-await-on-windows
     """
     await run_in_threadpool(install_requirements, plugin)
@@ -152,9 +152,9 @@ async def install_requirements_async(plugin: str | None = None) -> None:
 
 async def uninstall_requirements_async(plugin: str) -> None:
     """
-    Asynchronously uninstall plugin dependencies
+    Uninstall plugin dependencies asynchronously
 
-    :p aram plugin: The name of the plugin
+    :param plugin: Plugin Name
     :return:
     """
     await run_in_threadpool(uninstall_requirements, plugin)

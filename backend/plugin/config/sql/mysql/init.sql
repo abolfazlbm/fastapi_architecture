@@ -7,16 +7,16 @@ set @config_menu_id = LAST_INSERT_ID();
 
 insert into sys_menu (title, name, path, sort, icon, type, component, perms, status, display, cache, link, remark, parent_id, created_time, updated_time)
 values
-('新增', 'AddConfig', null, 0, null, 2, null, 'sys:config:add', 1, 0, 1, '', null, @config_menu_id, now(), null),
-('修改', 'EditConfig', null, 0, null, 2, null, 'sys:config:edit', 1, 0, 1, '', null, @config_menu_id, now(), null),
-('删除', 'DeleteConfig', null, 0, null, 2, null, 'sys:config:del', 1, 0, 1, '', null, @config_menu_id, now(), null);
+('New', 'AddConfig', null, 0, null, 2, null, 'sys:config:add', 1, 0, 1, '', null, @config_menu_id, now(), null),
+('Modify', 'EditConfig', null, 0, null, 2, null, 'sys:config:edit', 1, 0, 1, '', null, @config_menu_id, now(), null),
+('Delete', 'DeleteConfig', null, 0, null, 2, null, 'sys:config:del', 1, 0, 1, '', null, @config_menu_id, now(), null);
 
 insert into sys_config (id, name, type, `key`, value, is_frontend, remark, created_time, updated_time)
 values
 (1, 'STATUS', 'EMAIL', 'EMAIL_CONFIG_STATUS', '1', false, null, now(), null),
-(2, 'Server address', 'EMAIL', 'EMAIL_HOST', 'smtp.qq.com', false, null, now(), null),
+(2, 'Server address', 'EMAIL', 'EMAIL_HOST', 'smtp.example.com', false, null, now(), null),
 (3, 'Server port', 'EMAIL', 'EMAIL_PORT', '465', false, null, now(), null),
-(4, 'Email account', 'EMAIL', 'EMAIL_USERNAME', 'fba@qq.com', false, null, now(), null),
+(4, 'Email account', 'EMAIL', 'EMAIL_USERNAME', 'noreply@example.com', false, null, now(), null),
 (5, 'Email password', 'EMAIL', 'EMAIL_PASSWORD', '', false, null, now(), null),
 (6, 'SSL encryption', 'EMAIL', 'EMAIL_SSL', 'true', false, null, now(), null),
 (7, 'STATUS', 'USER_SECURITY', 'USER_SECURITY_CONFIG_STATUS', '1', false, null, now(), null),

@@ -66,7 +66,11 @@ async def create_config(db: CurrentSessionTransaction, obj: CreateConfigParam) -
     return response_base.success()
 
 
-@router.put('', summary='Batch update parameter configuration', dependencies=[Depends(RequestPermission('sys.config.edits')), DependsRBAC])
+@router.put(
+    '',
+    summary='Batch update parameter configuration',
+    dependencies=[Depends(RequestPermission('sys.config.edits')), DependsRBAC],
+)
 async def bulk_update_config(db: CurrentSessionTransaction, objs: list[UpdateConfigsParam]) -> ResponseModel:
     count = await config_service.bulk_update(db=db, objs=objs)
     if count > 0:
@@ -83,7 +87,9 @@ async def bulk_update_config(db: CurrentSessionTransaction, objs: list[UpdateCon
     ],
 )
 async def update_config(
-    db: CurrentSessionTransaction, pk: Annotated[int, Path(description='Parameter configuration ID')], obj: UpdateConfigParam
+    db: CurrentSessionTransaction,
+    pk: Annotated[int, Path(description='Parameter configuration ID')],
+    obj: UpdateConfigParam,
 ) -> ResponseModel:
     count = await config_service.update(db=db, pk=pk, obj=obj)
     if count > 0:

@@ -35,12 +35,12 @@ class UserSocialService:
         source: UserSocialType,
     ) -> None:
         """
-        Bind user social accounts through the OAuth2 process
+        Bind a user's social account through the OAuth2 flow
 
-        :param db: database session
-        :param user_id: user ID
-        :param sid: unique code of social account
-        :param source: binding source
+        :param db: Database session
+        :param user_id: User ID
+        :param sid: Unique social-account identifier
+        :param source: Binding source
         :return:
         """
         if await user_social_dao.check_binding(db, user_id, source.value):
@@ -57,9 +57,9 @@ class UserSocialService:
         """
         Unbind the user’s social account
 
-        :param db: database session
-        :param user_id: user ID
-        :param source: unbind source
+        :param db: Database session
+        :param user_id: User ID
+        :param source: Unbinding source
         :return:
         """
         bind = await user_social_dao.check_binding(db, user_id, source.value)

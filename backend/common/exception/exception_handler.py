@@ -85,7 +85,7 @@ async def _validation_exception_handler(exc: RequestValidationError | Validation
         error_input = error.get('input')
         field = str(error.get('loc')[-1])
         error_msg = error.get('msg')
-        message = f'{field} {error_msg}，Entry：{error_input}' if settings.ENVIRONMENT == 'dev' else error_msg
+        message = f'{field} {error_msg},Entry:{error_input}' if settings.ENVIRONMENT == 'dev' else error_msg
     msg = f'Illegal request parameters: {message}'
     data = {'errors': errors} if settings.ENVIRONMENT == 'dev' else None
     content = {

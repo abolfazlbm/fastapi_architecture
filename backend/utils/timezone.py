@@ -5,7 +5,7 @@ from typing import Final
 
 from backend.core.conf import settings
 
-# based on wikipedia：https://en.wikipedia.org/wiki/List_of_tz_database_time_zones#List
+# based on wikipedia:https://en.wikipedia.org/wiki/List_of_tz_database_time_zones#List
 _UTC_IDENTIFIERS: Final = frozenset({
     'Etc/UCT',
     'Etc/Universal',

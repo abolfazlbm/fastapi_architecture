@@ -18,7 +18,9 @@ class CodeGenColumn(DataClassBase):
     name: Mapped[str] = mapped_column(sa.String(64), comment='Column name')
     comment: Mapped[str | None] = mapped_column(sa.String(256), default=None, comment='Column description')
     type: Mapped[str] = mapped_column(sa.String(32), default='String', comment='SQLA Model column type')
-    pd_type: Mapped[str] = mapped_column(sa.String(32), default='str', comment='The pydantic type corresponding to the column type')
+    pd_type: Mapped[str] = mapped_column(
+        sa.String(32), default='str', comment='The pydantic type corresponding to the column type'
+    )
     default: Mapped[str | None] = mapped_column(UniversalText, default=None, comment='Column default value')
     sort: Mapped[int | None] = mapped_column(default=1, comment='Column sort')
     length: Mapped[int] = mapped_column(default=0, comment='Column length')

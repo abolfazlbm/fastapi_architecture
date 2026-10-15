@@ -11,7 +11,7 @@ class DictData(Base):
     __tablename__ = 'sys_dict_data'
     __table_args__ = (
         sa.UniqueConstraint('type_code', 'label', 'deleted', name='uk_sys_dict_data_type_code_label_deleted'),
-        {'comment': '字典数据表'},
+        {'comment': 'Dictionary data table'},
     )
 
     id: Mapped[id_key] = mapped_column(init=False)

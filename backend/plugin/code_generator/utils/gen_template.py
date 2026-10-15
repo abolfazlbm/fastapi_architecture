@@ -28,7 +28,7 @@ class GenTemplate:
 
     def get_template(self, jinja_file: str) -> Template:
         """
-        Get Jinja2 template object
+        Get a Jinja2 template object
 
         :param jinja_file: Jinja2 template file path
         :return:
@@ -38,7 +38,7 @@ class GenTemplate:
     @staticmethod
     def get_template_path_mapping(business: CodeGenBusiness) -> dict[str, str]:
         """
-        Get the path mapping from template files to generated files
+        Get the path mapping from templates to generated files
 
         :param business: Code generation business object
         :return:
@@ -61,7 +61,7 @@ class GenTemplate:
 
     def get_init_files(self, business: CodeGenBusiness) -> dict[str, str]:
         """
-        Get the __init__.py file that needs to be generated and its contents
+        Get the __init__.py files to generate and their content
 
         :param business: Business object
         :return:
@@ -90,8 +90,8 @@ class GenTemplate:
         """
         Get template variables
 
-        :param business: code generation business object
-        :param models: code generation model object list
+        :param business: Code-generation business object
+        :param models: List of code-generation model objects
         :return:
         """
         vars_dict = {

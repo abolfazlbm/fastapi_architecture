@@ -66,7 +66,9 @@ class UserPasswordHistoryService:
                 timezone.to_str(locked_until),
                 ex=settings.USER_LOCK_SECONDS,
             )
-            raise errors.AuthorizationError(msg='There have been too many failed login attempts and the account has been locked.')
+            raise errors.AuthorizationError(
+                msg='There have been too many failed login attempts and the account has been locked.'
+            )
 
     @staticmethod
     async def check_password_expiry_status(db: AsyncSession, password_changed_time: datetime) -> int | None:
@@ -83,13 +85,17 @@ class UserPasswordHistoryService:
             return None
 
         if not password_changed_time:
-            raise errors.AuthorizationError(msg='The password has expired, please change your password and log in again')
+            raise errors.AuthorizationError(
+                msg='The password has expired, please change your password and log in again'
+            )
 
         expiry_time = password_changed_time + timedelta(days=settings.USER_PASSWORD_EXPIRY_DAYS)
         days_remaining = (expiry_time - timezone.now()).days
 
         if days_remaining < 0:
-            raise errors.AuthorizationError(msg='The password has expired, please change your password and log in again')
+            raise errors.AuthorizationError(
+                msg='The password has expired, please change your password and log in again'
+            )
 
         if days_remaining <= settings.USER_PASSWORD_REMINDER_DAYS:
             return days_remaining

@@ -21,8 +21,8 @@ class CodeGenColumnService:
         """
         Get the model column with the specified ID
 
-        :param db: database session
-        :param pk: model column ID
+        :param db: Database session
+        :param pk: Model Column ID
         :return:
         """
 
@@ -46,10 +46,10 @@ class CodeGenColumnService:
     @staticmethod
     async def get_columns(*, db: AsyncSession, business_id: int) -> Sequence[CodeGenColumn]:
         """
-        Get all model columns of the specified business
+        Get all model columns for the specified business
 
-        :param db: database session
-        :param business_id: Business ID
+        :param db: Database session
+        :param business_id: business ID
         :return:
         """
 
@@ -60,10 +60,10 @@ class CodeGenColumnService:
     @staticmethod
     async def create(*, db: AsyncSession, obj: CreateCodeGenColumnParam) -> None:
         """
-        Create model columns
+        Create a model column
 
-        :param db: database session
-        :param obj: Create model column parameters
+        :param db: Database session
+        :param obj: Model-column creation parameters
         :return:
         """
 
@@ -80,11 +80,11 @@ class CodeGenColumnService:
     @staticmethod
     async def update(*, db: AsyncSession, pk: int, obj: UpdateCodeGenColumnParam) -> int:
         """
-        Update model columns
+        Update a model column
 
-        :param db: database session
-        :param pk: model column ID
-        :param obj: Update model column parameters
+        :param db: Database session
+        :param pk: Model Column ID
+        :param obj: Model-column update parameters
         :return:
         """
 
@@ -106,10 +106,10 @@ class CodeGenColumnService:
     @staticmethod
     async def delete(*, db: AsyncSession, pk: int) -> int:
         """
-        Delete model column
+        Delete a model column
 
-        :param db: database session
-        :param pk: model column ID
+        :param db: Database session
+        :param pk: Model Column ID
         :return:
         """
 

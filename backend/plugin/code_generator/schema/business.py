@@ -28,7 +28,9 @@ class CodeGenBusinessSchemaBase(SchemaBase):
     def validate_english_only(cls, v: str) -> str:
         """Validate English fields"""
         if not is_english_identifier(v):
-            raise errors.RequestError(msg='Must start with an English letter and contain only English letters and underscores')
+            raise errors.RequestError(
+                msg='Must start with an English letter and contain only English letters and underscores'
+            )
         return v
 
 

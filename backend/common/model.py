@@ -27,7 +27,7 @@ id_key = Annotated[
     )
     if PrimaryKeyType.autoincrement == settings.DATABASE_PK_MODE
     # Snowflake algorithm Mapped type primary key
-    # Details：https://fastapi-practices.github.io/fastapi_best_architecture_docs/backend/reference/pk.html
+    # Details:https://fastapi-practices.github.io/fastapi_best_architecture_docs/backend/reference/pk.html
     else mapped_column(
         BigInteger,
         primary_key=True,
@@ -54,7 +54,7 @@ class UniversalText(TypeDecorator[str]):
 
 
 class TimeZone(TypeDecorator[datetime]):
-    """PostgreSQL、MySQL Compatibility Time Zone Awareness Type"""
+    """PostgreSQL, MySQL Compatibility Time Zone Awareness Type"""
 
     impl = DateTime(timezone=True)
     cache_ok = True

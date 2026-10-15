@@ -94,7 +94,7 @@ def setup_logging() -> None:
         # Debug log handlers
         # logging.debug(f'{logging.getLogger(name)}, {logging.getLogger(name).propagate}')
 
-   # Remove the loguru default processor
+    # Remove the loguru default processor
     logger.remove()
 
     # Configure loguru processor

@@ -34,7 +34,9 @@ async def _build_cache_key(
                 raise errors.ServerError(msg=f'Cache key build failed with parameters "{param}" does not exist')
 
             if isinstance(value, list):
-                raise errors.ServerError(msg='Cache key build failed: Extracting fields from lists is not supported, please use key_builder to handle list parameters')
+                raise errors.ServerError(
+                    msg='Cache key build failed: Extracting fields from lists is not supported, please use key_builder to handle list parameters'
+                )
 
             if hasattr(value, field):
                 value = getattr(value, field)
@@ -178,13 +180,13 @@ def cache_invalidate[**P, T](  # ruff:ignore[complex-structure]
     atomic: bool = True,
 ) -> Callable[[Callable[P, T]], Callable[P, T]]:
     """
-    Cache invalidation decorator
+        Cache invalidation decorator
 
-:param namespace: Cache namespace (usually cache Key prefix)
-    :param key: Get the value of the specified parameter name from the method parameter as the cache Key, mutually exclusive with key_builder
-    :param key_builder: Custom Key generation function, mutually exclusive with key
-    :param atomic: Whether to ensure cache atomicity
-    :return:
+    :param namespace: Cache namespace (usually cache Key prefix)
+        :param key: Get the value of the specified parameter name from the method parameter as the cache Key, mutually exclusive with key_builder
+        :param key_builder: Custom Key generation function, mutually exclusive with key
+        :param atomic: Whether to ensure cache atomicity
+        :return:
     """
     if key is not None and key_builder is not None:
         raise errors.ServerError(msg='Cache key and key_builder cannot be used at the same time')
@@ -229,7 +231,9 @@ def cache_invalidate[**P, T](  # ruff:ignore[complex-structure]
 
             # atomicity check
             if atomic and not invalidate_success:
-                raise errors.ServerError(msg='Cache invalidation failed, data may be inconsistent', data=invalidate_error)
+                raise errors.ServerError(
+                    msg='Cache invalidation failed, data may be inconsistent', data=invalidate_error
+                )
 
             return result
 

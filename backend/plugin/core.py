@@ -50,7 +50,7 @@ def get_plugins() -> tuple[str, ...]:
     """Get plugin list"""
     plugin_packages = []
 
-    #Travel the plugin directory
+    # Travel the plugin directory
     for item in os.listdir(PLUGIN_DIR):
         item_path = PLUGIN_DIR / item
         if not os.path.isdir(item_path) and item == '__pycache__':
@@ -96,7 +96,9 @@ def load_plugin_config(plugin: str) -> dict[str, Any]:
     """
     toml_path = PLUGIN_DIR / plugin / 'plugin.toml'
     if not os.path.exists(toml_path):
-        raise PluginInjectError(f'Plugin {plugin} is missing plugin.toml configuration file, please check if the plugin is legal')
+        raise PluginInjectError(
+            f'Plugin {plugin} is missing plugin.toml configuration file, please check if the plugin is legal'
+        )
 
     with open(toml_path, encoding='utf-8') as f:
         return rtoml.load(f)
@@ -184,7 +186,9 @@ def resolve_plugin_order(plugins: list[PluginEntry]) -> list[PluginEntry]:
             for dep_name in plugin.depends_on:
                 dep_plugin = plugin_map.get(dep_name)
                 if dep_plugin is None:
-                    raise PluginConfigError(f'Plugin {plugin.name} depends on plugin {dep_name}, but plugin {dep_name} does not exist')
+                    raise PluginConfigError(
+                        f'Plugin {plugin.name} depends on plugin {dep_name}, but plugin {dep_name} does not exist'
+                    )
                 visit(dep_plugin)
             visiting.pop()
 

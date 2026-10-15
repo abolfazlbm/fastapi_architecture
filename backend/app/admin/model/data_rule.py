@@ -18,7 +18,7 @@ class DataRule(Base):
     name: Mapped[str] = mapped_column(sa.String(512), comment='Name')
     model: Mapped[str] = mapped_column(sa.String(64), comment='Model Name')
     column: Mapped[str] = mapped_column(sa.String(32), comment='Model field name')
-    operator: Mapped[int] = mapped_column(comment='Operator（0：and、1：or）')
+    operator: Mapped[int] = mapped_column(comment='Operator(0:and, 1:or)')
     expression: Mapped[int] = mapped_column(
         comment='Expression (0:==, 1:!=, 2:>, 3:>=, 4:<, 5:<=, 6: in, 7: not_in)',
     )

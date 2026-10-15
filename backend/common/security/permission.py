@@ -67,7 +67,7 @@ def filter_data_permission(  # ruff:ignore[complex-structure]
     :param models: model classes that require application data permissions
     :return:
     """
-    #Super administrator does not filter
+    # Super administrator does not filter
     if request.user.is_superuser:
         return or_(1 == 1)
 
@@ -141,6 +141,7 @@ def filter_data_permission(  # ruff:ignore[complex-structure]
                     return _column_type(value) if _column_type is not str else value
                 except (ValueError, TypeError):
                     return value
+
             condition = None
             match data_rule.expression:
                 case RoleDataRuleExpressionType.eq:

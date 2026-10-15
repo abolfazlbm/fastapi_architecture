@@ -24,10 +24,10 @@ from backend.core.conf import settings
 
 def get_database_url(*, unittest: bool = False, with_database: bool = True) -> URL:
     """
-    Create a database link
+    Create a database URL
 
-    :param unittest: whether to use for unit testing
-    :param with_database: whether to include the database name (not required when creating the database)
+    :param unittest: Whether it is used for unit tests
+    :param with_database: Whether to include the database name(not required when creating a database)
     :return:
     """
     if with_database:
@@ -50,9 +50,9 @@ def get_database_url(*, unittest: bool = False, with_database: bool = True) -> U
 
 def create_database_async_engine(url: str | URL) -> AsyncEngine:
     """
-    Create a database asynchronous engine
+    Create an asynchronous database engine
 
-    :param url: database connection address
+    :param url: Database connection URL
     :return:
     """
     try:
@@ -62,12 +62,12 @@ def create_database_async_engine(url: str | URL) -> AsyncEngine:
             echo_pool=settings.DATABASE_POOL_ECHO,
             future=True,
             # Medium concurrency
-            pool_size=10, # Low:- High:+
-            max_overflow=20, # Low:- High:+
-            pool_timeout=30, # Low: + High:-
-            pool_recycle=3600, # Low: + High:-
-            pool_pre_ping=True, # Low: False High: True
-            pool_use_lifo=False, # Low: False High: True
+            pool_size=10,  # Low:- High:+
+            max_overflow=20,  # Low:- High:+
+            pool_timeout=30,  # Low:+ High:-
+            pool_recycle=3600,  # Low:+ High:-
+            pool_pre_ping=True,  # Low:False High:True
+            pool_use_lifo=False,  # Low:False High:True
         )
     except Exception as e:
         log.error(f'Database connection failed {e}')

@@ -37,10 +37,10 @@ class CodeGenService:
     @staticmethod
     async def get_tables(*, db: AsyncSession, table_schema: str) -> Sequence[RowMapping]:
         """
-        Get all table names under the specified schema
+        Get all table names under a schema
 
-        :param db: database session
-        :param table_schema: database schema name
+        :param db: Database session
+        :param table_schema: Database schema Name
         :return:
         """
         return await code_gen_dao.get_all_tables(db, table_schema)
@@ -48,10 +48,10 @@ class CodeGenService:
     @staticmethod
     async def import_business_and_model(*, db: AsyncSession, obj: ImportParam) -> None:
         """
-        Import business and model column data
+        Import business and model-column data
 
-        :param db: database session
-        :param obj: Import parameter object
+        :param db: Database session
+        :param obj: Import-parameters object
         :return:
         """
         if settings.ENVIRONMENT != 'dev':
@@ -68,7 +68,7 @@ class CodeGenService:
         table_name = table_info['table_name']
         doc_comment = (
             table_info['table_comment'][:-1]
-            if table_info['table_comment'][-1] == '表'
+            if table_info['table_comment'][-1] == 'table'
             else table_info['table_comment'] or table_name.split('_')[-1]
         )
         new_business = CodeGenBusiness(
@@ -113,8 +113,8 @@ class CodeGenService:
         """
         Render template code
 
-        :param db: database session
-        :param business: business object
+        :param db: Database session
+        :param business: Business object
         :return:
         """
         gen_models = await code_gen_column_service.get_columns(db=db, business_id=business.id)
@@ -139,7 +139,7 @@ class CodeGenService:
         Inject application routes
 
         :param app_name:
-        :param write: whether to write to the file
+        :param write: Whether to write files
         :return:
         """
         app_root_router = BASE_PATH / 'app' / 'router.py'
@@ -172,7 +172,7 @@ class CodeGenService:
         """
         Preview generated code
 
-        :param db: database session
+        :param db: Database session
         :param pk: business ID
         :return:
         """
@@ -202,7 +202,7 @@ class CodeGenService:
         """
         Get code generation path
 
-        :param db: database session
+        :param db: Database session
         :param pk: business ID
         :return:
         """
@@ -225,7 +225,7 @@ class CodeGenService:
         """
         Generate code files
 
-        :param db: database session
+        :param db: Database session
         :param pk: business ID
         :return:
         """
@@ -268,9 +268,9 @@ class CodeGenService:
 
     async def download(self, *, db: AsyncSession, pk: int) -> io.BytesIO:
         """
-        Download the generated code
+        Download generated code
 
-        :param db: database session
+        :param db: Database session
         :param pk: business ID
         :return:
         """

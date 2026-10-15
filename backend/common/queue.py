@@ -75,7 +75,7 @@ async def batch_consume[T](
         try:
             await handler(items)
         except Exception as e:
-            log.error(f'{error_message}，lost {len(items)} item {item_name}: {e}')
+            log.error(f'{error_message},lost {len(items)} item {item_name}: {e}')
         finally:
             for _ in items:
                 queue.task_done()
