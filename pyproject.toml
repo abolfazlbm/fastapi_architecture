@@ -40,10 +40,10 @@ dependencies = [
   "opentelemetry-instrumentation-redis>=0.66b0",
   "opentelemetry-instrumentation-sqlalchemy>=0.66b0",
   "opentelemetry-sdk>=1.45.0",
-  "prometheus-client>=0.26.0",
   "path>=17.0.0",
-    "persiantools>=5.3.0",
-    "psutil>=7.2.2",
+  "persiantools>=5.3.0",
+  "prometheus-client>=0.26.0",
+  "psutil>=7.2.2",
   # https://github.com/fastapi-practices/fastapi_best_architecture/issues/887
   "psycopg[binary,pool]==3.2.10",
   "pwdlib>=0.3.1",
