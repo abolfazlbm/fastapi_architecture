@@ -1,12 +1,14 @@
 import asyncio
 
 from datetime import datetime
+from typing import ClassVar
 
 import sqlalchemy as sa
 
 from sqlalchemy import event
 from sqlalchemy.orm import Mapped, mapped_column
 
+from backend.common.enums import StatusType
 from backend.common.exception import errors
 from backend.common.model import Base, TimeZone, UniversalText, id_key
 from backend.core.conf import settings
@@ -24,35 +26,37 @@ class TaskScheduler(Base):
     )
 
     id: Mapped[id_key] = mapped_column(init=False)
-    name: Mapped[str] = mapped_column(sa.String(64), comment='task name')
-    task: Mapped[str] = mapped_column(sa.String(256), comment='Celery task to run')
-    args: Mapped[str | None] = mapped_column(sa.JSON(), comment='Positional parameters that the task can receive')
-    kwargs: Mapped[str | None] = mapped_column(sa.JSON(), comment='Keyword parameters that the task can receive')
-    queue: Mapped[str | None] = mapped_column(sa.String(256), comment='Queue defined in CELERY_TASK_QUEUES')
-    exchange: Mapped[str | None] = mapped_column(sa.String(256), comment='Exchange for low-level AMQP routing')
-    routing_key: Mapped[str | None] = mapped_column(sa.String(256), comment='Routing key for low-level AMQP routing')
-    start_time: Mapped[datetime | None] = mapped_column(TimeZone, comment='The time when the task started to be triggered')
-    expire_time: Mapped[datetime | None] = mapped_column(TimeZone, comment='Deadline time when the task is no longer triggered')
-    expire_seconds: Mapped[int | None] = mapped_column(comment='The number of seconds the task will no longer trigger')
-    type: Mapped[int] = mapped_column(comment='Scheduling type (0 interval 1 timing)')
-    interval_every: Mapped[int | None] = mapped_column(comment='Number of intervals before the task runs again')
-    interval_period: Mapped[str | None] = mapped_column(sa.String(256), comment='Period type between task runs')
-    crontab: Mapped[str | None] = mapped_column(sa.String(64), default='* * * * *', comment='Crontab expression')
-    one_off: Mapped[bool] = mapped_column(default=False, comment='Whether to run only once')
-    enabled: Mapped[bool] = mapped_column(default=True, comment='Whether to enable the task')
-    total_run_count: Mapped[int] = mapped_column(default=0, comment='Total number of task triggers')
-    last_run_time: Mapped[datetime | None] = mapped_column(TimeZone, default=None, comment='The last time the task was triggered')
-    remark: Mapped[str | None] = mapped_column(UniversalText, default=None, comment='Remark')
+    name: Mapped[str] = mapped_column(sa.String(64), comment='任务名称')
+    task: Mapped[str] = mapped_column(sa.String(256), comment='要运行的 Celery 任务')
+    args: Mapped[str | None] = mapped_column(sa.JSON(), comment='任务可接收的位置参数')
+    kwargs: Mapped[str | None] = mapped_column(sa.JSON(), comment='任务可接收的关键字参数')
+    queue: Mapped[str | None] = mapped_column(sa.String(256), comment='CELERY_TASK_QUEUES 中定义的队列')
+    exchange: Mapped[str | None] = mapped_column(sa.String(256), comment='低级别 AMQP 路由的交换机')
+    routing_key: Mapped[str | None] = mapped_column(sa.String(256), comment='低级别 AMQP 路由的路由密钥')
+    start_time: Mapped[datetime | None] = mapped_column(TimeZone, comment='任务开始触发的时间')
+    expire_time: Mapped[datetime | None] = mapped_column(TimeZone, comment='任务不再触发的截止时间')
+    expire_seconds: Mapped[int | None] = mapped_column(comment='任务不再触发的秒数时间差')
+    type: Mapped[int] = mapped_column(comment='调度类型（0间隔 1定时）')
+    interval_every: Mapped[int | None] = mapped_column(comment='任务再次运行前的间隔周期数')
+    interval_period: Mapped[str | None] = mapped_column(sa.String(256), comment='任务运行之间的周期类型')
+    crontab: Mapped[str | None] = mapped_column(sa.String(64), default='* * * * *', comment='Crontab 表达式')
+    one_off: Mapped[bool] = mapped_column(default=False, comment='是否仅运行一次')
+    status: Mapped[int] = mapped_column(default=StatusType.enable.value, comment='状态（0停用 1正常）')
+    total_run_count: Mapped[int] = mapped_column(default=0, comment='任务触发的总次数')
+    last_run_time: Mapped[datetime | None] = mapped_column(TimeZone, default=None, comment='任务最后触发的时间')
+    remark: Mapped[str | None] = mapped_column(UniversalText, default=None, comment='备注')
 
     no_changes: bool = False
+    # 持有后台任务引用，避免 create_task 返回的任务在执行前被回收
+    _update_tasks: ClassVar[set[asyncio.Task]] = set()
 
     @staticmethod
-    def before_insert_or_update(mapper, connection, target) -> None:  # noqa: ANN001
+    def before_insert_or_update(mapper, connection, target) -> None:  # ruff:ignore[missing-type-function-argument]
         if target.expire_seconds is not None and target.expire_time:
             raise errors.ConflictError(msg='expires and expire_seconds can only be set to one')
 
     @classmethod
-    def changed(cls, mapper, connection, target) -> None:  # noqa: ANN001
+    def changed(cls, mapper, connection, target) -> None:  # ruff:ignore[missing-type-function-argument]
         if not target.no_changes:
             cls.update_changed(mapper, connection, target)
 
@@ -62,8 +66,10 @@ class TaskScheduler(Base):
         await redis_client.set(f'{settings.CELERY_REDIS_PREFIX}:last_update', timezone.to_str(now))
 
     @classmethod
-    def update_changed(cls, mapper, connection, target) -> None:  # noqa: ANN001
-        asyncio.create_task(cls.update_changed_async())
+    def update_changed(cls, mapper, connection, target) -> None:  # ruff:ignore[missing-type-function-argument]
+        task = asyncio.create_task(cls.update_changed_async())
+        cls._update_tasks.add(task)
+        task.add_done_callback(cls._update_tasks.discard)
 
 
 # Event listener

@@ -1,8 +1,6 @@
-from enum import Enum
 from enum import IntEnum as SourceIntEnum
-from typing import Any, TypeVar
-
-T = TypeVar('T', bound=Enum)
+from enum import StrEnum as SourceStrEnum
+from typing import Any
 
 
 class _EnumBase:
@@ -28,7 +26,7 @@ class IntEnum(_EnumBase, SourceIntEnum):
     """Integer Enumeration Base Class"""
 
 
-class StrEnum(_EnumBase, str, Enum):
+class StrEnum(_EnumBase, SourceStrEnum):
     """String Enumeration Base Class"""
 
 
@@ -114,6 +112,7 @@ class PluginLevelType(StrEnum):
     """Plug-in level type"""
 
     app = 'app'
+    capability = 'capability'
     extend = 'extend'
 
 

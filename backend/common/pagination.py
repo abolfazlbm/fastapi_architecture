@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from math import ceil
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Any
 
 from fastapi import Depends, Query
 from fastapi_pagination import pagination_ctx
@@ -13,12 +13,10 @@ from fastapi_pagination.links.bases import create_links
 from pydantic import BaseModel, Field
 
 if TYPE_CHECKING:
+    from typing import Self
+
     from sqlalchemy import Select
     from sqlalchemy.ext.asyncio import AsyncSession
-    from typing_extensions import Self
-
-T = TypeVar('T')
-SchemaT = TypeVar('SchemaT')
 
 
 class _CustomPageParams(BaseModel, AbstractParams):
@@ -32,6 +30,12 @@ class _CustomPageParams(BaseModel, AbstractParams):
             limit=self.size,
             offset=self.size * (self.page - 1),
         )
+
+
+class _CustomCursorParams(CursorParams):
+    """自定义游标分页参数"""
+
+    size: int = Query(50, ge=1, le=200, description='每页数量')
 
 
 class _Links(BaseModel):
@@ -63,7 +67,7 @@ class _CursorPageDetails(BaseModel):
     has_more: bool = Field(description='Is there more data')
 
 
-class _CustomPage(_PageDetails, AbstractPage[T], Generic[T]):
+class _CustomPage[T](_PageDetails, AbstractPage[T]):
     """Custom paging class"""
 
     __params_type__ = _CustomPageParams
@@ -95,10 +99,10 @@ class _CustomPage(_PageDetails, AbstractPage[T], Generic[T]):
         )
 
 
-class _CustomCursorPage(_CursorPageDetails, AbstractPage[T], Generic[T]):
+class _CustomCursorPage[T](_CursorPageDetails, AbstractPage[T]):
     """Custom cursor paging class"""
 
-    __params_type__ = CursorParams
+    __params_type__ = _CustomCursorParams
 
     @classmethod
     def create(
@@ -119,7 +123,7 @@ class _CustomCursorPage(_CursorPageDetails, AbstractPage[T], Generic[T]):
         )
 
 
-class PageData(_PageDetails, Generic[SchemaT]):
+class PageData[SchemaT](_PageDetails):
     """
     Unified return model containing return data schema, only for pagination interfaces
 
@@ -144,22 +148,37 @@ class PageData(_PageDetails, Generic[SchemaT]):
     items: Sequence[SchemaT]
 
 
-class CursorPageData(_CursorPageDetails, Generic[SchemaT]):
+class CursorPageData[SchemaT](_CursorPageDetails):
     """Unified return model including return data schema, only applicable to cursor paging interface, usage is the same as PageData"""
 
     items: Sequence[SchemaT]
 
 
-async def paging_data(db: AsyncSession, select: Select, **kwargs) -> dict[str, Any]:
+async def paging_data(
+    db: AsyncSession,
+    select: Select,
+    *,
+    bind_params: dict[str, Any] | None = None,
+    execute_options: dict[str, Any] | None = None,
+    **kwargs: Any,
+) -> dict[str, Any]:
     """
     Create paging data based on SQLAlchemy
 
     :param db: database session
     :param select: SQL query statement
+    :param bind_params: 数据与总数查询共用的绑定参数
+    :param execute_options: 数据与总数查询共用的执行选项
     :param kwargs: More fastapi-pagination apaginate parameters
     :return:
     """
-    paginated_data: _CustomPage = await apaginate(db, select, **kwargs)
+    paginated_data: _CustomPage = await apaginate(
+        db,
+        select,
+        bind_params=bind_params,
+        execute_options=execute_options,
+        **kwargs,
+    )
     page_data = paginated_data.model_dump()
     return page_data
 

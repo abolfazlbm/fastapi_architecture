@@ -31,7 +31,7 @@ EMAIL_PORT = 465
 EMAIL_SSL = true
 ```
 
-Add the following content to `backend/core/conf.py`:
+当前项目的 `backend/core/conf.py` 已包含以下字段：
 
 ```python
 ###############################################
@@ -49,7 +49,15 @@ EMAIL_CAPTCHA_REDIS_PREFIX: str
 EMAIL_CAPTCHA_EXPIRE_SECONDS: int
 ```
 
-## Usage
+## 配置项说明
+
+- `EMAIL_CAPTCHA_EXPIRE_SECONDS`：控制邮箱验证码有效期
+- `EMAIL_CAPTCHA_REDIS_PREFIX`：控制邮箱验证码 Redis 键前缀
+- `EMAIL_HOST`：控制 SMTP 服务器地址
+- `EMAIL_PORT`：控制 SMTP 端口
+- `EMAIL_SSL`：控制是否启用 SSL
+
+## 使用方式
 
 1. After installing and enabling the plug-in, configure the correct SMTP account and password
 2. Modify `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_SSL` according to the actual email service provider

@@ -1,7 +1,7 @@
 from collections import defaultdict, namedtuple
 from collections.abc import Sequence
 from decimal import Decimal
-from typing import Any, TypeAlias, TypeVar
+from typing import Any
 
 from fastapi.encoders import decimal_encoder
 from msgspec import json
@@ -11,9 +11,7 @@ from starlette.responses import JSONResponse
 
 from backend.common.log import log
 
-RowData: TypeAlias = Row[Any] | RowMapping | Any
-
-R = TypeVar('R', bound=RowData)
+type RowData = Row[Any] | RowMapping | Any
 
 
 class MsgSpecJSONResponse(JSONResponse):
@@ -25,7 +23,7 @@ class MsgSpecJSONResponse(JSONResponse):
         return json.encode(content)
 
 
-def select_columns_serialize(row: R) -> dict[str, Any]:
+def select_columns_serialize[R: RowData](row: R) -> dict[str, Any]:
     """
     Serializes the columns of the SQLAlchemy lookup table, not containing the associated columns
 
@@ -41,7 +39,7 @@ def select_columns_serialize(row: R) -> dict[str, Any]:
     return result
 
 
-def select_list_serialize(row: Sequence[R]) -> list[dict[str, Any]]:
+def select_list_serialize[R: RowData](row: Sequence[R]) -> list[dict[str, Any]]:
     """
     Serialize SQLAlchemy query list
 
@@ -51,7 +49,7 @@ def select_list_serialize(row: Sequence[R]) -> list[dict[str, Any]]:
     return [select_columns_serialize(item) for item in row]
 
 
-def select_as_dict(row: R, *, use_alias: bool = False) -> dict[str, Any]:
+def select_as_dict[R: RowData](row: R, *, use_alias: bool = False) -> dict[str, Any]:
     """
     Convert SQLAlchemy query results to a dictionary that can contain associated data
 
@@ -74,7 +72,7 @@ def select_as_dict(row: R, *, use_alias: bool = False) -> dict[str, Any]:
     return result
 
 
-def select_join_serialize(  # noqa: C901
+def select_join_serialize[R: RowData](  # ruff:ignore[complex-structure]
     row: R | Sequence[R],
     relationships: list[str] | None = None,
     *,
@@ -248,7 +246,7 @@ def select_join_serialize(  # noqa: C901
                     field_list.append(nt_key)
                 field_list = list(dict.fromkeys(field_list))
 
-            namedtuple_cache[model_name] = namedtuple(model_name.capitalize(), field_list)  # noqa: PYI024
+            namedtuple_cache[model_name] = namedtuple(model_name.capitalize(), field_list)  # ruff:ignore[collections-named-tuple]
 
     # Nested relationship hierarchy (built in one go)
     hierarchy = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
@@ -262,7 +260,7 @@ def select_join_serialize(  # noqa: C901
             main_id = get_obj_id(row_elements[0])
             m_type_name = type(row_elements[0]).__name__.lower()
 
-            for idx, rel_obj in enumerate(row_elements[1:], 1):  # noqa: B007
+            for idx, rel_obj in enumerate(row_elements[1:], 1):  # ruff:ignore[unused-loop-control-variable]
                 if rel_obj is None:
                     continue
 
@@ -380,7 +378,7 @@ def select_join_serialize(  # noqa: C901
         result_data = build_nested(main_id, main_obj) if has_relationships else build_flat(main_id, main_obj)
 
         if not return_as_dict:
-            result_type = namedtuple('Result', result_data.keys())  # noqa: PYI024
+            result_type = namedtuple('Result', result_data.keys())  # ruff:ignore[collections-named-tuple]
             final_results.append(result_type(**result_data))
         else:
             final_results.append(result_data)

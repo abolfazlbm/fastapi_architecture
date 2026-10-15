@@ -4,15 +4,15 @@ from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_crud_plus import CRUDPlus
 
-from backend.plugin.code_generator.model import GenBusiness
-from backend.plugin.code_generator.schema.business import CreateGenBusinessParam, UpdateGenBusinessParam
+from backend.plugin.code_generator.model import CodeGenBusiness
+from backend.plugin.code_generator.schema.business import CreateCodeGenBusinessParam, UpdateCodeGenBusinessParam
 from backend.utils.timezone import timezone
 
 
-class CRUDGenBusiness(CRUDPlus[GenBusiness]):
+class CRUDCodeGenBusiness(CRUDPlus[CodeGenBusiness]):
     """Code generation business CRUD classes"""
 
-    async def get(self, db: AsyncSession, pk: int) -> GenBusiness | None:
+    async def get(self, db: AsyncSession, pk: int) -> CodeGenBusiness | None:
         """
         Get a code generation business
 
@@ -22,7 +22,7 @@ class CRUDGenBusiness(CRUDPlus[GenBusiness]):
         """
         return await self.select_model(db, pk, deleted=0)
 
-    async def get_by_name(self, db: AsyncSession, name: str) -> GenBusiness | None:
+    async def get_by_name(self, db: AsyncSession, name: str) -> CodeGenBusiness | None:
         """
         Get code generation business by name
 
@@ -32,7 +32,7 @@ class CRUDGenBusiness(CRUDPlus[GenBusiness]):
         """
         return await self.select_model_by_column(db, table_name=name, deleted=0)
 
-    async def get_all(self, db: AsyncSession) -> Sequence[GenBusiness]:
+    async def get_all(self, db: AsyncSession) -> Sequence[CodeGenBusiness]:
         """
         Get all code generation business
 
@@ -55,7 +55,7 @@ class CRUDGenBusiness(CRUDPlus[GenBusiness]):
 
         return await self.select_order('id', 'desc', **filters)
 
-    async def create(self, db: AsyncSession, obj: CreateGenBusinessParam) -> None:
+    async def create(self, db: AsyncSession, obj: CreateCodeGenBusinessParam) -> None:
         """
         Create a code generation business
 
@@ -65,7 +65,7 @@ class CRUDGenBusiness(CRUDPlus[GenBusiness]):
         """
         await self.create_model(db, obj)
 
-    async def update(self, db: AsyncSession, pk: int, obj: UpdateGenBusinessParam) -> int:
+    async def update(self, db: AsyncSession, pk: int, obj: UpdateCodeGenBusinessParam) -> int:
         """
         Update code generation business
 
@@ -96,4 +96,4 @@ class CRUDGenBusiness(CRUDPlus[GenBusiness]):
         )
 
 
-gen_business_dao: CRUDGenBusiness = CRUDGenBusiness(GenBusiness)
+code_gen_business_dao: CRUDCodeGenBusiness = CRUDCodeGenBusiness(CodeGenBusiness)

@@ -4,7 +4,7 @@ from functools import cache
 from re import Pattern
 from typing import Any, Literal
 
-from pydantic import model_validator
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
 
 from backend.core.path_conf import ENV_EXAMPLE_FILE_PATH, ENV_FILE_PATH
@@ -51,6 +51,7 @@ class Settings(BaseSettings):
     DATABASE_PORT: int
     DATABASE_USER: str
     DATABASE_PASSWORD: str
+    DATABASE_SOURCES: dict[str, str] = Field(default_factory=dict)
 
     # Database
     DATABASE_ECHO: bool | Literal['debug'] = False
@@ -67,6 +68,8 @@ class Settings(BaseSettings):
 
     # Redis
     REDIS_TIMEOUT: int = 5
+    REDIS_MAX_CONNECTIONS: int = 100  # 连接池上限
+    REDIS_POOL_TIMEOUT: int = 20  # 等待空闲连接超时（秒）
 
     # Cache
     CACHE_LOCAL_ENABLED: bool = True
@@ -76,8 +79,9 @@ class Settings(BaseSettings):
     CACHE_CONFIG_REDIS_PREFIX: str = 'fba:cache:config'
     CACHE_DICT_REDIS_PREFIX: str = 'fba:cache:dict'
     CACHE_PUBSUB_CHANNEL: str = 'fba:cache:invalidate'
-    CACHE_PUBSUB_RECONNECT_DELAY: int = 5  # Reconnect Delay Seconds
-    CACHE_PUBSUB_MAX_RECONNECT_ATTEMPTS: int = 10  # Maximum number of reconnections
+    CACHE_PUBSUB_RECONNECT_DELAY: int = 5  # 重连延迟（秒）
+    CACHE_PUBSUB_MAX_RECONNECT_ATTEMPTS: int = 10  # 最大重连次数
+    CACHE_PUBSUB_POLL_TIMEOUT: float = 1.0  # 订阅消息轮询超时（秒）
 
     # .env Snowflake
     SNOWFLAKE_ENABLED: bool = False
@@ -100,6 +104,7 @@ class Settings(BaseSettings):
     TOKEN_EXTRA_INFO_REDIS_PREFIX: str = 'fba:token_extra_info'
     TOKEN_ONLINE_REDIS_PREFIX: str = 'fba:token_online'
     TOKEN_REFRESH_REDIS_PREFIX: str = 'fba:refresh_token'
+    TOKEN_SESSION_REDIS_PREFIX: str = 'fba:token_session'
     TOKEN_REQUEST_UNDERLYING_SECURITY: bool = True
     TOKEN_REQUEST_PATH_EXCLUDE: list[str] = [  # JWT / RBAC Routing whitelist
         f'{FASTAPI_API_V1_PATH}/auth/login',
@@ -166,10 +171,7 @@ class Settings(BaseSettings):
     WS_NO_AUTH_MARKER: str = 'internal'
 
     # CORS
-    CORS_ALLOWED_ORIGINS: list[str] = [  # No slash at the end
-        'http://127.0.0.1',
-        'http://localhost:5173',
-    ]
+    CORS_ALLOWED_ORIGINS: list[str] = ['*']  # 末尾不带斜杠
     CORS_EXPOSE_HEADERS: list[str] = [
         'X-Request-ID',
     ]
@@ -239,6 +241,7 @@ class Settings(BaseSettings):
         'old_password',
         'new_password',
         'confirm_password',
+        'secret',
     ]
     OPERA_LOG_QUEUE_MAXSIZE: int = 100000
     OPERA_LOG_QUEUE_BATCH_CONSUME_SIZE: int = 100

@@ -34,7 +34,7 @@ OAUTH2_STATE_EXPIRE_SECONDS = 180
 OAUTH2_STATE_REDIS_PREFIX = 'fba:oauth2:state'
 ```
 
-Add the following content to `backend/core/conf.py`:
+当前项目的 `backend/core/conf.py` 已包含以下字段：
 
 ```python
 ################################################
@@ -54,7 +54,17 @@ OAUTH2_GOOGLE_REDIRECT_URI: str
 OAUTH2_FRONTEND_LOGIN_REDIRECT_URI: str
 OAUTH2_FRONTEND_BINDING_REDIRECT_URI: str
 ```
-## Usage
+
+## 配置项说明
+
+- `OAUTH2_FRONTEND_BINDING_REDIRECT_URI`：控制第三方账号绑定完成后的前端回跳地址
+- `OAUTH2_FRONTEND_LOGIN_REDIRECT_URI`：控制第三方登录完成后的前端回跳地址
+- `OAUTH2_GITHUB_REDIRECT_URI`：控制 GitHub OAuth 回调地址
+- `OAUTH2_GOOGLE_REDIRECT_URI`：控制 Google OAuth 回调地址
+- `OAUTH2_STATE_EXPIRE_SECONDS`：控制 OAuth state 有效期
+- `OAUTH2_STATE_REDIS_PREFIX`：控制 OAuth state Redis 键前缀
+
+## 使用方式
 
 1. After installing and enabling the plug-in, create OAuth applications on GitHub and Google Open Platform respectively.
 2. Configure the Client ID and Client Secret assigned by the platform into the project environment variables

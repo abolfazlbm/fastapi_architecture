@@ -7,18 +7,18 @@ from backend.common.enums import StatusType
 from backend.common.schema import SchemaBase
 
 
-class DataScopeBase(SchemaBase):
+class DataScopeSchemaBase(SchemaBase):
     """Data range basic model"""
 
     name: str = Field(description='name')
     status: StatusType = Field(description='Status')
 
 
-class CreateDataScopeParam(DataScopeBase):
+class CreateDataScopeParam(DataScopeSchemaBase):
     """Create data range parameters"""
 
 
-class UpdateDataScopeParam(DataScopeBase):
+class UpdateDataScopeParam(DataScopeSchemaBase):
     """Update data range parameters"""
 
 
@@ -41,7 +41,7 @@ class DeleteDataScopeParam(SchemaBase):
     pks: list[int] = Field(description='Data range ID list')
 
 
-class GetDataScopeDetail(DataScopeBase):
+class GetDataScopeDetail(DataScopeSchemaBase):
     """Data range details"""
 
     model_config = ConfigDict(from_attributes=True)

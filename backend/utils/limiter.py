@@ -5,11 +5,10 @@ from dataclasses import dataclass
 from hashlib import sha256
 from inspect import isawaitable
 from math import ceil
-from typing import TypeAlias, TypeVar
 
 from fastapi import Request, Response
 from fastapi_pagination.utils import is_async_callable
-from pyrate_limiter import AbstractBucket, BucketFactory, Limiter, Rate, RateItem
+from pyrate_limiter import BucketFactory, Rate, RateItem
 from pyrate_limiter.buckets import RedisBucket
 from redis.asyncio import Redis
 from starlette.concurrency import run_in_threadpool
@@ -20,14 +19,11 @@ from backend.core.conf import settings
 from backend.database.redis import redis_client
 from backend.utils.request_parse import get_request_ip
 
-IdentifierCallable: TypeAlias = Callable[[Request], str] | Callable[[Request], Awaitable[str]]
-CallbackCallable: TypeAlias = (
-    Callable[[Request, Response, int], None] | Callable[[Request, Response, int], Awaitable[None]]
-)
-T = TypeVar('T')
+type IdentifierCallable = Callable[[Request], str | Awaitable[str]]
+type CallbackCallable = Callable[[Request, Response, int], Awaitable[None] | None]
 
-REQUEST_LIMITER_BUCKET_CACHE_MAX_SIZE = 4096
-REQUEST_LIMITER_BUCKET_CACHE_BUFFER_MS = 10_000
+_REQUEST_LIMITER_BUCKET_CACHE_MAX_SIZE = 4096
+_REQUEST_LIMITER_BUCKET_CACHE_BUFFER_MS = 10_000
 
 
 @dataclass(slots=True)
@@ -38,7 +34,7 @@ class RedisBucketState:
     last_seen: int
 
 
-async def _maybe_await(value: T | Awaitable[T]) -> T:
+async def _maybe_await[T](value: T | Awaitable[T]) -> T:
     """
     兼容同步值和异步值
 
@@ -75,7 +71,7 @@ class RedisBucketFactory(BucketFactory):
         self,
         rates: list[Rate],
         bucket_key: str,
-        max_cache_size: int = REQUEST_LIMITER_BUCKET_CACHE_MAX_SIZE,
+        max_cache_size: int = _REQUEST_LIMITER_BUCKET_CACHE_MAX_SIZE,
     ) -> None:
         """
         初始化 Redis bucket 工厂
@@ -88,7 +84,7 @@ class RedisBucketFactory(BucketFactory):
         self.rates = rates
         self.bucket_key = f'{bucket_key}:{self._rate_key(rates)}'
         self.max_cache_size = max(1, max_cache_size)
-        self.cache_ttl = max(rate.interval for rate in rates) + REQUEST_LIMITER_BUCKET_CACHE_BUFFER_MS
+        self.cache_ttl = max(rate.interval for rate in rates) + _REQUEST_LIMITER_BUCKET_CACHE_BUFFER_MS
         self.lock = Lock()
         self.buckets: OrderedDict[str, RedisBucketState] = OrderedDict()
 
@@ -110,7 +106,8 @@ class RedisBucketFactory(BucketFactory):
         :return:
         """
         bucket_key = self._bucket_key(item.name)
-        now = await _redis_time_ms(redis_client)
+        # wrap_item 已取过 Redis 时间，直接复用，省一次往返
+        now = item.timestamp
 
         async with self.lock:
             state = self.buckets.get(bucket_key)
@@ -119,16 +116,29 @@ class RedisBucketFactory(BucketFactory):
                 self.buckets.move_to_end(bucket_key)
                 return state.bucket
 
-            bucket_result = RedisTimeBucket.init(
+        # 锁外做 Redis IO，避免所有限流请求排队等待 script_load
+        bucket = await _maybe_await(
+            RedisTimeBucket.init(
                 rates=self.rates,
                 redis=redis_client,
                 bucket_key=bucket_key,
             )
-            bucket = await _maybe_await(bucket_result)
+        )
+
+        async with self.lock:
+            # 并发初始化同一 bucket 时以先写入者为准
+            state = self.buckets.get(bucket_key)
+            if state is not None:
+                state.last_seen = now
+                self.buckets.move_to_end(bucket_key)
+                return state.bucket
             self.buckets[bucket_key] = RedisBucketState(bucket=bucket, last_seen=now)
             self.schedule_leak(bucket)
-            await self._evict(now)
-            return bucket
+            disposed = self._evict(now)
+
+        for state in disposed:
+            await self._cleanup(state.bucket, now)
+        return bucket
 
     async def get_bucket(self, name: str) -> RedisBucket:
         """
@@ -139,38 +149,38 @@ class RedisBucketFactory(BucketFactory):
         """
         return await self.get(await self.wrap_item(name))
 
-    async def _evict(self, now: int) -> None:
+    def _evict(self, now: int) -> list[RedisBucketState]:
         """
-        淘汰本地 bucket 缓存
+        淘汰本地 bucket 缓存，只改内存状态，不做 Redis IO
 
         :param now: 当前时间戳，单位毫秒
         :return:
         """
+        expired: list[RedisBucketState] = []
         for bucket_key, state in list(self.buckets.items()):
             if now - state.last_seen <= self.cache_ttl:
                 continue
-            await self._dispose(bucket_key, state, now, cleanup=True)
+            self.buckets.pop(bucket_key, None)
+            self.dispose(state.bucket)
+            expired.append(state)
 
         while len(self.buckets) > self.max_cache_size:
-            bucket_key, state = next(iter(self.buckets.items()))
-            await self._dispose(bucket_key, state, now, cleanup=False)
+            _, state = self.buckets.popitem(last=False)
+            self.dispose(state.bucket)
+        return expired
 
-    async def _dispose(self, bucket_key: str, state: RedisBucketState, now: int, *, cleanup: bool) -> None:
+    @staticmethod
+    async def _cleanup(bucket: RedisBucket, now: int) -> None:
         """
-        移除本地 bucket 并按需清理 Redis 过期数据
+        清理已淘汰 bucket 的 Redis 过期数据
 
-        :param bucket_key: Redis bucket key
-        :param state: Redis bucket 缓存状态
+        :param bucket: Redis bucket
         :param now: 当前时间戳，单位毫秒
-        :param cleanup: 是否执行 Redis 过期数据清理
         :return:
         """
-        self.buckets.pop(bucket_key, None)
-        self.dispose(state.bucket)
-        if cleanup:
-            await _maybe_await(state.bucket.leak(now))
-            if await _maybe_await(state.bucket.count()) == 0:
-                await _maybe_await(state.bucket.flush())
+        await _maybe_await(bucket.leak(now))
+        if await _maybe_await(bucket.count()) == 0:
+            await _maybe_await(bucket.flush())
 
     def _bucket_key(self, name: str) -> str:
         """
@@ -228,28 +238,21 @@ class RateLimiter:
         self,
         *rates: Rate,
         identifier: IdentifierCallable = default_identifier,
-        bucket: AbstractBucket | None = None,
-        limiter: Limiter | None = None,
         callback: CallbackCallable = default_callback,
     ) -> None:
         """
         Initialize rate limiter
 
-        :param rates: pyrate_limiter Rate object, supports passing in single or multiple
-        :param identifier: custom identifier function
-        :param bucket: pyrate_limiter AbstractBucket instance
-        :param limiter: pyrate_limiter Limiter instance
-        :param callback: Custom current limiting callback function
+        :param rates: 一个或多个限流策略
+        :param identifier: 自定义标识符函数
+        :param callback: 自定义限流回调函数
         :return:
         """
-        if limiter is None and not rates and bucket is None:
-            raise errors.ServerError(msg='At least one Rate, bucket or limiter instance needs to be passed in')
-        self.rates = list(rates)
+        if not rates:
+            raise errors.ServerError(msg='至少需要传入一个 Rate')
         self.identifier = identifier
-        self.bucket = bucket
-        self.limiter = limiter
         self.callback = callback
-        self.bucket_factory: RedisBucketFactory | None = None
+        self.bucket_factory = RedisBucketFactory(list(rates), settings.REQUEST_LIMITER_REDIS_PREFIX)
 
     async def __call__(self, request: Request, response: Response) -> None:
         """
@@ -259,52 +262,26 @@ class RateLimiter:
         :param response: FastAPI response object
         :return:
         """
-        if self.limiter is None:
-            if self.bucket is None:
-                self.bucket_factory = RedisBucketFactory(
-                    rates=self.rates,
-                    bucket_key=f'{settings.REQUEST_LIMITER_REDIS_PREFIX}',
-                )
-                self.limiter = Limiter(self.bucket_factory)
-            else:
-                self.limiter = Limiter(self.bucket)
-
-        if is_async_callable(self.identifier):
+        if self.identifier is default_identifier:
+            identifier = self.identifier(request)
+        elif is_async_callable(self.identifier):
             identifier = await self.identifier(request)
         else:
             identifier = await run_in_threadpool(self.identifier, request)
 
-        acquired = await self.limiter.try_acquire_async(identifier, blocking=False)
-        if not acquired:
-            retry_after = await self._retry_after(identifier)
-            if is_async_callable(self.callback):
-                await self.callback(request, response, retry_after)
-            else:
-                await run_in_threadpool(self.callback, request, response, retry_after)
+        item = await self.bucket_factory.wrap_item(identifier)
+        bucket = await self.bucket_factory.get(item)
+        decision = await bucket.put_decision(item)
+        if decision.allowed:
+            return
 
-    async def _retry_after(self, identifier: str) -> int:
-        """
-        Calculate current limit retry waiting time
-
-        :param identifier: current limit identifier
-        :return:
-        """
-        if self.bucket_factory is not None:
-            failing_rate = (await self.bucket_factory.get_bucket(identifier)).failing_rate
-        elif self.bucket is not None:
-            failing_rate = self.bucket.failing_rate
+        wait_ms = decision.retry_after_ms
+        if wait_ms is None:
+            wait_ms = max(rate.interval for rate in self.bucket_factory.rates)
+        retry_after = max(1, ceil(wait_ms / 1000))
+        if self.callback is default_callback:
+            self.callback(request, response, retry_after)
+        elif is_async_callable(self.callback):
+            await self.callback(request, response, retry_after)
         else:
-            failing_rate = None
-
-        if failing_rate is not None:
-            return ceil(failing_rate.interval / 1000)
-
-        if self.limiter is not None:
-            for bucket in self.limiter.buckets():
-                if bucket.failing_rate is not None:
-                    return ceil(bucket.failing_rate.interval / 1000)
-
-        if self.rates:
-            return ceil(max(rate.interval for rate in self.rates) / 1000)
-
-        return 1
+            await run_in_threadpool(self.callback, request, response, retry_after)

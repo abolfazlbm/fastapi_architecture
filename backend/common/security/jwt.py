@@ -1,12 +1,7 @@
-import json
-import uuid
-
-from datetime import timedelta
 from typing import Annotated, Any
 
 from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from fastapi.security.utils import get_authorization_scheme_param
 from jose import ExpiredSignatureError, JWTError, jwt
 from pydantic_core import from_json
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,7 +10,7 @@ from starlette.authentication import UnauthenticatedUser
 from backend.app.admin.model import User
 from backend.app.admin.schema.user import GetUserInfoWithRelationDetail
 from backend.common.context import ctx
-from backend.common.dataclasses import AccessToken, NewToken, RefreshToken, TokenPayload
+from backend.common.dataclasses import TokenPayload
 from backend.common.exception import errors
 from backend.core.conf import settings
 from backend.database.db import async_db_session
@@ -63,132 +58,6 @@ def jwt_decode(token: str) -> TokenPayload:
     )
 
 
-async def create_access_token(user_id: int, *, multi_login: bool, **kwargs) -> AccessToken:
-    """
-    Generate encrypted tokens
-
-    :param user_id: User ID
-    :param multi_login: Whether to allow multi-terminal login
-    :param kwargs: token Additional information
-    :return:
-    """
-    expire = timezone.now() + timedelta(seconds=settings.TOKEN_EXPIRE_SECONDS)
-    session_uuid = str(uuid.uuid4())
-    access_token = jwt_encode({
-        'session_uuid': session_uuid,
-        'exp': timezone.to_utc(expire).timestamp(),
-        'sub': str(user_id),
-    })
-
-    if not multi_login:
-        await redis_client.delete_by_prefix(f'{settings.TOKEN_REDIS_PREFIX}:{user_id}')
-
-    await redis_client.set(
-        f'{settings.TOKEN_REDIS_PREFIX}:{user_id}:{session_uuid}',
-        access_token,
-        ex=settings.TOKEN_EXPIRE_SECONDS,
-    )
-
-    # Token Additional information is stored separately
-    if kwargs:
-        await redis_client.set(
-            f'{settings.TOKEN_EXTRA_INFO_REDIS_PREFIX}:{user_id}:{session_uuid}',
-            json.dumps(kwargs, ensure_ascii=False),
-            ex=settings.TOKEN_EXPIRE_SECONDS,
-        )
-
-    return AccessToken(access_token=access_token, access_token_expire_time=expire, session_uuid=session_uuid)
-
-
-async def create_refresh_token(session_uuid: str, user_id: int, *, multi_login: bool) -> RefreshToken:
-    """
-    Generate encrypted refresh tokens, only for creating new tokens
-
-    :param session_uuid: session UUID
-    :param user_id: User ID
-    :param multi_login: Whether to allow multi-terminal login
-    :return:
-    """
-    expire = timezone.now() + timedelta(seconds=settings.TOKEN_REFRESH_EXPIRE_SECONDS)
-    refresh_token = jwt_encode({
-        'session_uuid': session_uuid,
-        'exp': timezone.to_utc(expire).timestamp(),
-        'sub': str(user_id),
-    })
-
-    if not multi_login:
-        await redis_client.delete_by_prefix(f'{settings.TOKEN_REFRESH_REDIS_PREFIX}:{user_id}')
-
-    await redis_client.set(
-        f'{settings.TOKEN_REFRESH_REDIS_PREFIX}:{user_id}:{session_uuid}',
-        refresh_token,
-        ex=settings.TOKEN_REFRESH_EXPIRE_SECONDS,
-    )
-    return RefreshToken(refresh_token=refresh_token, refresh_token_expire_time=expire)
-
-
-async def create_new_token(
-    refresh_token: str,
-    session_uuid: str,
-    user_id: int,
-    *,
-    multi_login: bool,
-    **kwargs,
-) -> NewToken:
-    """
-    Generate a new token
-
-    :param refresh_token: refresh token
-    :param session_uuid: session UUID
-    :param user_id: User ID
-    :param multi_login: Whether to allow multi-terminal login
-    :param kwargs: token Additional information
-    :return:
-    """
-    redis_refresh_token = await redis_client.get(f'{settings.TOKEN_REFRESH_REDIS_PREFIX}:{user_id}:{session_uuid}')
-    if not redis_refresh_token or redis_refresh_token != refresh_token:
-        raise errors.TokenError(msg='Refresh Token has expired, please log in again')
-
-    await redis_client.delete(f'{settings.TOKEN_REFRESH_REDIS_PREFIX}:{user_id}:{session_uuid}')
-    await redis_client.delete(f'{settings.TOKEN_REDIS_PREFIX}:{user_id}:{session_uuid}')
-
-    new_access_token = await create_access_token(user_id, multi_login=multi_login, **kwargs)
-    new_refresh_token = await create_refresh_token(new_access_token.session_uuid, user_id, multi_login=multi_login)
-    return NewToken(
-        new_access_token=new_access_token.access_token,
-        new_access_token_expire_time=new_access_token.access_token_expire_time,
-        new_refresh_token=new_refresh_token.refresh_token,
-        new_refresh_token_expire_time=new_refresh_token.refresh_token_expire_time,
-        session_uuid=new_access_token.session_uuid,
-    )
-
-
-async def revoke_token(user_id: int, session_uuid: str) -> None:
-    """
-    Revoke token
-
-    :param user_id: User ID
-    :param session_uuid: Session ID
-    :return:
-    """
-    await redis_client.delete(f'{settings.TOKEN_REDIS_PREFIX}:{user_id}:{session_uuid}')
-    await redis_client.delete(f'{settings.TOKEN_EXTRA_INFO_REDIS_PREFIX}:{user_id}:{session_uuid}')
-
-
-def get_token(request: Request) -> str:
-    """
-    Get the token in the request header
-
-    :param request: FastAPI request object
-    :return:
-    """
-    authorization = request.headers.get('Authorization')
-    scheme, token = get_authorization_scheme_param(authorization)
-    if not authorization or scheme.lower() != 'bearer':
-        raise errors.TokenError(msg='Token invalid')
-    return token
-
-
 async def get_current_user(db: AsyncSession, pk: int) -> User:
     """
     Get the current user
@@ -219,16 +88,17 @@ async def get_jwt_user(user_id: int) -> GetUserInfoWithRelationDetail:
     """
     Get JWT user
 
-    :param user_id:
+    :param user_id: 用户 ID
     :return:
     """
-    cache_user = await redis_client.get(f'{settings.JWT_USER_REDIS_PREFIX}:{user_id}')
+    user_key = f'{settings.JWT_USER_REDIS_PREFIX}:{user_id}'
+    cache_user = await redis_client.get(user_key)
     if not cache_user:
         async with async_db_session() as db:
             current_user = await get_current_user(db, user_id)
             user = GetUserInfoWithRelationDetail.model_validate(current_user)
             await redis_client.set(
-                f'{settings.JWT_USER_REDIS_PREFIX}:{user_id}',
+                user_key,
                 user.model_dump_json(),
                 ex=settings.TOKEN_EXPIRE_SECONDS,
             )
@@ -251,11 +121,12 @@ async def jwt_authentication(token: str) -> GetUserInfoWithRelationDetail:
     redis_token = await redis_client.get(f'{settings.TOKEN_REDIS_PREFIX}:{ctx.user_id}:{token_payload.session_uuid}')
     if not redis_token:
         raise errors.TokenError(msg='Token expired')
-
     if token != redis_token:
         raise errors.TokenError(msg='Token have expired')
 
-    return await get_jwt_user(ctx.user_id)
+    user = await get_jwt_user(ctx.user_id)
+    ctx.is_superuser = user.is_superuser
+    return user
 
 
 def jwt_authentication_verify(
@@ -290,7 +161,6 @@ def superuser_verify(request: Request, _token: str = DependsJwtAuth) -> bool:
     """
     if isinstance(request.user, UnauthenticatedUser):
         raise errors.TokenError
-
     superuser = request.user.is_superuser
     if not superuser or not request.user.is_staff:
         raise errors.AuthorizationError

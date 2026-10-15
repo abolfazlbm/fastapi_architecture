@@ -67,7 +67,7 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection: Connection) -> None:
-    def process_revision_directives(context, revision, directives) -> None:  # noqa: ANN001
+    def process_revision_directives(context, revision, directives) -> None:  # ruff:ignore[missing-type-function-argument]
         """When there are no changes in the migration, no migration records are generated."""
         if config.cmd_opts.autogenerate:
             script = directives[0]

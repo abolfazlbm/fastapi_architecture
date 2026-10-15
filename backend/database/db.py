@@ -1,8 +1,9 @@
 import sys
 
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Mapping
+from contextlib import AbstractAsyncContextManager
 from functools import partial
-from typing import Annotated, Any, TypeAlias
+from typing import Annotated, Any
 from uuid import uuid4
 
 from fastapi import Depends
@@ -73,29 +74,73 @@ def create_database_async_engine(url: str | URL) -> AsyncEngine:
         sys.exit()
 
 
-def create_database_async_session(engine: AsyncEngine) -> async_sessionmaker[AsyncSession | Any]:
-    """
-    Create a database asynchronous session
+class DatabaseAsyncSessionMaker:
+    """按数据源名选择对应的 async_sessionmaker"""
 
-    :param engine: database asynchronous engine
+    def __init__(self, makers: Mapping[str, async_sessionmaker[AsyncSession]]) -> None:
+        if 'default' not in makers:
+            raise ValueError('会话工厂必须包含 default 数据源')
+        self._makers = dict(makers)
+
+    def _get_maker(self, source: str) -> async_sessionmaker[AsyncSession]:
+        """
+        获取指定数据源的会话工厂
+
+        :param source: 数据源名称
+        :return:
+        """
+        try:
+            return self._makers[source]
+        except KeyError as e:
+            raise ValueError(f'未知数据库数据源: {source}') from e
+
+    def __call__(self, source: str = 'default', **kwargs: Any) -> AsyncSession:
+        """
+        创建数据库会话
+
+        :param source: 数据源名称
+        :return:
+        """
+        return self._get_maker(source)(**kwargs)
+
+    def begin(self, source: str = 'default') -> AbstractAsyncContextManager[AsyncSession]:
+        """
+        创建会话并开启事务，退出时提交并关闭
+
+        :param source: 数据源名称
+        :return:
+        """
+        return self._get_maker(source).begin()
+
+
+def create_database_async_session(
+    async_engine: AsyncEngine,
+    *,
+    source_binds: Mapping[str, AsyncEngine] | None = None,
+) -> DatabaseAsyncSessionMaker:
+    """
+    创建支持命名数据源的数据库异步会话
+
+    :param async_engine: 默认数据源异步引擎
+    :param source_binds: 额外数据源异步引擎
     :return:
     """
-    return async_sessionmaker(
-        bind=engine,
-        class_=AsyncSession,
-        autoflush=False,  # Disable automatic refresh
-        expire_on_commit=False, # Disable expiration of commit
-    )
+    engines = dict(source_binds or {})
+    engines.setdefault('default', async_engine)
+    return DatabaseAsyncSessionMaker({
+        source: async_sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
+        for source, engine in engines.items()
+    })
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    """Get database session"""
+    """获取默认数据源会话"""
     async with async_db_session() as session:
         yield session
 
 
 async def get_db_transaction() -> AsyncGenerator[AsyncSession, None]:
-    """Get a database session with a transaction"""
+    """获取默认数据源事务会话"""
     async with async_db_session.begin() as session:
         yield session
 
@@ -119,25 +164,44 @@ def uuid4_str() -> str:
 
 # SQLA Async Engines And Sessions
 async_engine = create_database_async_engine(get_database_url())
-async_db_session = create_database_async_session(async_engine)
+_database_engines: dict[str, AsyncEngine] = {'default': async_engine}
+for source, url in settings.DATABASE_SOURCES.items():
+    if not source or source == 'default':
+        raise ValueError('DATABASE_SOURCES 数据源名称不能为空且不能为 default')
+    _database_engines[source] = create_database_async_engine(url)
+
+async_db_session = create_database_async_session(async_engine, source_binds=_database_engines)
+
+
+def get_database_engines() -> Mapping[str, AsyncEngine]:
+    """获取所有数据库引擎"""
+    return _database_engines
+
+
+async def dispose_database() -> None:
+    """释放所有数据库连接池"""
+    for engine in _database_engines.values():
+        await engine.dispose()
+
 
 # SQLA Connection pool indicator monitoring
-event.listen(
-    async_engine.sync_engine.pool,
-    'connect',
-    partial(observe_sqlalchemy_pool_connections, pool=async_engine.sync_engine.pool),
-)
-event.listen(
-    async_engine.sync_engine.pool,
-    'checkout',
-    partial(observe_sqlalchemy_pool_connections, pool=async_engine.sync_engine.pool),
-)
-event.listen(
-    async_engine.sync_engine.pool,
-    'checkin',
-    partial(observe_sqlalchemy_pool_connections, pool=async_engine.sync_engine.pool),
-)
+for source, engine in _database_engines.items():
+    event.listen(
+        engine.sync_engine.pool,
+        'connect',
+        partial(observe_sqlalchemy_pool_connections, pool=engine.sync_engine.pool, source=source),
+    )
+    event.listen(
+        engine.sync_engine.pool,
+        'checkout',
+        partial(observe_sqlalchemy_pool_connections, pool=engine.sync_engine.pool, source=source),
+    )
+    event.listen(
+        engine.sync_engine.pool,
+        'checkin',
+        partial(observe_sqlalchemy_pool_connections, pool=engine.sync_engine.pool, source=source),
+    )
 
 # Session Annotated
-CurrentSession: TypeAlias = Annotated[AsyncSession, Depends(get_db)]
-CurrentSessionTransaction: TypeAlias = Annotated[AsyncSession, Depends(get_db_transaction)]
+type CurrentSession = Annotated[AsyncSession, Depends(get_db)]
+type CurrentSessionTransaction = Annotated[AsyncSession, Depends(get_db_transaction)]

@@ -2,7 +2,7 @@ import functools
 
 from collections.abc import Awaitable, Callable, Sequence
 from inspect import isawaitable
-from typing import Any, ParamSpec, TypeVar
+from typing import Any
 
 from msgspec import json
 
@@ -15,8 +15,6 @@ from backend.core.conf import settings
 from backend.database.redis import redis_client
 from backend.utils.serializers import select_columns_serialize, select_list_serialize
 
-P = ParamSpec('P')
-T = TypeVar('T')
 _MISSING = object()
 
 
@@ -105,7 +103,7 @@ def user_key_builder() -> str:
     return str(user_id)
 
 
-def cached(  # noqa: C901
+def cached[**P, T](  # ruff:ignore[complex-structure]
     namespace: str,
     *,
     key: str | None = None,
@@ -122,7 +120,7 @@ def cached(  # noqa: C901
     if key is not None and key_builder is not None:
         raise errors.ServerError(msg='Cache key and key_builder cannot be used at the same time')
 
-    def decorator(func: Callable[P, T]) -> Callable[P, T]:  # noqa: C901
+    def decorator(func: Callable[P, T]) -> Callable[P, T]:  # ruff:ignore[complex-structure]
         @functools.wraps(func)
         async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
             cache_key = await _build_cache_key(namespace, key, key_builder, *args, **kwargs)
@@ -172,7 +170,7 @@ def cached(  # noqa: C901
     return decorator
 
 
-def cache_invalidate(  # noqa: C901
+def cache_invalidate[**P, T](  # ruff:ignore[complex-structure]
     namespace: str,
     *,
     key: str | None = None,

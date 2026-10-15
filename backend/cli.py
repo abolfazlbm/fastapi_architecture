@@ -234,7 +234,7 @@ async def init(db: AsyncSession, redis: RedisCli) -> None:
     """Interactively initialize database table structure and data"""
     panel_content = _build_db_config_panel_content()
     pk_details = panel_content.from_markup(
-        '[link=https://fastapi-practices.github.io/fastapi_best_architecture_docs/backend/reference/pk.html]（LearnMore）[/]'
+        '[link=https://docs.fba.wu-clan.cc/fastapi_best_architecture_docs/backend/reference/pk.html]（LearnMore）[/]'
     )
     panel_content.append(pk_details)
     panel_content.append('\n\n【Redis deploy】', style='bold green')
@@ -261,8 +261,10 @@ async def init(db: AsyncSession, redis: RedisCli) -> None:
             for prefix in [
                 settings.JWT_USER_REDIS_PREFIX,
                 settings.TOKEN_EXTRA_INFO_REDIS_PREFIX,
+                settings.TOKEN_ONLINE_REDIS_PREFIX,
                 settings.TOKEN_REDIS_PREFIX,
                 settings.TOKEN_REFRESH_REDIS_PREFIX,
+                settings.TOKEN_SESSION_REDIS_PREFIX,
             ]:
                 await redis.delete_by_prefix(prefix)
 
@@ -285,7 +287,7 @@ async def init(db: AsyncSession, redis: RedisCli) -> None:
         console.warning('Initialization operation canceled')
 
 
-def run(host: str, port: int, reload: bool, workers: int) -> None:  # noqa: FBT001
+def run(host: str, port: int, reload: bool, workers: int) -> None:  # ruff:ignore[boolean-type-hint-positional-argument]
     """Start API service"""
     url = f'http://{host}:{port}'
     docs_url = url + settings.FASTAPI_DOCS_URL
@@ -317,6 +319,9 @@ def run(host: str, port: int, reload: bool, workers: int) -> None:  # noqa: FBT0
 
     panel_content.append('\n🌐 Architecture official documentation: ', style='bold magenta')
     panel_content.append('#')
+    panel_content.append('\n\n赞助商：', style='bold yellow')
+    panel_content.append('Claude.uy', style='link https://claude.uy/home')
+
 
     console.print(Panel(panel_content, title=f'fba (v{__version__})', border_style='purple', padding=(1, 2)))
     granian.Granian(
@@ -346,7 +351,7 @@ def run_celery_beat(log_level: Literal['info', 'debug']) -> None:
         pass
 
 
-def run_celery_flower(port: int, basic_auth: str) -> None:
+def run_celery_flower(port: int, basic_auth: str, *, read_only: bool = True) -> None:
     """Start Celery flower monitoring service"""
     try:
         subprocess.run([
@@ -356,16 +361,17 @@ def run_celery_flower(port: int, basic_auth: str) -> None:
             'flower',
             f'--port={port}',
             f'--basic-auth={basic_auth}',
+            f'--read-only={str(read_only).lower()}',
         ])
     except KeyboardInterrupt:
         pass
 
 
-async def install_plugin(  # noqa: C901
+async def install_plugin(  # ruff:ignore[complex-structure]
     path: str | None,
     repo_url: str | None,
-    frontend: bool,  # noqa: FBT001
-    no_sql: bool,  # noqa: FBT001
+    frontend: bool,  # ruff:ignore[boolean-type-hint-positional-argument]
+    no_sql: bool,  # ruff:ignore[boolean-type-hint-positional-argument]
     db_type: DataBaseType,
     pk_type: PrimaryKeyType,
 ) -> None:
@@ -470,7 +476,7 @@ async def sync_deps(plugin: str | None, *, no_project: bool = False, no_plugin: 
         await sync_plugin_deps(plugin)
 
 
-async def remove_plugin(plugin: str | None, *, no_sql: bool = False) -> None:  # noqa: C901
+async def remove_plugin(plugin: str | None, *, no_sql: bool = False) -> None:  # ruff:ignore[complex-structure]
     """Uninstall plugin"""
     if settings.ENVIRONMENT != 'dev':
         raise cappa.Exit('Plug-in uninstallation is only available in development environment', code=1)
@@ -594,15 +600,15 @@ async def import_table(
         raise cappa.Exit('Code generation is only available in development environments', code=1)
 
     try:
-        from backend.plugin.code_generator.schema.gen import ImportParam
-        from backend.plugin.code_generator.service.gen_service import gen_service
+        from backend.plugin.code_generator.schema.code_gen import ImportParam
+        from backend.plugin.code_generator.service.code_gen_service import code_gen_service
     except ImportError:
         raise cappa.Exit('Code generation plug-in usage failed to import, please contact the system administrator', code=1)
 
     try:
         obj = ImportParam(app=app, table_schema=table_schema, table_name=table_name)
         async with async_db_session.begin() as db:
-            await gen_service.import_business_and_model(db=db, obj=obj)
+            await code_gen_service.import_business_and_model(db=db, obj=obj)
         console.tip('Code generation business and model columns are imported successfully')
         console.log('\nTry it quickly [bold cyan]fba codegen[/bold cyan] Generate code~')
     except Exception as e:
@@ -615,15 +621,15 @@ async def generate(*, preview: bool = False) -> None:
         raise cappa.Exit('Code generation is only available in development environments', code=1)
 
     try:
-        from backend.plugin.code_generator.service.business_service import gen_business_service
-        from backend.plugin.code_generator.service.gen_service import gen_service
+        from backend.plugin.code_generator.service.business_service import code_gen_business_service
+        from backend.plugin.code_generator.service.code_gen_service import code_gen_service
     except ImportError:
         raise cappa.Exit('Code generation plug-in usage import failed, please contact the system administrator', code=1)
 
     try:
         ids = []
         async with async_db_session() as db:
-            results = await gen_business_service.get_all(db=db)
+            results = await code_gen_business_service.get_all(db=db)
 
         if not results:
             raise cappa.Exit('[red]No code generation business available! Please import first through the import command！[/]')
@@ -648,7 +654,7 @@ async def generate(*, preview: bool = False) -> None:
 
         # preview
         async with async_db_session() as db:
-            preview_data = await gen_service.preview(db=db, pk=business)
+            preview_data = await code_gen_service.preview(db=db, pk=business)
 
         console.print('\n[bold yellow]The following files will be generated：[/]')
         file_table = Table(show_header=True, header_style='bold cyan')
@@ -672,7 +678,7 @@ async def generate(*, preview: bool = False) -> None:
 
         if ok.lower() == 'y':
             async with async_db_session.begin() as db:
-                gen_path = await gen_service.generate(db=db, pk=business)
+                gen_path = await code_gen_service.generate(db=db, pk=business)
 
             console.print()
             console.tip('The code has been generated')
@@ -849,9 +855,13 @@ class Flower:
         str,
         cappa.Arg(default='admin:123456', help='Username and password for page login'),
     ]
+    read_only: Annotated[
+        bool,
+        cappa.Arg(long=['--read-only', '--no-read-only'], default=True, help='只读监控模式，关闭后允许管理操作'),
+    ]
 
     def __call__(self) -> None:
-        run_celery_flower(port=self.port, basic_auth=self.basic_auth)
+        run_celery_flower(port=self.port, basic_auth=self.basic_auth, read_only=self.read_only)
 
 
 @cappa.command(help='Run the Celery service')

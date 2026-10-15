@@ -7,7 +7,7 @@ from backend.common.security.jwt import DependsJwtAuth
 from backend.core.conf import settings
 
 
-async def rbac_verify(request: Request, _token: str = DependsJwtAuth) -> None:  # noqa: C901
+async def rbac_verify(request: Request, _token: str = DependsJwtAuth) -> None:  # ruff:ignore[complex-structure]
     """
     RBAC permission verification (the order of authentication is very important, please modify it with caution)
 

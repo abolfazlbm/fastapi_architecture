@@ -24,7 +24,7 @@ from backend.common.observability.otel import init_otel
 from backend.common.response.response_code import StandardResponseCode
 from backend.core.conf import settings
 from backend.core.path_conf import STATIC_DIR, UPLOAD_DIR
-from backend.database.db import create_tables
+from backend.database.db import create_tables, dispose_database
 from backend.database.redis import redis_client
 from backend.middleware.access_middleware import AccessMiddleware
 from backend.middleware.i18n_middleware import I18nMiddleware
@@ -86,6 +86,9 @@ async def register_init(app: FastAPI) -> AsyncGenerator[None, None]:
         # Close redis connection
         await redis_client.aclose()
 
+        # 释放数据库连接池
+        await dispose_database()
+
 
 def register_app() -> FastAPI:
     """Register FastAPI Application"""
@@ -99,6 +102,13 @@ def register_app() -> FastAPI:
         openapi_url=settings.FASTAPI_OPENAPI_URL,
         default_response_class=MsgSpecJSONResponse,
         lifespan=lifespan_manager.build(),
+        telemetry={
+            'tracing': settings.GRAFANA_METRICS_ENABLE,
+            'metrics': settings.GRAFANA_METRICS_ENABLE,
+            # 异常日志由现有中间件记录，避免重复导出
+            'logs': False,
+            'auto_configure': False,
+        },
     )
 
     # Register components
@@ -249,5 +259,5 @@ def register_metrics(app: FastAPI) -> None:
     metrics_app = make_asgi_app()
     app.mount(settings.GRAFANA_METRICS_PATH, metrics_app)
 
-    init_otel(app)
+    init_otel()
     init_plugin_otel_hooks(app)

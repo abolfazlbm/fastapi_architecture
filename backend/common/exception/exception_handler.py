@@ -43,7 +43,29 @@ async def _validation_exception_handler(exc: RequestValidationError | Validation
     """
     errors = []
     for error in exc.errors():
-        # Use custom error messages in non-en-US languages
+        # 用于 ai-buddy 插件，脱敏校验错误中的敏感输入，避免异常响应泄露请求内容
+        if (
+            error.get('type') == 'json_invalid'
+            or any(
+                str(part).lower()
+                in {
+                    *settings.OPERA_LOG_REDACT_KEYS,
+                    'secret',
+                    'messages',
+                    'forwardedprops',
+                    'forwarded_props',
+                }
+                for part in error.get('loc', ())
+            )
+            or (
+                isinstance(error.get('input'), dict)
+                and any(str(key).lower() in {'messages', 'forwardedprops', 'forwarded_props'} for key in error['input'])
+            )
+        ):
+            error['input'] = '[REDACTED]'
+        elif isinstance(error.get('input'), dict) and 'secret' in error['input']:
+            error['input'] = {**error['input'], 'secret': '[REDACTED]'}
+        # 非 en-US 语言下，使用自定义错误信息
         if i18n.current_language != 'en-US':
             custom_message = t(f'pydantic.{error["type"]}')
             if custom_message:
@@ -76,7 +98,7 @@ async def _validation_exception_handler(exc: RequestValidationError | Validation
     return MsgSpecJSONResponse(status_code=StandardResponseCode.HTTP_422, content=content)
 
 
-def register_exception(app: FastAPI) -> None:  # noqa: C901
+def register_exception(app: FastAPI) -> None:  # ruff:ignore[complex-structure]
     @app.exception_handler(HTTPException)
     async def http_exception_handler(request: Request, exc: HTTPException):
         """

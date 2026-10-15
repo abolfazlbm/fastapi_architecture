@@ -28,7 +28,7 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
     opera_log_queue_name = 'opera_log_queue'
     opera_log_queue: Queue[CreateOperaLogParam] = Queue(maxsize=settings.OPERA_LOG_QUEUE_MAXSIZE)
 
-    async def dispatch(self, request: Request, call_next: Any) -> Response:  # noqa: C901
+    async def dispatch(self, request: Request, call_next: Any) -> Response:  # ruff:ignore[complex-structure]
         """
         Process requests and log operation logs
 
@@ -125,7 +125,7 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
 
         return response
 
-    async def get_request_args(self, request: Request) -> dict[str, Any] | None:  # noqa: C901
+    async def get_request_args(self, request: Request) -> dict[str, Any] | None:  # ruff:ignore[complex-structure]
         """
         Get request parameters
 
@@ -133,6 +133,12 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
         :return:
         """
         args = {}
+        # 用于 ai-buddy 插件，避免交互输入、聊天和图像生成请求中的敏感内容写入操作日志
+        if '/input-requests/' in request.url.path or request.url.path.endswith((
+            '/chat/completions',
+            '/images/generations',
+        )):
+            return {'body': '[REDACTED]'}
 
         # Query parameters
         query_params = dict(request.query_params)

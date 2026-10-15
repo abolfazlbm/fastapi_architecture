@@ -54,7 +54,7 @@ class SnowflakeNodeManager:
     async def acquire_node_id(self) -> tuple[int, int]:
         """Get available datacenter_id and worker_id from Redis"""
         occupied_nodes = set()
-        async for key in redis_client.scan_iter(match=f'{self.node_redis_prefix}:*'):
+        async for key in redis_client.scan_iter(match=f'{self.node_redis_prefix}:*', count=1000):
             parts = key.split(':')
             if len(parts) >= 5:
                 try:
@@ -119,6 +119,7 @@ class Snowflake:
         self.last_timestamp: int = -1
 
         self._lock = threading.Lock()
+        self._init_lock = asyncio.Lock()
         self._initialized = False
         self._node_manager: SnowflakeNodeManager | None = None
         self._auto_allocated = False  # Whether the tag is automatically assigned an ID by Redis
@@ -128,7 +129,11 @@ class Snowflake:
         if self._initialized:
             return
 
-        with self._lock:
+        # 初始化涉及 Redis IO，必须用 asyncio.Lock，threading.Lock 会在 await 期间锁死事件循环
+        async with self._init_lock:
+            if self._initialized:
+                return
+
             # Environment variable fixed allocation
             if settings.SNOWFLAKE_DATACENTER_ID is not None and settings.SNOWFLAKE_WORKER_ID is not None:
                 self.datacenter_id = settings.SNOWFLAKE_DATACENTER_ID

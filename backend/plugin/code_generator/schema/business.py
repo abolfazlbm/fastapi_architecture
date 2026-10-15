@@ -7,7 +7,7 @@ from backend.common.schema import SchemaBase
 from backend.utils.pattern_validate import is_english_identifier
 
 
-class GenBusinessSchemaBase(SchemaBase):
+class CodeGenBusinessSchemaBase(SchemaBase):
     """Code generation business basic model"""
 
     app_name: str = Field(description='Application name (English)')
@@ -32,15 +32,15 @@ class GenBusinessSchemaBase(SchemaBase):
         return v
 
 
-class CreateGenBusinessParam(GenBusinessSchemaBase):
+class CreateCodeGenBusinessParam(CodeGenBusinessSchemaBase):
     """Create code to generate business parameters"""
 
 
-class UpdateGenBusinessParam(GenBusinessSchemaBase):
+class UpdateCodeGenBusinessParam(CodeGenBusinessSchemaBase):
     """Update code generation business parameters"""
 
 
-class GetGenBusinessDetail(GenBusinessSchemaBase):
+class GetCodeGenBusinessDetail(CodeGenBusinessSchemaBase):
     """Get code generation business details"""
 
     model_config = ConfigDict(from_attributes=True)

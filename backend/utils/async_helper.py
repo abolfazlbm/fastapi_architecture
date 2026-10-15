@@ -5,9 +5,7 @@ import weakref
 
 from collections.abc import Awaitable, Callable, Coroutine
 from functools import wraps
-from typing import Any, TypeVar
-
-T = TypeVar('T')
+from typing import Any
 
 
 class _TaskRunner:
@@ -38,7 +36,7 @@ class _TaskRunner:
         finally:
             self.__loop.close()
 
-    def run(self, coro: Awaitable[T]) -> T:
+    def run[T](self, coro: Awaitable[T]) -> T:
         """Run the coroutine on the background event loop and return its result"""
         with self.__lock:
             name = f'TaskRunner-{threading.get_ident()}'
@@ -53,11 +51,11 @@ class _TaskRunner:
 _runner_map = weakref.WeakValueDictionary()
 
 
-def run_await(coro: Callable[..., Awaitable[T]] | Callable[..., Coroutine[Any, Any, T]]) -> Callable[..., T]:
+def run_await[T](coro: Callable[..., Awaitable[T]] | Callable[..., Coroutine[Any, Any, T]]) -> Callable[..., T]:
     """Wrap the coroutine in a function until it is executed"""
 
     @wraps(coro)
-    def wrapped(*args, **kwargs):  # noqa: ANN202
+    def wrapped(*args, **kwargs):  # ruff:ignore[missing-return-type-private-function]
         inner = coro(*args, **kwargs)
         if not asyncio.iscoroutine(inner) and not asyncio.isfuture(inner):
             raise TypeError(f'Expected coroutine or future, got {type(inner)}')
